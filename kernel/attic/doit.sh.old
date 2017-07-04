@@ -1,0 +1,6 @@
+
+gcc -m32 -Os -c -march=i686 -ffreestanding -S -o kernelbootA.s kernelbootA.c
+as --32 -o kernelbootA.o kernelbootA.s
+as --32 -o kernelA.o kernelA.s
+as --32 -o kernelB.o kernelB.s
+

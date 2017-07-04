@@ -1,0 +1,125 @@
+
+20.01.2013, Sonntag
+
+Den Buddy-System Code ins Projekt eingefügt. Einige Anfangsfehler, speziell in
+der buddy_free()-Phase von buddy_alloc(). Der Fehler war sehr tricky zu finden, denn eigentlich
+war der Code schon stand-alone getestet. Es stellte sich heraus, daß der Compiler einen
+bestimmten (notwendigen) Funktionsaufruf einfach wegoptimiert hatte, weil er die Seiteneffekte
+(auf die es hier ankam) nicht wahrgenommen hatte. Ein strategisch plaziertes volatile
+in buddy.c brachte dann die Lösung.
+
+Zum Schluß lief aber alles, auch der Test
+mit random Allokationen und Deallokationen. Dafür auch nach Knuth einen linear-congruence
+Random-Generator als Funktion rand() mit aufgenommen.
+
+10.02.2013, Sonntag, 02:58
+
+Zuletzt erst noch einige Stubs für TSS-Blöcke und
+Prozess-Datenblöcke eingefügt. Dann, sehr wichtig, vor einer Woche (oder so) endlich
+eine brauchbare Überleitung vom Assembler-Teil des Interrupts zu entsprechenden C-Routinen.
+Kurzum: Jetzt eine brauchbare Basis zur Interrupt-Behandlung vorhanden.
+
+Jetzt dabei, das Memory-Subsystem weiterzutreiben.
+Zunächst Aufbau eines Speicherbeschreibungsarrays aus den BIOS Memory-Map-Daten.
+
+Dazu jetzt die entsprechende ACPI Spezifikation und Beschreibung von int 0x15,
+e820h aus dem Internet geholt. Das ganze ist schon implementiert, eben gerade
+nur noch mal durchgesehen und ein kleines Refactoring gemacht:
+get_mem_map_next() ist gestrichen, get_mem_map_first() macht jetzt die
+entsprechende Arbeit gleich mit.
+
+Das Speicherbeschreibungsarray soll dann für jede Page einen Eintrag haben, der
+alle für das OS nötigen Infos bereithält, die per Adresse als Index abrufbar sein
+müssen. Insbesondere das Buddy-System, der 2^k Allokator für k < 12 und der Zonen-Allokator
+für N > 4k werden evtl. Hilfsinformationen dort eintragen. Maximal sollten 40 Bytes
+= 1% einer Page pro Eintrag nicht überschritten werden. Auf diese Weise wird dieses
+Array, das linear mit dem verfügbaren Hauptspeicher wächst eben niemals mehr als
+1% dieses Hauptspeichers aufzehren. (Was man, wenn man will, auch schon als viel bezeichnen
+kann). Der Eintrag für eine Page wird insbesondere auch einen Use-Count enthalten,
+der beim Verbrauch (durch Demand-Paging oder kernel-malloc) hochgezählt und beim
+Freiwerden (durch Prozess-Beendigung oder kernel-free) heruntergezählt wird.
+
+
+20.03.2013, Mittwoch, 01:22
+
+Eben gerade Stubs für mtx_init, mtx_destroy, mtx_lock, mtx_unlock und cond_wait eingetragen.
+Daher auch Stub für wait_queue_t und dann auch noch Stubs für vmem_area_t (Beschreibung des
+virtuellen Adressraums eines Prozesses) angelegt.
+
+21.03.2013, Donnerstag, 05:22
+
+buddy-System mit page-frame-Liste verschmolzen (hatte in der bisherigen Testvariante eine
+eigene "simulierte" Page-Liste). Dabei eigenartiges Problem: Plötzlich immer Abstürze, zuletzt
+einengbar auf die Situation 
+
+1) struct page_desc_t hat eine Länge, die keine Zweierpotenz ist
+2) DEBUGOUT(0, "...", BLK_INDEX(p_blk), p_blk->order);
+
+Es gab einen Assertion-Fehler aus der printf-Routine in klib.c
+Es genügte dann BLK_INDEX(p_blk) und p_blk->order in eigene Variablen zu schreiben und diese an
+DEBUGOUT und letztlich an printf zu übergeben (und volatile zu setzen).
+Damit funktionierte dann auch der Testfall mit sizeof(page_desc_t) = 24.
+
+23.03.2013, Samstag, 06:45
+
+Die Lösung oben für das DEBUGOUT(0,..) Problem war eine Scheinlösung. Die wahre Ursache war
+einfach die nicht korrekt initialisierte Variable 'precision' in den printf()-Routinen
+in klib.c. Damit funktioniert der Code dann so wie bei dem üblichen printf() erwartet.
+
+24.02.2013, Sonntag, 19:16
+
+buddy.c refactored. Makros LL_INSERT_BEFORE und LL_DELETE ausgegliedert. Dabei interessante
+Anwendung von doppelter Indirektion. (Damit bin ich **-Programmierer, ***- kommt vielleicht
+noch.. :-))
+
+03.03.2013, Sonntag, 02:39
+
+buddy.c/h nach pagedesc.c/h umbenannt. Dort ist jetzt die Pagedeskriptorliste mit allen
+Hilfsfunktionen angesiedelt. Jetzt auch Initialisierung aus der BIOS-Memoryliste heraus (endlich)
+implementiert. Test mit 10000 Allokationen konnte beibehalten werden. Zur Zeit werden
+65520 Pages bereitgestellt, davon sind 65495 als Speicher verfügbar, 25 demzufolge gesperrt.
+Dies stimmt auch mit dem überein, was man aus der angezeigten BIOS-Memoryliste ablesen und
+ausrechnen kann. Es fehlt jetzt noch das Blockieren derjenigen Speicherbereiche, die
+vom Betriebssystem selbst unwiderruflich okkupiert sind (und damit auch das Zusammenspiel des
+Buddy-Allokators mit dem "linearen" Allokator aus der Startphase des Betriebssystems).
+
+06.03.2013, Mittwoch, 02:43
+
+Mehr oder weniger beschlossen mit dem ext2-Filesystem als nächstes weiterzumachen. Dateien
+fs/ext2.h/c angelegt und structs für Superblock, Blockdeskriptor und Inode angelegt (nach
+einer Anleitung im Internet von Dave Poirier). Mini-Test: Alle structs haben die richtige Größe.
+Außerdem am Sonntag noch einen Fehler bei der anfänglichen Markierung der page_desc_t korrigiert:
+Es durften nur 65423 verfügbare Pages gefunden werden, dies geschieht jetzt auch so.
+
+06.03.2013, Mittwoch, 23:25
+
+osexperi-test mit ./bochs ausgegliedert. Dort makefile angepaßt, Fehler gefunden und beseitigt
+(falsche Reihenfolge der 'make all' Abhängigkeiten ld und kr). Das Ausgliedern von osexperi-test
+erfolgt, damit nicht mehr die potentiell großen Files c.img gesichert werden müssen (Es soll nur
+osexperi gesichert werden). Anlaß für ein mögliches Anwachsen von c.img ist der bevorstehende
+Test mit einem in c.img angelegten ext2-Filesystem und entsprechenden Funktionen, die in osexperi
+entstehen sollen.
+
+12.11.2013, Dienstag, 01:14
+
+Eben wilde Bastelei, Scheduling und malloc und und und... in letzter Zeit gemacht. Jetzt Versuch
+einen sauberen User-Prozeß im Kernel zu isolieren und als Startprozeß mit User-Rechten auszuführen.
+Klappt aber noch nicht, Ursache unklar. Klappt jetzt plötzlich nach einigem Rumgemansche mit
+len16, len32, Beachtung, daß nach der totalen Aufwärtsverschiebung des Kern16 + Kern32(System + User)
+wieder um len16 = len(Kern16) nach unten verschoben wird. Anfang von Kern32 ist bündig
+mit 0x100000 = 1024^2. Der User-Code ist jetzt in eigene Files (userproc.c/.h, stdlib.c/.h
+userproc_stub.S) ausgelagert. Start des Userprocesses jetzt möglich. Nur Syscall print_character
+klappt noch nicht, da Daten falsch übergeben werden. Der schnelle Hack mit bx als Übergabe-Register
+funktioniert noch nicht.
+
+13.11.2013, Mittwoch, 21:41
+
+Alle irq_handler Routinen mit der Signatur (errcode, irq_num, esp) ausgestattet. esp zeigt auf den
+esp Stand nach Abladen aller Register im irq-Stub. Damit kann dann über *(esp + Delta) auf einzelne
+Register zugegriffen werden. Damit funktioniert dann auch der Syscall print_character jetzt mit ebx
+als Übergabe-Register.
+
+
+
+
+

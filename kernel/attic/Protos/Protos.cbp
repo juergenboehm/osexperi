@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="Protos" />
+		<Option makefile="/home/juergen/osexperi/kernel/makefile" />
+		<Option makefile_is_custom="1" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/Protos" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/Protos" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+		</Compiler>
+		<Unit filename="main.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../boot/loader.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../boot/loader.h" />
+		<Unit filename="../boot/loaderstub.S" />
+		<Unit filename="../drivers/hardware.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../drivers/hardware.h" />
+		<Unit filename="../drivers/ide.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../drivers/ide.h" />
+		<Unit filename="../drivers/keyb.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../drivers/keyb.h" />
+		<Unit filename="../drivers/pci.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../drivers/pci.h" />
+		<Unit filename="../drivers/pic.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../drivers/pic.h" />
+		<Unit filename="../drivers/timer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../drivers/timer.h" />
+		<Unit filename="../drivers/vga.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../drivers/vga.h" />
+		<Unit filename="../fs/vfs.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../fs/vfs.h" />
+		<Unit filename="../kernel16/dummy.h" />
+		<Unit filename="../kernel16/startup.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../kernel16/startup.h" />
+		<Unit filename="../kernel16/stub.S" />
+		<Unit filename="../kernel16/stubAux.S" />
+		<Unit filename="../kernel32/dummy.h" />
+		<Unit filename="../kernel32/irq.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../kernel32/irq.h" />
+		<Unit filename="../kernel32/irq_stub.S" />
+		<Unit filename="../kernel32/startup.h" />
+		<Unit filename="../kernel32/startup32.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../kernel32/stub32.S" />
+		<Unit filename="../kerneltypes.h" />
+		<Unit filename="../ldscript.kr.ls" />
+		<Unit filename="../ldscript.kr16.ls" />
+		<Unit filename="../ldscript.kr32.ls" />
+		<Unit filename="../ldscript.ld.ls" />
+		<Unit filename="../libs/gdt.h" />
+		<Unit filename="../libs/generaldefs.h" />
+		<Unit filename="../libs/idt.h" />
+		<Unit filename="../libs/kerneldefs.h" />
+		<Unit filename="../libs/structs.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../libs/structs.h" />
+		<Unit filename="../libs/utils.h" />
+		<Unit filename="../libs16/bioslib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../libs16/bioslib.h" />
+		<Unit filename="../libs16/code16.h" />
+		<Unit filename="../libs16/print16.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../libs16/print16.h" />
+		<Unit filename="../libs32/defines.h" />
+		<Unit filename="../libs32/kalloc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../libs32/kalloc.h" />
+		<Unit filename="../libs32/kernel32defs.h" />
+		<Unit filename="../libs32/klib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../libs32/klib.h" />
+		<Unit filename="../libs32/stdlib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../libs32/stdlib.h" />
+		<Unit filename="../libs32/utils32.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../libs32/utils32.h" />
+		<Unit filename="../makefile" />
+		<Unit filename="../mem/gdt32.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../mem/gdt32.h" />
+		<Unit filename="../mem/paging.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../mem/paging.h" />
+		<Extensions>
+			<code_completion>
+				<search_path add="../../kernel" />
+			</code_completion>
+			<debugger />
+			<envvars />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

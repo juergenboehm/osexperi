@@ -1,0 +1,273 @@
+
+#include "libs/kerneldefs.h"
+
+#include "libs32/utils32.h"
+
+#include "drivers/hardware.h"
+#include "drivers/pci.h"
+
+#include "kernel32/irq.h"
+
+#include "drivers/timer.h"
+#include "drivers/keyb.h"
+#include "drivers/keyb_decode.h"
+#include "drivers/ide.h"
+#include "drivers/pic.h"
+
+#include "drivers/vga.h"
+
+
+#include "fs/vfs.h"
+
+#include "libs32/klib.h"
+
+#include "libs32/kalloc.h"
+
+#include "mem/memareas.h"
+#include "mem/paging.h"
+#include "mem/malloc.h"
+
+
+#include "libs/structs.h"
+
+#include "libs/gdt.h"
+#include "libs/idt.h"
+
+#include "mem/gdt32.h"
+
+#include "kernel32/process.h"
+
+
+
+// for ide drive access
+
+uint8_t* ide_buffer;
+
+prd_entry_t* prd_table;
+
+// try
+
+extern void* uproc_1;
+
+
+void ide_test()
+{
+
+	ide_ctrl_t* ide_ctrl = ide_ctrl_PM;
+
+	ide_ctrl->buffer = ide_buffer;
+
+	uint32_t ok = ide_IDENTIFY_DEVICE(ide_ctrl, 0);
+
+	printf("ide test: IDENTIFY_DEVICE: ok = %08x\n", ok);
+	printf("ide test: BSY %01x DRDY %01x DF %01x DRQ %01x ERR %01x\n\n",
+							ide_ctrl->BSY, ide_ctrl->DRDY, ide_ctrl->DF, ide_ctrl->DRQ, ide_ctrl->ERR);
+
+
+	display_buffer(ide_buffer, 512);
+
+	ok = ide_SET_FEATURE(ide_ctrl, 0);
+
+	printf("ide test: SET_FEATURE: ok = %08x\n", ok);
+	printf("ide test: BSY %01x DRDY %01x DF %01x DRQ %01x ERR %01x\n\n",
+							ide_ctrl->BSY, ide_ctrl->DRDY, ide_ctrl->DF, ide_ctrl->DRQ, ide_ctrl->ERR);
+
+
+	ok = ide_IDENTIFY_DEVICE(ide_ctrl, 0);
+
+	printf("ide test: IDENTIFY_DEVICE: ok = %08x\n", ok);
+	printf("ide test: BSY %01x DRDY %01x DF %01x DRQ %01x ERR %01x\n\n",
+							ide_ctrl->BSY, ide_ctrl->DRDY, ide_ctrl->DF, ide_ctrl->DRQ, ide_ctrl->ERR);
+
+
+	display_buffer(ide_buffer, 512);
+
+
+	ok = ide_READ_DMA(ide_ctrl, prd_table, 1, 0, 0);
+
+	printf("ide test: ok = %08x\n", ok);
+	printf("ide test: BSY %01x DRDY %01x DF %01x DRQ %01x ERR %01x\n\n",
+							ide_ctrl->BSY, ide_ctrl->DRDY, ide_ctrl->DF, ide_ctrl->DRQ, ide_ctrl->ERR);
+
+
+	display_buffer(ide_buffer, 512);
+
+
+	ok = ide_READ_DMA(ide_ctrl, prd_table, 1, 1, 0);
+
+	printf("ide test: ok = %08x\n", ok);
+	printf("ide test: BSY %01x DRDY %01x DF %01x DRQ %01x ERR %01x\n\n",
+							ide_ctrl->BSY, ide_ctrl->DRDY, ide_ctrl->DF, ide_ctrl->DRQ, ide_ctrl->ERR);
+
+
+	display_buffer(ide_buffer, 512);
+
+
+}
+
+void keyb_controller_comreg()
+{
+	outb(0x64, 0x20);
+	uint8_t keyb_command = inb(0x60);
+	keyb_command &= 0xff;
+	outb(0x64, 0x60);
+	outb(0x60, keyb_command);
+}
+
+/*
+void do_screen_reset()
+{
+	screen_reset(0, 0, 25, 80);
+}
+*/
+
+
+void kmain32()
+{
+
+	current = 0;
+
+	init_base_files();
+	init_kalloc_fixed();
+
+	//screen_reset(0, 0, 0, 25, 80);
+	int fd_vga0 = do_open("/dev/vga0", 1);
+	int fd_vga1 = do_open("/dev/vga1", 1);
+	int fd_vga2 = do_open("/dev/vga2", 1);
+	int fd_vga3 = do_open("/dev/vga3", 1);
+
+	test_ext2();
+
+	init_mem_system();
+
+	init_malloc_system();
+
+	//test_malloc();
+
+
+
+	printf("Protected mode.\n");
+	printf("Paging enabled.\n\n");
+
+	init_gdt_table_32();
+
+  //printf( " %08x\n %08x\n %08x %08x\n", (U32)sizeof(U8), (U32)sizeof(U16), (U32)sizeof(U32), (U32)sizeof(U64) );
+
+	uint64_t long_val_1 = ((((uint64_t)0x1234abcd) << 32) + (uint64_t)0xfedcabcd);
+	//U64 long_val_2 = ((((U64)0x10000000) << 32) + (U64)0xffffffff);
+
+	//printf("long_val_1 > long_val_2 ? %s \n", long_val_1 > long_val_2 ? "Ja" : "Nein" );
+
+	DEBUGOUT(1, "1: %04d 2: %04d 3: %0+8.8d 4: %04x 5: %04x\n%s\n", 1, -2, 3, 0x20, 0x3f, "Juergen Boehm");
+	DEBUGOUT(1, "Test unsigned hex:%016lx\n\n", long_val_1);
+
+	DEBUGOUT(1, "Len16: %08x\n", (uint32_t)_len16 );
+	DEBUGOUT(1, "Len32: %08x\n\n", (uint32_t)_len32 );
+
+	idt_table = MALLOC_FIXED_TYPE(idt_entry, IDT_TABLE_SIZE, 1);
+
+	init_idt_table();
+	init_pic();
+
+	schedule_off = 1;
+
+
+	timer_special_counter = 0;
+	keyb_special_counter = 0;
+
+  uint8_t* test_dummy = MALLOC_FIXED_TYPE(uint8_t, 128, 4096);
+
+  SET_LIM_ADDR(idt_ptr, IDT_TABLE_SIZE * sizeof(idt_entry), idt_table);
+  SET_LIDT(idt_ptr);
+
+	init_global_tss();
+
+  sti();
+
+	uint32_t i = 0;
+
+	uint32_t eflags = irq_cli_save();
+	irq_restore(eflags);
+
+
+	init_keyboard();
+
+	init_keytables();
+
+	keyb_sema = 0;
+	timer_sema = 0;
+
+	display_bios_mem_area_table();
+
+	waitkey();
+
+	enumerate_pci_bus(pci_addr_ide_contr);
+
+	uint32_t res = ide_init(pci_addr_ide_contr);
+
+	//ide_buffer = MALLOC_FIXED_TYPE(uint8_t, 512, 0x10000);
+	ide_buffer = (uint8_t*) kalloc_fixed_aligned(512 * sizeof(uint8_t), 0x10000);
+	printf("\nkmain32: ide_buffer = %08x\n", (uint32_t)ide_buffer);
+
+	//prd_table must be 16 byte aligned
+	//prd_table = MALLOC_FIXED_TYPE(prd_entry_t, 16, 2);
+	prd_table = (prd_entry_t*)kalloc_fixed_aligned(16 * sizeof(prd_entry_t), 0x10000);
+	printf("\nkmain32: prd_table = %08x\n", (uint32_t) prd_table);
+
+	goto skip_ide_test;
+
+	ide_test();
+
+	uint32_t cnt = 0;
+
+
+	skip_ide_test: waitkey();
+
+  goto skip_pfh_test;
+
+	for (i = 12; i < 19; ++i)
+	{
+		uint32_t p_addr = (0x100000+i);
+		volatile char* p = (char*)p_addr;
+		*p = 'e';
+		printf("%d %x %c\n", i, *p, *p);
+	}
+	for (i = 0; i < 12; ++i)
+	{
+		uint32_t p_addr = (0x100000+i);
+		volatile char* p = (char*)p_addr;
+		*p = 'e';
+		printf("%d %x %c\n", i, *p, *p);
+	}
+
+	skip_pfh_test:
+
+	//do_list_tests();
+
+	// for instant keyboard code debugging
+	//use_keyboard();
+
+
+	for(i = 0; i < 5; ++i)
+		waitkey();
+
+	void* uproc_1 = (void*) 0x1000;
+
+	//schedule_off = 0;
+
+	init_process_1_xp(uproc_1);
+
+/*
+	for(i = 0; 1 ; ++i)
+	{
+		printf("\nproc_0: only counting: cs = 0x%08x ds = 0x%08x esp = 0x%08x\n", get_cs(), get_ds(), get_esp());
+		printf("proc0: i = %d timer_special_counter = %d proc_switch_count = %d\n", i,
+				timer_special_counter, proc_switch_count);
+
+		outb(0xe9, 'B');
+		//WAIT(1 << 23);
+	}
+*/
+
+}
+

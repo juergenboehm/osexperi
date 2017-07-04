@@ -1,0 +1,101 @@
+TARGET(elf32-i386)
+OUTPUT_FORMAT(binary)
+phys1  = 0x00010000;
+phys2  = 0x00020000;
+logic1 = 0x00000000;
+logic2 = 0x00100000;
+offset = 0x00010000;
+
+SECTIONS
+{
+			 	. = logic1;
+       
+			 	.text1 : AT(phys1)
+			 	{ 
+			 		code1 = .;
+					kernelA.o(.text) 
+					kernelbootA.o(.text)
+					code1end = ALIGN(.,16);
+				}
+				
+				lencode1 = code1end - code1;
+				
+				. = logic2;
+       
+			 .text2 : AT(phys2)
+			 { 
+			 		code2 = .;
+					*B.o(.text)
+					code2end = .;
+				}
+				
+				lencode2 = code2end - code2;
+												
+				. = logic1 + lencode1;
+									
+       .data1 : AT(phys1 + lencode1)
+			  { 
+					data1 = .;
+					kernelA.o(.data) 
+					kernelbootA.o(.data)
+					data1end = ALIGN(., 16);
+				}
+				
+				lendata1 = data1end - data1;
+				
+				. = logic2 + lencode2;
+								
+				.data2 : AT(phys2 + lencode2 )
+			  { 
+					data2 = .;
+					*B.o(.data)
+					data2end = .; 
+				}
+				
+				lendata2 = data2end - data2;
+								
+			 . = logic1 + lencode1 + lendata1;
+
+       .bss1 : AT(phys1 + lencode1 + lendata1)
+			 {
+			 		bss1 = .; 
+			 		*A.o(.bss)
+					*A.o(COMMON)
+			 		bss1end = ALIGN(., 16);
+			 }
+			 
+			 lenbss1 = bss1end - bss1;
+			 
+			 . = logic2 + lencode2 + lendata2;
+			 
+       .bss2 : AT(phys2 + lencode2 + lendata2)
+			 {
+			 		bss2 = .; 
+			 		*B.o(.bss)
+			 		bss2end = .;
+			 }
+			 
+			 lenbss2 = bss2end - bss2;
+			 
+			 . = logic1 + lencode1 + lendata1 + lenbss1;
+			 
+			 .rodata1 : AT(phys1 + lencode1 + lendata1 + lenbss1)
+			 {
+			 		rodata1 = .;
+					*A.o(.rodata*)
+			 		rodata1end = ALIGN(., 16);
+			 }
+			 
+			 lenrodata1 = rodata1end - rodata1;
+			 
+			 . = logic2 + lencode2 + lendata2 + lenbss2;
+			 
+			 .rodata2 : AT(phys2 + lencode2 + lendata2 + lenbss2)
+			 {
+			 		rodata2 = .;
+					*B.o(.rodata*)
+			 		rodata2end = .;
+			 }
+
+			 end = .;
+}

@@ -1,0 +1,2 @@
+
+objdump -D -m i386 -b binary kernel.bin 

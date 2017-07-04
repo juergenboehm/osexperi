@@ -1,0 +1,2 @@
+
+ld -melf_i386 --cref -o kernel.bin kernelA.o kernelbootA.o kernelB.o -T ./ldscript.ld
