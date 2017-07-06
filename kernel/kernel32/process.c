@@ -15,6 +15,7 @@
 
 #include "fs/gendrivers.h"
 
+#include "kernel32/objects.h"
 #include "kernel32/process.h"
 
 uint32_t _usercode_phys;
@@ -140,172 +141,171 @@ uint32_t num_procs;
 : )
 
 
-
+#if 0
 // old context-swich code
 
 // remember stack of current before switching:
 // no remember stack
 
-//#define SWITCH(cur_tss,next_tss) asm __volatile__ ( \
-//																						"pushl %%ebx \n\t" \
-//																						"movl " #cur_tss  ", %%ebx \n\t" \
-//																						SAVEREG(EAX) \
-//																						SAVEREG(ECX) \
-//																						SAVEREG(EDX) \
-//																						"popl %%edx \n\t" /* ebx */ \
-//																						"movl %%edx, " XSTR(OFFSET_EBX) "(%%ebx) \n\t" \
-//																						"popl %%edx \n\t" /* ebp */ \
-//																						"movl %%edx, " XSTR(OFFSET_EBP) "(%%ebx) \n\t" \
-//																						"popl %%ecx \n\t" /* ret eip */ \
-//																						"movl %%ecx, " XSTR(OFFSET_EIP) "(%%ebx) \n\t" \
-//																						"pushfl \n\t" \
-//																						"popl %%eax \n\t" \
-//																						"movl %%eax," XSTR(OFFSET_EFLAGS) "(%%ebx) \n\t" \
-//																						SAVEREG(ESI) \
-//																						SAVEREG(EDI) \
-//																						SAVEREG(ESP) \
-//																						"movl %%cr3, %%eax \n\t" \
-//																						"movl %%eax, " XSTR(OFFSET_CR3) "(%%ebx) \n\t" \
-//																						SAVEREG_SEG(FS) \
-//																						SAVEREG_SEG(GS) \
-//																						SAVEREG_SEG(ES) \
-//																						SAVEREG_SEG(SS) \
-//																						SAVEREG_SEG(CS) \
-//																						SAVEREG_SEG(DS) \
-//																						"movl " #next_tss ", %%ebx \n\t" \
-//																						"movl " XSTR(OFFSET_ESP0) "(%%ebx), %%eax \n\t" \
-//																						"movl global_tss, %%ebx \n\t" \
-//																						"movl %%eax, " XSTR(OFFSET_ESP0) "(%%ebx) \n\t" \
-//																						"movl " #next_tss ", %%ebx \n\t" \
-//																						"movw " XSTR(OFFSET_SS0) "(%%ebx), %%ax \n\t" \
-//																						"movl global_tss, %%ebx \n\t" \
-//																						"movw %%ax, " XSTR(OFFSET_SS0) "(%%ebx) \n\t" \
-//																						"movl " #next_tss ", %%ebx \n\t" \
-//																						LOADREG(ECX) \
-//																						LOADREG(EDX) \
-//																						LOADREG(ESI) \
-//																						LOADREG(EDI) \
-//																						LOADREG(EBP) \
-//																						"movl " XSTR(OFFSET_CR3) "(%%ebx), %%eax \n\t" \
-//																						"movl %%eax, %%cr3 \n\t" \
-//																						LOADREG_SEG(FS) \
-//																						LOADREG_SEG(GS) \
-//																						LOADREG_SEG(ES) \
-//																						"movw " XSTR(OFFSET_SS) "(%%ebx), %%ax \n\t" \
-//																						"movw %%ax, %%ss \n\t" /* ss */ \
-//																						"movl " XSTR(OFFSET_ESP) "(%%ebx), %%eax \n\t" \
-//																						"movl %%eax, %%esp \n\t" /* esp */ \
-//																						"movl " XSTR(OFFSET_EFLAGS) "(%%ebx), %%eax \n\t" \
-//																						"pushl %%eax \n\t" \
-//																						"movw $0, %%ax \n\t" \
-//																						"pushw %%ax \n\t" \
-//																						"movw " XSTR(OFFSET_CS) "(%%ebx), %%ax \n\t" \
-//																						"pushw %%ax \n\t" /* ss */ \
-//																						"movl next, %%eax \n\t" \
-//																						"movl %%eax, current \n\t" \
-//																						"movl " XSTR(OFFSET_EIP) "(%%ebx), %%eax \n\t" \
-//																						"pushl %%eax \n\t" /* eip */ \
-//																						"movl " XSTR(OFFSET_EAX) "(%%ebx), %%eax \n\t" \
-//																						"pushl %%eax \n\t" /* eax */\
-//																						"movl " XSTR(OFFSET_EBX) "(%%ebx), %%eax \n\t" \
-//																						"pushl %%eax \n\t" /* ebx */ \
-//																						"movw " XSTR(OFFSET_DS) "(%%ebx), %%ax \n\t" \
-//																						"movw %%ax, %%ds \n\t" \
-//																						"popl %%ebx \n\t" \
-//																						"popl %%eax \n\t" \
-//																						"iretl" : )
-//
-//#define SWITCH_TO_USER(cur_tss,next_tss) asm __volatile__ ( \
-//																						"pushl %%ebx \n\t" \
-//																						"movl " #cur_tss  ", %%ebx \n\t" \
-//																						SAVEREG(EAX) \
-//																						SAVEREG(ECX) \
-//																						SAVEREG(EDX) \
-//																						"popl %%edx \n\t" /* ebx */ \
-//																						"movl %%edx, " XSTR(OFFSET_EBX) "(%%ebx) \n\t" \
-//																						"popl %%edx \n\t" /* ebp */ \
-//																						"movl %%edx, " XSTR(OFFSET_EBP) "(%%ebx) \n\t" \
-//																						"popl %%ecx \n\t" /* ret eip */ \
-//																						"movl %%ecx, " XSTR(OFFSET_EIP) "(%%ebx) \n\t" \
-//																						"pushfl \n\t" \
-//																						"popl %%eax \n\t" \
-//																						"movl %%eax," XSTR(OFFSET_EFLAGS) "(%%ebx) \n\t" \
-//																						SAVEREG(ESI) \
-//																						SAVEREG(EDI) \
-//																						SAVEREG(ESP) \
-//																						"movl %%cr3, %%eax \n\t" \
-//																						"movl %%eax, " XSTR(OFFSET_CR3) "(%%ebx) \n\t" \
-//																						SAVEREG_SEG(FS) \
-//																						SAVEREG_SEG(GS) \
-//																						SAVEREG_SEG(ES) \
-//																						SAVEREG_SEG(SS) \
-//																						SAVEREG_SEG(CS) \
-//																						SAVEREG_SEG(DS) \
-//																						"movl " #next_tss ", %%ebx \n\t" \
-//																						"movl " XSTR(OFFSET_ESP0) "(%%ebx), %%eax \n\t" \
-//																						"movl global_tss, %%ebx \n\t" \
-//																						"movl %%eax, " XSTR(OFFSET_ESP0) "(%%ebx) \n\t" \
-//																						"movl " #next_tss ", %%ebx \n\t" \
-//																						"movw " XSTR(OFFSET_SS0) "(%%ebx), %%ax \n\t" \
-//																						"movl global_tss, %%ebx \n\t" \
-//																						"movw %%ax, " XSTR(OFFSET_SS0) "(%%ebx) \n\t" \
-//																						"movl " #next_tss ", %%ebx \n\t" \
-//																						LOADREG(ECX) \
-//																						LOADREG(EDX) \
-//																						LOADREG(ESI) \
-//																						LOADREG(EDI) \
-//																						LOADREG(EBP) \
-//																						"movl " XSTR(OFFSET_CR3) "(%%ebx), %%eax \n\t" \
-//																						"movl %%eax, %%cr3 \n\t" \
-//																						LOADREG_SEG(FS) \
-//																						LOADREG_SEG(GS) \
-//																						LOADREG_SEG(ES) \
-//																						"movw " XSTR(OFFSET_CS) "(%%ebx), %%ax \n\t" \
-//																						"andw $0x00003, %%ax \n\t" \
-//																						"cmpw $0x00003, %%ax \n\t" \
-//																						"je lower_privilege \n\t" \
-//																						"movw " XSTR(OFFSET_SS) "(%%ebx), %%ax \n\t" \
-//																						"movw %%ax, %%ss \n\t" /* ss */ \
-//																						"movl " XSTR(OFFSET_ESP) "(%%ebx), %%eax \n\t" \
-//																						"movl %%eax, %%esp \n\t" \
-//																						"jmp do_eflags \n\t" \
-//																						"lower_privilege: \n\t " \
-//																						"movw $0, %%ax \n\t" \
-//																						"pushw %%ax \n\t" \
-//																						"movw " XSTR(OFFSET_SS) "(%%ebx), %%ax \n\t" \
-//																						"pushw %%ax \n\t" /* ss */ \
-//																						"movl " XSTR(OFFSET_ESP) "(%%ebx), %%eax \n\t" \
-//																						"pushl %%eax \n\t" \
-//																						"do_eflags: \n\t" \
-//																						"movl " XSTR(OFFSET_EFLAGS) "(%%ebx), %%eax \n\t" \
-//																						"pushl %%eax \n\t" \
-//																						"movw $0, %%ax \n\t" \
-//																						"pushw %%ax \n\t" \
-//																						"movw " XSTR(OFFSET_CS) "(%%ebx), %%ax \n\t" \
-//																						"pushw %%ax \n\t" /* ss */ \
-//																						"movl next, %%eax \n\t" \
-//																						"movl %%eax, current \n\t" \
-//																						"movl " XSTR(OFFSET_EIP) "(%%ebx), %%eax \n\t" \
-//																						"pushl %%eax \n\t" /* eip */ \
-//																						"movl " XSTR(OFFSET_EAX) "(%%ebx), %%eax \n\t" \
-//																						"pushl %%eax \n\t" /* eax */\
-//																						"movl " XSTR(OFFSET_EBX) "(%%ebx), %%eax \n\t" \
-//																						"pushl %%eax \n\t" /* ebx */ \
-//																						"movw " XSTR(OFFSET_DS) "(%%ebx), %%ax \n\t" \
-//																						"movw %%ax, %%ds \n\t" \
-//																						"popl %%ebx \n\t" \
-//																						"popl %%eax \n\t" \
-//																						"iretl" : )
+#define SWITCH(cur_tss,next_tss) asm __volatile__ ( \
+																						"pushl %%ebx \n\t" \
+																						"movl " #cur_tss  ", %%ebx \n\t" \
+																						SAVEREG(EAX) \
+																						SAVEREG(ECX) \
+																						SAVEREG(EDX) \
+																						"popl %%edx \n\t" /* ebx */ \
+																						"movl %%edx, " XSTR(OFFSET_EBX) "(%%ebx) \n\t" \
+																						"popl %%edx \n\t" /* ebp */ \
+																						"movl %%edx, " XSTR(OFFSET_EBP) "(%%ebx) \n\t" \
+																						"popl %%ecx \n\t" /* ret eip */ \
+																						"movl %%ecx, " XSTR(OFFSET_EIP) "(%%ebx) \n\t" \
+																						"pushfl \n\t" \
+																						"popl %%eax \n\t" \
+																						"movl %%eax," XSTR(OFFSET_EFLAGS) "(%%ebx) \n\t" \
+																						SAVEREG(ESI) \
+																						SAVEREG(EDI) \
+																						SAVEREG(ESP) \
+																						"movl %%cr3, %%eax \n\t" \
+																						"movl %%eax, " XSTR(OFFSET_CR3) "(%%ebx) \n\t" \
+																						SAVEREG_SEG(FS) \
+																						SAVEREG_SEG(GS) \
+																						SAVEREG_SEG(ES) \
+																						SAVEREG_SEG(SS) \
+																						SAVEREG_SEG(CS) \
+																						SAVEREG_SEG(DS) \
+																						"movl " #next_tss ", %%ebx \n\t" \
+																						"movl " XSTR(OFFSET_ESP0) "(%%ebx), %%eax \n\t" \
+																						"movl global_tss, %%ebx \n\t" \
+																						"movl %%eax, " XSTR(OFFSET_ESP0) "(%%ebx) \n\t" \
+																						"movl " #next_tss ", %%ebx \n\t" \
+																						"movw " XSTR(OFFSET_SS0) "(%%ebx), %%ax \n\t" \
+																						"movl global_tss, %%ebx \n\t" \
+																						"movw %%ax, " XSTR(OFFSET_SS0) "(%%ebx) \n\t" \
+																						"movl " #next_tss ", %%ebx \n\t" \
+																						LOADREG(ECX) \
+																						LOADREG(EDX) \
+																						LOADREG(ESI) \
+																						LOADREG(EDI) \
+																						LOADREG(EBP) \
+																						"movl " XSTR(OFFSET_CR3) "(%%ebx), %%eax \n\t" \
+																						"movl %%eax, %%cr3 \n\t" \
+																						LOADREG_SEG(FS) \
+																						LOADREG_SEG(GS) \
+																						LOADREG_SEG(ES) \
+																						"movw " XSTR(OFFSET_SS) "(%%ebx), %%ax \n\t" \
+																						"movw %%ax, %%ss \n\t" /* ss */ \
+																						"movl " XSTR(OFFSET_ESP) "(%%ebx), %%eax \n\t" \
+																						"movl %%eax, %%esp \n\t" /* esp */ \
+																						"movl " XSTR(OFFSET_EFLAGS) "(%%ebx), %%eax \n\t" \
+																						"pushl %%eax \n\t" \
+																						"movw $0, %%ax \n\t" \
+																						"pushw %%ax \n\t" \
+																						"movw " XSTR(OFFSET_CS) "(%%ebx), %%ax \n\t" \
+																						"pushw %%ax \n\t" /* ss */ \
+																						"movl next, %%eax \n\t" \
+																						"movl %%eax, current \n\t" \
+																						"movl " XSTR(OFFSET_EIP) "(%%ebx), %%eax \n\t" \
+																						"pushl %%eax \n\t" /* eip */ \
+																						"movl " XSTR(OFFSET_EAX) "(%%ebx), %%eax \n\t" \
+																						"pushl %%eax \n\t" /* eax */\
+																						"movl " XSTR(OFFSET_EBX) "(%%ebx), %%eax \n\t" \
+																						"pushl %%eax \n\t" /* ebx */ \
+																						"movw " XSTR(OFFSET_DS) "(%%ebx), %%ax \n\t" \
+																						"movw %%ax, %%ds \n\t" \
+																						"popl %%ebx \n\t" \
+																						"popl %%eax \n\t" \
+																						"iretl" : )
 
+#define SWITCH_TO_USER(cur_tss,next_tss) asm __volatile__ ( \
+																						"pushl %%ebx \n\t" \
+																						"movl " #cur_tss  ", %%ebx \n\t" \
+																						SAVEREG(EAX) \
+																						SAVEREG(ECX) \
+																						SAVEREG(EDX) \
+																						"popl %%edx \n\t" /* ebx */ \
+																						"movl %%edx, " XSTR(OFFSET_EBX) "(%%ebx) \n\t" \
+																						"popl %%edx \n\t" /* ebp */ \
+																						"movl %%edx, " XSTR(OFFSET_EBP) "(%%ebx) \n\t" \
+																						"popl %%ecx \n\t" /* ret eip */ \
+																						"movl %%ecx, " XSTR(OFFSET_EIP) "(%%ebx) \n\t" \
+																						"pushfl \n\t" \
+																						"popl %%eax \n\t" \
+																						"movl %%eax," XSTR(OFFSET_EFLAGS) "(%%ebx) \n\t" \
+																						SAVEREG(ESI) \
+																						SAVEREG(EDI) \
+																						SAVEREG(ESP) \
+																						"movl %%cr3, %%eax \n\t" \
+																						"movl %%eax, " XSTR(OFFSET_CR3) "(%%ebx) \n\t" \
+																						SAVEREG_SEG(FS) \
+																						SAVEREG_SEG(GS) \
+																						SAVEREG_SEG(ES) \
+																						SAVEREG_SEG(SS) \
+																						SAVEREG_SEG(CS) \
+																						SAVEREG_SEG(DS) \
+																						"movl " #next_tss ", %%ebx \n\t" \
+																						"movl " XSTR(OFFSET_ESP0) "(%%ebx), %%eax \n\t" \
+																						"movl global_tss, %%ebx \n\t" \
+																						"movl %%eax, " XSTR(OFFSET_ESP0) "(%%ebx) \n\t" \
+																						"movl " #next_tss ", %%ebx \n\t" \
+																						"movw " XSTR(OFFSET_SS0) "(%%ebx), %%ax \n\t" \
+																						"movl global_tss, %%ebx \n\t" \
+																						"movw %%ax, " XSTR(OFFSET_SS0) "(%%ebx) \n\t" \
+																						"movl " #next_tss ", %%ebx \n\t" \
+																						LOADREG(ECX) \
+																						LOADREG(EDX) \
+																						LOADREG(ESI) \
+																						LOADREG(EDI) \
+																						LOADREG(EBP) \
+																						"movl " XSTR(OFFSET_CR3) "(%%ebx), %%eax \n\t" \
+																						"movl %%eax, %%cr3 \n\t" \
+																						LOADREG_SEG(FS) \
+																						LOADREG_SEG(GS) \
+																						LOADREG_SEG(ES) \
+																						"movw " XSTR(OFFSET_CS) "(%%ebx), %%ax \n\t" \
+																						"andw $0x00003, %%ax \n\t" \
+																						"cmpw $0x00003, %%ax \n\t" \
+																						"je lower_privilege \n\t" \
+																						"movw " XSTR(OFFSET_SS) "(%%ebx), %%ax \n\t" \
+																						"movw %%ax, %%ss \n\t" /* ss */ \
+																						"movl " XSTR(OFFSET_ESP) "(%%ebx), %%eax \n\t" \
+																						"movl %%eax, %%esp \n\t" \
+																						"jmp do_eflags \n\t" \
+																						"lower_privilege: \n\t " \
+																						"movw $0, %%ax \n\t" \
+																						"pushw %%ax \n\t" \
+																						"movw " XSTR(OFFSET_SS) "(%%ebx), %%ax \n\t" \
+																						"pushw %%ax \n\t" /* ss */ \
+																						"movl " XSTR(OFFSET_ESP) "(%%ebx), %%eax \n\t" \
+																						"pushl %%eax \n\t" \
+																						"do_eflags: \n\t" \
+																						"movl " XSTR(OFFSET_EFLAGS) "(%%ebx), %%eax \n\t" \
+																						"pushl %%eax \n\t" \
+																						"movw $0, %%ax \n\t" \
+																						"pushw %%ax \n\t" \
+																						"movw " XSTR(OFFSET_CS) "(%%ebx), %%ax \n\t" \
+																						"pushw %%ax \n\t" /* ss */ \
+																						"movl next, %%eax \n\t" \
+																						"movl %%eax, current \n\t" \
+																						"movl " XSTR(OFFSET_EIP) "(%%ebx), %%eax \n\t" \
+																						"pushl %%eax \n\t" /* eip */ \
+																						"movl " XSTR(OFFSET_EAX) "(%%ebx), %%eax \n\t" \
+																						"pushl %%eax \n\t" /* eax */\
+																						"movl " XSTR(OFFSET_EBX) "(%%ebx), %%eax \n\t" \
+																						"pushl %%eax \n\t" /* ebx */ \
+																						"movw " XSTR(OFFSET_DS) "(%%ebx), %%ax \n\t" \
+																						"movw %%ax, %%ds \n\t" \
+																						"popl %%ebx \n\t" \
+																						"popl %%eax \n\t" \
+																						"iretl" : )
 
+#endif
 
 int init_global_tss()
 {
 	DEBUGOUT(0, "sizeof(tss_t) = %d\n", sizeof(tss_t));
 	DEBUGOUT(0, "sizeof(process_t) = %d\n", sizeof(process_t));
 
-	global_tss = (tss_t*) malloc(PAGE_SIZE);
-	memset(global_tss, 0, sizeof(tss_t));
+	global_tss = get_tss_t();
 
 	DESCRIPTOR_SET_SEG_ZERO(gdt_table_32[TSS_GDT_INDEX]);
 	DESCRIPTOR_SET_GD_P_DPL_S_TYPX(gdt_table_32[TSS_GDT_INDEX], global_tss, 8191, 0, 0, 1, 0, 0, TSS_GDT_TYPX);
@@ -372,4 +372,58 @@ void schedule()
 
 	irq_restore(eflags);
 }
+
+
+void process_signals(uint32_t esp)
+{
+	if (current->proc_data.signal_pending)
+	{
+		if (current->proc_data.handler)
+		{
+			call_user_handler(esp, current->proc_data.handler, current->proc_data.handler_arg);
+		}
+	}
+}
+
+
+void print_iret_blk(iret_blk_t* pir)
+{
+	outb_printf("pir = %08x\n", (uint32_t) pir);
+	outb_printf("pir->ss = %08x\n", (uint32_t) pir->ss);
+	outb_printf("pir->esp = %08x\n", (uint32_t) pir->esp);
+	outb_printf("pir->eflags = %08x\n", (uint32_t) pir->eflags);
+	outb_printf("pir->cs = %08x\n", (uint32_t) pir->cs);
+	outb_printf("pir->eip = %08x\n", (uint32_t) pir->eip);
+
+}
+
+
+void call_user_handler(uint32_t esp, uint32_t handler, uint32_t arg)
+{
+
+	outb_printf("\n");
+	outb_printf("call_user_handler: esp = %08x\n", esp);
+
+	iret_blk_t* pir = (iret_blk_t*) (esp + 36);
+	print_iret_blk(pir);
+
+	bool in_kernel_code = !(pir->cs & 0x03); // DPL is zero
+
+	if (in_kernel_code)
+	{
+		return;
+	}
+
+	current->proc_data.signal_pending = 0;
+
+	uint32_t *old_esp = (uint32_t*) pir->esp;
+
+	*--old_esp = arg;
+	*--old_esp = pir->eip;
+
+	pir->esp = (uint32_t) old_esp;
+	pir->eip = handler;
+
+}
+
 

@@ -56,6 +56,8 @@ uint32_t FILE;
 // print main routines
 
 int uprintf(char* format, ... );
+int uoutb_printf(char* format, ... );
+
 
 // some machine-level functions
 
@@ -98,6 +100,11 @@ int ustrlen(char *str);
 
 
 // random numbers
+
+// syscalls
+
+int register_handler(void *address_of_handler);
+
 
 
 

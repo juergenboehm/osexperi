@@ -19,17 +19,17 @@
 #include "fs/gendrivers.h"
 
 #include "kernel32/process.h"
+#include "kernel32/objects.h"
+#include "kernel32/proclife.h"
 
 #include "kernel32/baseprocs.h"
 
 #include "kernel32/procstart.h"
 
 
-
-
 uint32_t stack_old;
 uint32_t stack_new;
-uint32_t esp0_next_idle_forever;
+uint32_t esp0_global;
 
 uint32_t ax_old;
 uint32_t cx_old;
@@ -37,7 +37,7 @@ uint32_t cx_old;
 
 void insert_process(process_t * proc, list_head_t** pproc_list_head, uint32_t status)
 {
-	process_node_t* new_node = (process_node_t*) malloc(sizeof(process_node_t));
+	process_node_t* new_node = get_process_node_t();
 	new_node->proc = proc;
 	proc->proc_data.status = status;
 
@@ -71,9 +71,7 @@ void insert_process(process_t * proc, list_head_t** pproc_list_head, uint32_t st
 
 void attach_io_block(process_t * proc, file_t* f_stdin, file_t* f_stdout)
 {
-	proc_io_block_t* p_new_proc_io_block = (proc_io_block_t*) malloc(sizeof(proc_io_block_t));
-
-	memset(p_new_proc_io_block, 0, sizeof(proc_io_block_t));
+	proc_io_block_t* p_new_proc_io_block = get_proc_io_block_t();
 
 	// fixed_file_list[i] is the /dev/vga<i> file
 	p_new_proc_io_block->base_fd_arr[0] = f_stdin;
@@ -92,30 +90,31 @@ void prepare_process(void* fun_addr, int pid, file_t* f_stdin, file_t* f_stdout)
 
 	uint32_t i;
 
-	process_t* new_process = (process_t*)malloc(sizeof(process_t));
+	process_t* new_process = get_process_t();
 
 	attach_io_block(new_process, f_stdin, f_stdout);
 
 	insert_process(new_process, &process_node_list_head, PROC_READY);
 
-	uint32_t* esp0_proc_0 = (uint32_t*) PROC_STACK_BEG(new_process);
-	esp0_next_idle_forever = (uint32_t) esp0_proc_0;
+	uint32_t* esp0 = (uint32_t*) PROC_STACK_BEG(new_process);
 
+	// global variable: is used in assembly code
+	esp0_global = (uint32_t) esp0;
 
-	new_process->proc_data.tss.ss0 = KERNEL32_DS;
-	new_process->proc_data.tss.esp0 = (uint32_t) esp0_proc_0;
-	new_process->proc_data.tss.ebp = 0;
-	new_process->proc_data.tss.eip = (uint32_t) fun_addr;
+	// user stack is set at end of procedure! here it is set 0.
+	init_proc_tss_stacks(new_process, (uint32_t) esp0, 0);
 
-	new_process->proc_data.tss.cr3 = get_cr3();
+	init_proc_eip(new_process, (uint32_t) fun_addr);
+
+	init_proc_cr3(new_process, get_cr3());
 
 	printf("old page dir phys addr = %08x\n", new_process->proc_data.tss.cr3);
 
 	//WAIT(30 * (1 << 24));
 
+	init_proc_basic(new_process, pid, 0);
 
-	new_process->proc_data.pid = pid;
-	new_process->proc_data.ticks = 0;
+	init_proc_handler(new_process);
 
 	p_tss_next = &new_process->proc_data.tss;
 
@@ -135,7 +134,7 @@ void prepare_process(void* fun_addr, int pid, file_t* f_stdin, file_t* f_stdout)
 	"movl %%eax, ax_old \n\t" \
 	"movl %%ecx, cx_old \n\t" \
 	\
-	"movl esp0_next_idle_forever, %%esp \n\t" \
+	"movl esp0_global, %%esp \n\t" \
 	\
 	/* "movl p_tss_next, %%edx \n\t" */ \
 	\
@@ -224,7 +223,7 @@ void init_process_1_xp(void* fun_addr)
 
 	// current is the first user process
 
-	current = (process_t*)malloc(sizeof(process_t));
+	current = get_process_t();
 	insert_process(current, &process_node_list_head, PROC_READY);
 	current_node = container_of(process_node_list_head, process_node_t, link);
 
@@ -236,44 +235,32 @@ void init_process_1_xp(void* fun_addr)
 	// /dev/vga3
 	attach_io_block(current, NULL, &fixed_file_list[DEV_VGA3]);
 
+	init_proc_basic(current, 3, 0);
+	init_proc_handler(current);
+
 	uint32_t* esp0_system = (uint32_t*)PROC_STACK_BEG(current);
 
-	uint32_t* esp0 = (uint32_t*) 0x100000 - 4;
+	init_proc_tss_stacks(current, (uint32_t) esp0_system, USER32_STACK);
 
-	uint32_t* esp0_top = esp0;
-
-	current->proc_data.pid = 3;
-	current->proc_data.ticks = 0;
-
-	current->proc_data.tss.esp0 = (uint32_t) esp0_system;
-	current->proc_data.tss.ss0 = KERNEL32_DS;
-
-	current->proc_data.tss.ss = USER32_DS;
-//	current->proc_data.tss.esp = (uint32_t) esp0_top;
-	current->proc_data.tss.esp = (uint32_t) USER32_STACK;
 
 	page_table_entry_t* new_page_dir;
 	make_page_directory(&new_page_dir_phys_addr, &new_page_dir);
 
-	current->proc_data.tss.cr3 = new_page_dir_phys_addr;
+	init_proc_cr3(current, new_page_dir_phys_addr);
 
 	printf("new page dir phys addr = %08x\n", new_page_dir_phys_addr);
 
 	//WAIT(30 * (1 << 24));
 
-	current->proc_data.tss.ds = USER32_DS;
-	current->proc_data.tss.es = USER32_DS;
-	current->proc_data.tss.fs = USER32_DS;
-	current->proc_data.tss.gs = USER32_DS;
-	current->proc_data.tss.ss = USER32_DS;
+	const int is_user_mode_process = 1;
 
-	current->proc_data.tss.eip = (uint32_t) fun_addr;
+	init_proc_tss_segments(current, is_user_mode_process);
 
-	current->proc_data.tss.cs = USER32_CS;
+	init_proc_eip(current, (uint32_t) fun_addr);
+
 
 	uint32_t eflags = irq_cli_save();
-
-	current->proc_data.tss.eflags = (eflags |  (1 << 9));
+	init_proc_eflags(current, eflags | (1 << 9));
 
 	printf("current->eflags = %08x\n", current->proc_data.tss.eflags);
 

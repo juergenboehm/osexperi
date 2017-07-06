@@ -1,6 +1,7 @@
 
 //#include "drivers/vga.h"
 #include "libs/utils.h"
+#include "libs/kerneldefs.h"
 //#include "mem/paging.h"
 //#include "mem/pagedesc.h"
 //#include "kernel32/irq.h"
@@ -10,6 +11,20 @@
 #include "kernel_user/stdlib.h"
 
 //
+
+__NOINLINE static uint32_t make_syscall1(uint32_t code, uint32_t arg1)
+{
+	uint32_t ret;
+
+	asm __volatile__ ( "movl %1, %%eax \n\t" \
+										 "movl %2, %%ebx \n\t" \
+										 "int $0x80 \n\t" \
+										 "movl %%eax, %0" \
+			: "=g"(ret) : "g"(code), "g"(arg1) : "%eax", "%ebx", "%ecx", "%edx");
+
+	return ret;
+}
+
 
 __NOINLINE static uint32_t make_syscall3(uint32_t code, uint32_t arg1, uint32_t arg2, uint32_t arg3)
 {
@@ -26,11 +41,47 @@ __NOINLINE static uint32_t make_syscall3(uint32_t code, uint32_t arg1, uint32_t 
 	return ret;
 }
 
+typedef void (*handler_fun_t)(uint32_t arg);
+
+#define HANDLER_ADDRESS ((uint32_t*) (USER32_STACK + 0x10))
+
+static void __attribute__ ((stdcall))  handler_wrapper(uint32_t arg)
+{
+	asm __volatile__ ( \
+			"pushal \n\t" \
+			"pushfl \n\t" \
+			: );
+	if (*HANDLER_ADDRESS)
+	{
+		(*((handler_fun_t*)HANDLER_ADDRESS))(arg);
+	}
+	asm __volatile__ ( \
+			"popfl \n\t" \
+			"popal \n\t" \
+		: );
+
+}
+
+int register_handler(void *address_of_handler)
+{
+	*HANDLER_ADDRESS = (uint32_t) address_of_handler;
+	return make_syscall1(SC_SYS_REGISTER_HANDLER, (uint32_t) handler_wrapper);
+}
+
 
 static int kprint_str(uint32_t fd, char* str)
 {
 	int nlen = ustrlen(str);
 	return make_syscall3(SC_SYS_WRITE_NO, (uint32_t)fd, (uint32_t)str, (uint32_t) nlen);
+}
+
+static int uoutb_kprint_str(uint32_t fd,char* buffer)
+{
+	char* p = buffer;
+	while (*p) {
+		uoutb(0xe9, *p++);
+	}
+	return 0;
 }
 
 
@@ -588,6 +639,24 @@ int uprintf(char* format, ... )
 
 }
 
+int uoutb_printf(char* format, ... )
+{
+	int i = 0;
+	char* p = format;
+
+	char buffer[1024];
+
+	va_list ap;
+
+	va_start(ap, format);
+
+	vprintf(buffer, 1024, format, ap);
+
+	va_end(ap);
+
+	return uoutb_kprint_str(1, buffer);
+
+}
 
 
 

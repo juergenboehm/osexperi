@@ -272,6 +272,74 @@ void print_proc_info_line(process_t* proc)
 }
 
 
+int execute_sig(int argc, char* argv[])
+{
+	int ret = -1;
+
+	printf("ps: started.\n");
+
+	if (argc < 3)
+	{
+		printf("sig: too few arguments.\n");
+		return -1;
+	}
+
+	uint32_t ntimes = 1;
+	uint32_t delay = 1 << 20;
+
+	if (argc > 3) {
+		ntimes = atoi(argv[3]);
+	}
+
+	uint32_t pid = atoi(argv[1]);
+	uint32_t arg = atoi(argv[2]);
+
+	int np = 0;
+
+	list_head_t *p = process_node_list_head;
+
+	int found = 0;
+
+	if (p)
+	{
+		int i;
+		for(i = 0; i < ntimes; ++i)
+		{
+			uint32_t eflags = irq_cli_save();
+			do
+			{
+				process_node_t *pnd = container_of(p, process_node_t, link);
+
+				process_t *proc = pnd->proc;
+
+				if (proc->proc_data.pid == pid)
+				{
+					proc->proc_data.handler_arg = arg;
+					proc->proc_data.signal_pending = 1;
+
+					ret = 0;
+					found = 1;
+					break;
+				}
+				++np;
+				p = p->next;
+
+			} while (p != process_node_list_head);
+
+			irq_restore(eflags);
+			WAIT(delay);
+		}
+	}
+
+	if (!found)
+	{
+		printf("sig: process not found.\n");
+	}
+
+	return ret;
+}
+
+
 int execute_ps(int argc, char* argv[])
 {
 	printf("ps: started.\n");
@@ -403,7 +471,8 @@ typedef struct exec_struct_s {
 
 exec_struct_t my_commands[] = { {"calc", execute_calc},
 																	{"ps", execute_ps}, {"spd", execute_spd },
-																	{"mem", execute_mem}};
+																	{"mem", execute_mem},
+																	{"sig", execute_sig}};
 
 
 void dispatch_op(exec_struct_t *commands, int ncommands, int argc, char* argv[])
@@ -481,7 +550,7 @@ void idle_vn()
 		}
 		++i;
 
-		if (i == 2206) {
+		if (i == 10) {
 			use_keyboard();
 		}
 	}

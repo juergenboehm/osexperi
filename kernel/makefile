@@ -69,6 +69,8 @@ objectsC_kernel32 = kernel32/startup32.o \
 			kernel32/procstart.o \
 			kernel32/baseprocs.o \
 			kernel32/mutex.o \
+			kernel32/proclife.o \
+			kernel32/objects.o \
 			syscalls/syscalls.o \
 
 objectsC_kernel_user_mode = kernel_user/stdlib.o \
@@ -105,7 +107,8 @@ headerskernel = kernel16/*.h libs16/*.h libs32/*.h kernel32/*.h libs/*.h drivers
 headersall = $(headers) $(headersboot) $(headerskernel) $(headerslibs16) $(headerslibs32) \
 		$(headerslibs)
 
-debugs = boot/loader.s libs16/bioslib.s kernel16/startup.s kernel32/startup32.s kernel32/process.s drivers/hardware.s
+debugs = boot/loader.s libs16/bioslib.s kernel16/startup.s kernel32/startup32.s \
+		kernel32/process.s drivers/hardware.s kernel_user/stdlib.s
 
 # ld for loader
 

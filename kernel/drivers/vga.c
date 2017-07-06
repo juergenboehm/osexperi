@@ -31,7 +31,7 @@ int vga_open(inode_t* inode, file_t* fil)
 {
 	int minor = GET_MINOR_DEVICE_NUMBER(fil->f_dentry->d_inode->i_device);
 
-	outb_printf(" vga_open reached: minor = %d\n", minor);
+	//outb_printf(" vga_open reached: minor = %d\n", minor);
 
 	int ret = screen_reset(minor, 0,0, 25, 80);
 	return ret;
@@ -42,7 +42,7 @@ int vga_write(file_t* fil, char* buf, size_t count, size_t* offset)
 
 	int minor = GET_MINOR_DEVICE_NUMBER(fil->f_dentry->d_inode->i_device);
 
-	outb_printf("vga_write: minor_number = %d\n", minor);
+	//outb_printf("vga_write: minor_number = %d\n", minor);
 
 	size_t i = 0;
 	char* p = buf;

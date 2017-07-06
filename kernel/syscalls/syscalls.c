@@ -37,6 +37,8 @@ void syscall_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 				break;
 		case SC_SYS_WRITE_NO: retval = sys_write((uint32_t) ebx, (char*) ecx, (size_t) edx);
 				break;
+		case SC_SYS_REGISTER_HANDLER: retval = sys_register_handler((uint32_t) ebx);
+				break;
 		default:
 			break;
 	}
@@ -52,12 +54,29 @@ int sys_open(char* fname, uint32_t fmode)
 
 int sys_read(uint32_t fd, char* buf, size_t count)
 {
+	int ret;
 	file_t* p_file = current->proc_data.io_block->base_fd_arr[fd];
-	return p_file->f_fops->read(p_file, buf, count, 0);
+
+	if (p_file)
+	{
+		if (p_file->f_fops->read) {
+			ret =  p_file->f_fops->read(p_file, buf, count, 0);
+		}
+		else
+		{
+			ret = ENOREAD;
+		}
+	}
+	else
+	{
+		ret = ENOFILE;
+	}
+	return ret;
 }
 
 int sys_write(uint32_t fd, char* buf, size_t count)
 {
+	int ret;
 
 /*
 	outb_printf("fd = %d current = %08x io_block = %08x base_fd_arr = %08x\n",
@@ -74,8 +93,32 @@ int sys_write(uint32_t fd, char* buf, size_t count)
 	outb_printf("fd = %d\n buf = %s \n count = %d \n", fd, buf, count);
 	outb_printf("p_file = %08x fixed_file[] = %08x\n", (uint32_t) p_file, (uint32_t) &fixed_file_list[0] );
 */
+	if (p_file)
+	{
+		if (p_file->f_fops->write)
+		{
+			ret = p_file->f_fops->write(p_file, buf, count, 0);
+		}
+		else
+		{
+			ret = ENOWRITE;
+		}
+	}
+	else
+	{
+		ret = ENOFILE;
+	}
 
-	int ret = p_file->f_fops->write(p_file, buf, count, 0);
 	return ret;
 }
+
+
+int sys_register_handler(uint32_t handler_address)
+{
+	current->proc_data.handler = handler_address;
+	outb_printf("sys_register_handler: registered = %08x\n", handler_address);
+	return 0;
+}
+
+
 

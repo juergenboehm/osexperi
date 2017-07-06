@@ -15,6 +15,17 @@
 
 #define PROCESS_BLOCKSIZE (2 * PAGE_SIZE)
 
+typedef struct __PACKED iret_blk_s {
+	uint32_t eip;
+	uint16_t cs;
+	uint16_t zero2;
+	uint32_t eflags;
+	uint32_t esp;
+	uint16_t ss;
+	uint16_t zero1;
+} iret_blk_t;
+
+
 struct __PACKED tss_s {
 
 	uint16_t bk_link;
@@ -118,11 +129,19 @@ typedef struct __PACKED process_data_s {
 
 	proc_io_block_t* io_block;
 
+	// core infos
+
 	uint32_t pid;
 
 	uint32_t ticks;
 
 	uint32_t status;
+
+	// signal handling
+
+	uint32_t handler;
+	uint32_t handler_arg;
+	uint32_t signal_pending;
 
 } process_data_t;
 
@@ -169,6 +188,11 @@ extern uint32_t num_procs;
 int init_global_tss();
 
 void schedule();
+
+void process_signals(uint32_t esp);
+void call_user_handler(uint32_t esp, uint32_t handler, uint32_t arg);
+
+
 
 // useful for inline assembly macros
 

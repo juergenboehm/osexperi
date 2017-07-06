@@ -2,6 +2,11 @@
 #include "kernel_user/stdlib.h"
 #include "kernel_user/userproc.h"
 
+void my_handler(uint32_t arg)
+{
+	uoutb_printf("\nmy handler_called: arg = %d\n", arg);
+}
+
 
 void uproc_1()
 {
@@ -24,6 +29,7 @@ void uproc_1()
 	}
 */
 
+	register_handler(my_handler);
 
 	uprintf("proc_1: presenting: the primes: cs = 0x%08x ds = 0x%08x\n", uget_cs(), uget_ds());
 	uprintf("                                                       \n");
@@ -62,7 +68,7 @@ void uproc_1()
 			}
 		}
 		i = i + 1;
-		uoutb(0xe9,'A');
+		//uoutb(0xe9,'A');
 		if (i % 100 == 0)
 		{
 			//WAIT(1 << 25);

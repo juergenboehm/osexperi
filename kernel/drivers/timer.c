@@ -30,6 +30,8 @@ void timer_irq_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 
 	schedule();
 
+	process_signals((uint32_t) esp);
+
 
 }
 

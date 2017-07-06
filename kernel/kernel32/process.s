@@ -21,7 +21,7 @@ init_global_tss:
 	pushl	%ebp
 	movl	%esp, %ebp
 	subl	$12, %esp
-	pushl	$304
+	pushl	$305
 	pushl	$.LC0
 	pushl	$.LC1
 	call	printf
@@ -31,7 +31,7 @@ init_global_tss:
 	pushl	$.LC2
 	call	printf
 	addl	$12, %esp
-	pushl	$305
+	pushl	$306
 	pushl	$.LC0
 	pushl	$.LC1
 	call	printf
@@ -40,16 +40,9 @@ init_global_tss:
 	pushl	$8192
 	pushl	$.LC3
 	call	printf
-	movl	$4096, (%esp)
-	call	malloc
+	call	get_tss_t
 	movl	%eax, global_tss
-	addl	$12, %esp
-	pushl	$104
-	pushl	$0
-	pushl	%eax
-	call	memset
 	movb	$0, gdt_table_32+86
-	movl	global_tss, %eax
 	movw	%ax, gdt_table_32+82
 	movl	%eax, %edx
 	shrl	$16, %edx
@@ -198,6 +191,130 @@ schedule:
 .L14:
 	ret
 	.size	schedule, .-schedule
+	.section	.rodata.str1.1
+.LC5:
+	.string	"pir = %08x\n"
+.LC6:
+	.string	"pir->ss = %08x\n"
+.LC7:
+	.string	"pir->esp = %08x\n"
+.LC8:
+	.string	"pir->eflags = %08x\n"
+.LC9:
+	.string	"pir->cs = %08x\n"
+.LC10:
+	.string	"pir->eip = %08x\n"
+	.text
+	.globl	print_iret_blk
+	.type	print_iret_blk, @function
+print_iret_blk:
+	pushl	%ebp
+	movl	%esp, %ebp
+	pushl	%ebx
+	subl	$12, %esp
+	movl	8(%ebp), %ebx
+	pushl	%ebx
+	pushl	$.LC5
+	call	outb_printf
+	popl	%eax
+	popl	%edx
+	movzwl	16(%ebx), %eax
+	pushl	%eax
+	pushl	$.LC6
+	call	outb_printf
+	popl	%ecx
+	popl	%eax
+	pushl	12(%ebx)
+	pushl	$.LC7
+	call	outb_printf
+	popl	%eax
+	popl	%edx
+	pushl	8(%ebx)
+	pushl	$.LC8
+	call	outb_printf
+	popl	%ecx
+	popl	%eax
+	movzwl	4(%ebx), %eax
+	pushl	%eax
+	pushl	$.LC9
+	call	outb_printf
+	popl	%eax
+	popl	%edx
+	pushl	(%ebx)
+	pushl	$.LC10
+	call	outb_printf
+	addl	$16, %esp
+	movl	-4(%ebp), %ebx
+	leave
+	ret
+	.size	print_iret_blk, .-print_iret_blk
+	.section	.rodata.str1.1
+.LC11:
+	.string	"\n"
+.LC12:
+	.string	"call_user_handler: esp = %08x\n"
+	.text
+	.globl	call_user_handler
+	.type	call_user_handler, @function
+call_user_handler:
+	pushl	%ebp
+	movl	%esp, %ebp
+	pushl	%esi
+	pushl	%ebx
+	movl	8(%ebp), %ebx
+	subl	$12, %esp
+	pushl	$.LC11
+	call	outb_printf
+	popl	%eax
+	popl	%edx
+	pushl	%ebx
+	pushl	$.LC12
+	call	outb_printf
+	leal	36(%ebx), %esi
+	movl	%esi, (%esp)
+	call	print_iret_blk
+	addl	$16, %esp
+	testb	$3, 40(%ebx)
+	je	.L18
+	movl	current, %eax
+	movl	$0, 132(%eax)
+	movl	48(%ebx), %eax
+	movl	16(%ebp), %edx
+	movl	%edx, -4(%eax)
+	movl	36(%ebx), %edx
+	movl	%edx, -8(%eax)
+	subl	$8, %eax
+	movl	%eax, 48(%ebx)
+	movl	12(%ebp), %eax
+	movl	%eax, 36(%ebx)
+.L18:
+	leal	-8(%ebp), %esp
+	popl	%ebx
+	popl	%esi
+	popl	%ebp
+	ret
+	.size	call_user_handler, .-call_user_handler
+	.globl	process_signals
+	.type	process_signals, @function
+process_signals:
+	movl	current, %eax
+	cmpl	$0, 132(%eax)
+	je	.L31
+	movl	124(%eax), %edx
+	testl	%edx, %edx
+	je	.L31
+	pushl	%ebp
+	movl	%esp, %ebp
+	subl	$12, %esp
+	pushl	128(%eax)
+	pushl	%edx
+	pushl	8(%ebp)
+	call	call_user_handler
+	addl	$16, %esp
+	leave
+.L31:
+	ret
+	.size	process_signals, .-process_signals
 	.comm	num_procs,4,4
 	.comm	schedule_off,4,4
 	.comm	proc_switch_count,4,4

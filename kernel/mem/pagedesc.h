@@ -20,25 +20,23 @@
 
 //
 // PDESC_FLAG_ALLOC set has the following meaning:
-// if set in a page that is aligned to 2^k
+// if set in a page that has 2^k order
 // it means that the 2^k block starting with the page
 // is not in the 2^k free_list of the buddy system
 // it does _not_ mean something for a single page only
-// if not set in a 2^k aligned block it means that
-// the following 2^k bytes are free and should appear in
+// if not set in a 2^k order block it means that
+// the following 2^k block is free and should appear in
 // the respective 2^k free_list of the buddy system
 //
 // In the beginning, for all pages PDESC_FLAG_ALLOC is set
-// In building the initial free_list it is _reset_ only
-// for a minor fraction of pages, because a big 2^k
-// block is marked free by resetting PDESC_FLAG_ALLOC only
-// in the leader page of the 2^k block.
-// So when big 2^k blocks are put on the free list in the beginning
-// most PDESC_FLAG_ALLOC flags remain untouched (that is set)
-// in their respective pages. But this is no problem
-// for the buddy system, as it is checking only
-// the valid (for its current operation) flags entries.
-//
+// then for every usable page the page is freed with
+// buddy_free. As buddy_free is doing allocs and markings
+// on intermediate result blocks, only a small number
+// of pages is not marked with PDESC_FLAG_ALLOC finally
+// although most pages are considered free by the buddy
+// system and appear in the free_list. (Concretely
+// the non ALLOC marked pages are the headers of
+// big order blocks in the (upper) free_list
 //
 
 // PDESC_FLAG_NOMEM means the page is not in the buddy system
