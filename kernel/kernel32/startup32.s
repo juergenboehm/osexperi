@@ -193,20 +193,30 @@ keyb_controller_comreg:
 	.size	keyb_controller_comreg, .-keyb_controller_comreg
 	.section	.rodata.str1.1
 .LC4:
-	.string	"/dev/vga0"
+	.string	"kmain32 started.\n"
 .LC5:
-	.string	"/dev/vga1"
+	.string	"kalloc_fixed_done.\n"
 .LC6:
-	.string	"/dev/vga2"
+	.string	"init_mem_system done.\n"
 .LC7:
-	.string	"/dev/vga3"
+	.string	"init_malloc_system done.\n"
 .LC8:
-	.string	"Protected mode.\n"
+	.string	"init_base_files done.\n"
 .LC9:
-	.string	"Paging enabled.\n\n"
+	.string	"/dev/vga0"
 .LC10:
-	.string	"\nkmain32: ide_buffer = %08x\n"
+	.string	"/dev/vga1"
 .LC11:
+	.string	"/dev/vga2"
+.LC12:
+	.string	"/dev/vga3"
+.LC13:
+	.string	"Protected mode.\n"
+.LC14:
+	.string	"Paging enabled.\n\n"
+.LC15:
+	.string	"\nkmain32: ide_buffer = %08x\n"
+.LC16:
 	.string	"\nkmain32: prd_table = %08x\n"
 	.text
 	.globl	kmain32
@@ -214,36 +224,46 @@ keyb_controller_comreg:
 kmain32:
 	pushl	%ebp
 	movl	%esp, %ebp
-	subl	$8, %esp
+	subl	$20, %esp
 	movl	$0, current
-	call	init_base_files
-	call	init_kalloc_fixed
-	pushl	%eax
-	pushl	%eax
-	pushl	$1
 	pushl	$.LC4
-	call	do_open
+	call	outb_printf
+	call	init_kalloc_fixed
+	movl	$.LC5, (%esp)
+	call	outb_printf
+	call	init_mem_system
+	movl	$.LC6, (%esp)
+	call	outb_printf
+	call	init_malloc_system
+	movl	$.LC7, (%esp)
+	call	outb_printf
+	call	init_base_files
+	movl	$.LC8, (%esp)
+	call	outb_printf
 	popl	%eax
 	popl	%edx
 	pushl	$1
-	pushl	$.LC5
+	pushl	$.LC9
 	call	do_open
 	popl	%ecx
 	popl	%eax
 	pushl	$1
-	pushl	$.LC6
+	pushl	$.LC10
 	call	do_open
 	popl	%eax
 	popl	%edx
 	pushl	$1
-	pushl	$.LC7
+	pushl	$.LC11
+	call	do_open
+	popl	%ecx
+	popl	%eax
+	pushl	$1
+	pushl	$.LC12
 	call	do_open
 	call	test_ext2
-	call	init_mem_system
-	call	init_malloc_system
-	movl	$.LC8, (%esp)
+	movl	$.LC13, (%esp)
 	call	printf
-	movl	$.LC9, (%esp)
+	movl	$.LC14, (%esp)
 	call	printf
 	call	init_gdt_table_32
 	movl	$2048, (%esp)
@@ -260,7 +280,7 @@ kmain32:
 	movl	idt_table, %eax
 	movl	%eax, idt_ptr+2
 #APP
-# 181 "kernel32/startup32.c" 1
+# 199 "kernel32/startup32.c" 1
 	lidt idt_ptr
 # 0 "" 2
 #NO_APP
@@ -269,30 +289,14 @@ kmain32:
 # 60 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
 	sti
 # 0 "" 2
-# 72 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
-	pushfl 
-	popl %eax 
-	cli 
-	
-# 0 "" 2
 #NO_APP
-	addl	$16, %esp
-	testb	$2, %ah
-	je	.L6
-#APP
-# 85 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
-	sti
-# 0 "" 2
-#NO_APP
-.L6:
 	call	init_keyboard
 	call	init_keytables
 	movl	$0, keyb_sema
 	movl	$0, timer_sema
 	call	display_bios_mem_area_table
 	call	waitkey
-	subl	$12, %esp
-	pushl	$pci_addr_ide_contr
+	movl	$pci_addr_ide_contr, (%esp)
 	call	enumerate_pci_bus
 	movl	$pci_addr_ide_contr, (%esp)
 	call	ide_init
@@ -305,7 +309,7 @@ kmain32:
 	popl	%ecx
 	popl	%edx
 	pushl	%eax
-	pushl	$.LC10
+	pushl	$.LC15
 	call	printf
 	popl	%ecx
 	popl	%eax
@@ -316,7 +320,7 @@ kmain32:
 	popl	%edx
 	popl	%ecx
 	pushl	%eax
-	pushl	$.LC11
+	pushl	$.LC16
 	call	printf
 	call	waitkey
 	call	waitkey

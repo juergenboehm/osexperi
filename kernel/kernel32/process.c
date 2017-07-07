@@ -344,6 +344,8 @@ void __NOINLINE schedule_1()
 //
 void schedule()
 {
+	uint32_t status_next;
+
 	if (schedule_off)
 		return;
 
@@ -355,9 +357,20 @@ void schedule()
 
 	++current->proc_data.ticks;
 
-	next = (container_of((current_node->link.next), process_node_t, link))->proc;
+	do
+	{
+		next = (container_of((current_node->link.next), process_node_t, link))->proc;
+		current_node = container_of(current_node->link.next, process_node_t, link);
 
-	current_node = container_of(current_node->link.next, process_node_t, link);
+		status_next = next->proc_data.status;
+	}
+	while (status_next != PROC_READY && status_next != PROC_RUNNING );
+
+	if (current->proc_data.status == PROC_RUNNING)
+	{
+		current->proc_data.status = PROC_READY;
+	}
+	next->proc_data.status = PROC_RUNNING;
 
 	++proc_switch_count;
 
@@ -376,11 +389,14 @@ void schedule()
 
 void process_signals(uint32_t esp)
 {
-	if (current->proc_data.signal_pending)
+	if (current)
 	{
-		if (current->proc_data.handler)
+		if (current->proc_data.signal_pending)
 		{
-			call_user_handler(esp, current->proc_data.handler, current->proc_data.handler_arg);
+			if (current->proc_data.handler)
+			{
+				call_user_handler(esp, current->proc_data.handler, current->proc_data.handler_arg);
+			}
 		}
 	}
 }

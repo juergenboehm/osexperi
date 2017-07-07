@@ -181,8 +181,8 @@ int init_paging_system()
   	paddr += PAGE_SIZE;
   }
 
-  // NUM_INIT_PAGE_DIR_ENTRIES page tables are allocated. This corresponds to
-  // NUM_INIT_PAGE_DIR_ENTRIES times 4M mapped physical memory
+  // 256 page tables are allocated. This corresponds to
+  // 256 times 4M mapped physical memory
   // (note that one page table maps 1024 * 4KB = 4MB memory)
   // Therefore one page directory entry controls 4MB and
   // 1024 page directory entries map 4GB virtual memory.
@@ -241,6 +241,8 @@ void page_fault_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 	uint32_t lin_addr;
 	asm __volatile__ ( "movl %%cr2, %0" : "=r"(lin_addr));
 	printf("page fault = %d %d 0x%08x esp = 0x%08x cs = %08x\n", errcode, irq_num, lin_addr, esp_val,
+			(uint32_t)get_cs());
+	outb_printf("page fault = %d %d 0x%08x esp = 0x%08x cs = %08x\n", errcode, irq_num, lin_addr, esp_val,
 			(uint32_t)get_cs());
 	void *p = malloc(PAGE_SIZE);
 	uint32_t paddr = (uint32_t)__PHYS(p);

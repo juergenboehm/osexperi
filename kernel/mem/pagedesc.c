@@ -50,7 +50,7 @@ uint32_t buddy_free(page_desc_t* p_blk)
 
 start:
 
-	DEBUGOUT(0, "buddy free: index: %d order:%d\n", BLK_INDEX(p_blk), p_blk->order);
+	DEBUGOUT1(0, "buddy free: index: %d order:%d\n", BLK_INDEX(p_blk), p_blk->order);
 	
 	order = p_blk->order;
 	blk_index = BLK_INDEX(p_blk);
@@ -156,7 +156,7 @@ void get_order_stat(int mode, uint32_t *free_bytesa)
 		free_bytes += n_cnt * (1 << (i_order + 12));
 
 		if (mode == 0) {
-			printf("order %d: len: %d\n", i_order, n_cnt);
+			DEBUGOUT(0, "order %d: len: %d\n", i_order, n_cnt);
 		}
 	}
 	if (free_bytesa) {
@@ -337,15 +337,16 @@ uint32_t init_global_page_list()
 	global_page_list = 0;
 
 	global_page_list = kalloc_fixed_aligned(n_pages * sizeof(page_desc_t), sizeof(page_desc_t));
+	memset(global_page_list, 0, n_pages * sizeof(page_desc_t));
 
 	if (global_page_list == NULL)
 	{
-		printf("init_global_page_list: malloc %d blocks failed.\n", n_pages);
+		DEBUGOUT1(0, "init_global_page_list: malloc %d blocks failed.\n", n_pages);
 		return 1;
 	}
 	else
 	{
-		printf("init_global_page_list: %d page_desc_t of total size %d\n",
+		DEBUGOUT1(0, "init_global_page_list: %d page_desc_t of total size %d\n",
 																		n_pages, n_pages * sizeof(page_desc_t));
 	}
 
@@ -410,7 +411,7 @@ uint32_t init_buddy_system(uint32_t n_pages)
 		mark_occupied(global_page_list + i, 0);
 	}
 
-	printf("init_buddy_system: mark_occupied_done.\n");
+	DEBUGOUT1(0, "init_buddy_system: mark_occupied_done.\n");
 
 	for(i = 0; i < n_pages; ++i)
 	{

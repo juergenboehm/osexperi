@@ -107,9 +107,10 @@ typedef struct tss_s tss_t;
 
 
 
-#define PROC_READY 0
-#define PROC_BLOCKED 1
-#define PROC_RUNNING 2
+#define PROC_READY 		0
+#define PROC_BLOCKED 	1
+#define PROC_RUNNING 	2
+#define PROC_STOPPED	3
 
 #define NUM_BASE_FD_PROC	16
 

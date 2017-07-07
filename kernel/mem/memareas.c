@@ -25,7 +25,7 @@ void display_bios_mem_area_table()
 
 	get_mem_area_table_info(&table_len, &p_entry);
 
-	printf("BIOS Memory Areas:\n\n");
+	printf("BIOS Memory Areas: table_len = %d, p_entry = %08x\n\n", table_len, (uint32_t) p_entry);
 
 	for(i = 0; i < table_len; ++i)
 	{

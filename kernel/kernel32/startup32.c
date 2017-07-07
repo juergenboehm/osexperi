@@ -38,7 +38,6 @@
 #include "kernel32/process.h"
 
 
-
 // for ide drive access
 
 uint8_t* ide_buffer;
@@ -127,8 +126,30 @@ void kmain32()
 
 	current = 0;
 
-	init_base_files();
+	outb_printf("kmain32 started.\n");
+
 	init_kalloc_fixed();
+
+	outb_printf("kalloc_fixed_done.\n");
+
+	// now the initialization of the memory system
+	// is done right at the beginning, because
+	// it depends only on init_kalloc_fixed.
+	// earlier it was postponed so that
+	// virtual vgas could be created for debugging output
+	// this is not necessary anymore, as
+	// outb_printf is now used in the new DEBUGOUT1()
+
+	init_mem_system();
+	outb_printf("init_mem_system done.\n");
+	init_malloc_system();
+	outb_printf("init_malloc_system done.\n");
+
+
+	init_base_files();
+
+	outb_printf("init_base_files done.\n");
+
 
 	//screen_reset(0, 0, 0, 25, 80);
 	int fd_vga0 = do_open("/dev/vga0", 1);
@@ -138,9 +159,7 @@ void kmain32()
 
 	test_ext2();
 
-	init_mem_system();
 
-	init_malloc_system();
 
 	//test_malloc();
 
@@ -171,7 +190,6 @@ void kmain32()
 
 	schedule_off = 1;
 
-
 	timer_special_counter = 0;
 	keyb_special_counter = 0;
 
@@ -186,8 +204,6 @@ void kmain32()
 
 	uint32_t i = 0;
 
-	uint32_t eflags = irq_cli_save();
-	irq_restore(eflags);
 
 
 	init_keyboard();
@@ -198,6 +214,7 @@ void kmain32()
 	timer_sema = 0;
 
 	display_bios_mem_area_table();
+
 
 	waitkey();
 

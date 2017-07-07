@@ -1,6 +1,6 @@
 	.file	"hardware.c"
 	.text
-.globl set_cr3
+	.globl	set_cr3
 	.type	set_cr3, @function
 set_cr3:
 	pushl	%ebp
@@ -18,5 +18,5 @@ set_cr3:
 	popl	%ebp
 	ret
 	.size	set_cr3, .-set_cr3
-	.ident	"GCC: (Ubuntu 4.4.3-4ubuntu5.1) 4.4.3"
+	.ident	"GCC: (GNU) 4.8.2 20140120 (Red Hat 4.8.2-15)"
 	.section	.note.GNU-stack,"",@progbits

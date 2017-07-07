@@ -1,4 +1,6 @@
 
+#include "drivers/hardware.h"
+
 #include "mem/pagedesc.h"
 #include "mem/paging.h"
 #include "mem/malloc.h"
@@ -96,6 +98,10 @@ static uint32_t tally_log_size[MALLOC_HEADS_NUM];
 
 void* malloc(uint32_t size)
 {
+	// To protect the many memory related datastructures
+	// that are acted upon by the now called code.
+	uint32_t eflags = irq_cli_save();
+
 	DEBUGOUT(0, "enter malloc(%d)\n", size);
 
 	uint32_t size_4 = align(size, 4);
@@ -108,11 +114,19 @@ void* malloc(uint32_t size)
 
 	void *p_ret = get_malloc_node(log_size);
 	DEBUGOUT(0, "leave malloc\n");
+
+	irq_restore(eflags);
+
 	return p_ret;
 }
 
 void free(void * p)
 {
+
+	// To protect the many memory related datastructures
+	// that are acted upon by the now called code.
+	uint32_t eflags = irq_cli_save();
+
 	uint32_t q_pd = ADDR_TO_PDESC_INDEX(p);
 	page_desc_t *pdesc = BLK_PTR(q_pd);
 	ASSERT((pdesc->flags & PDESC_FLAG_MALLOC));
@@ -129,6 +143,8 @@ void free(void * p)
 		malloc_heads[malloc_order_log] = p;
 		((malloc_node_t*)p)->next = pp;
 	}
+
+	irq_restore(eflags);
 }
 
 #define LEN_TEST_QUEUE 64

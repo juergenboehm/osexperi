@@ -236,6 +236,9 @@ void init_process_1_xp(void* fun_addr)
 	attach_io_block(current, NULL, &fixed_file_list[DEV_VGA3]);
 
 	init_proc_basic(current, 3, 0);
+
+	current->proc_data.status = PROC_READY;
+
 	init_proc_handler(current);
 
 	uint32_t* esp0_system = (uint32_t*)PROC_STACK_BEG(current);

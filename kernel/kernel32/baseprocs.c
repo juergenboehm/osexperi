@@ -363,6 +363,44 @@ int execute_ps(int argc, char* argv[])
 	}
 }
 
+int execute_sst(int argc, char* argv[])
+{
+	int np = 0;
+
+	list_head_t *p = process_node_list_head;
+
+	printf("sst: started.\n");
+
+	if (argc < 3) {
+		printf("sst: too few arguments.\n");
+		return -1;
+	}
+
+	uint32_t pid = atoi(argv[1]);
+	uint32_t status = atoi(argv[2]);
+
+	if (p)
+	{
+		uint32_t eflags = irq_cli_save();
+		do
+		{
+			process_node_t *pnd = container_of(p, process_node_t, link);
+
+			if (pnd->proc->proc_data.pid == pid)
+			{
+				pnd->proc->proc_data.status = status;
+				goto unlock;
+			}
+			++np;
+			p = p->next;
+
+		} while (p != process_node_list_head);
+
+		unlock: irq_restore(eflags);
+	}
+
+}
+
 int execute_spd(int argc, char* argv[])
 {
 
@@ -472,7 +510,8 @@ typedef struct exec_struct_s {
 exec_struct_t my_commands[] = { {"calc", execute_calc},
 																	{"ps", execute_ps}, {"spd", execute_spd },
 																	{"mem", execute_mem},
-																	{"sig", execute_sig}};
+																	{"sig", execute_sig},
+																	{"sst", execute_sst}};
 
 
 void dispatch_op(exec_struct_t *commands, int ncommands, int argc, char* argv[])

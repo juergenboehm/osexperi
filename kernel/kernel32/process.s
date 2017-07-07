@@ -146,7 +146,7 @@ schedule_1:
 schedule:
 	movl	schedule_off, %eax
 	testl	%eax, %eax
-	jne	.L14
+	jne	.L17
 	pushl	%ebp
 	movl	%esp, %ebp
 	pushl	%ebx
@@ -163,10 +163,18 @@ schedule:
 	movl	8(%eax), %edx
 	movl	%edx, current
 	incl	116(%edx)
-	movl	(%eax), %edx
-	movl	8(%edx), %eax
-	movl	%eax, next
-	movl	%edx, current_node
+.L9:
+	movl	(%eax), %eax
+	movl	8(%eax), %ecx
+	testl	$-3, 120(%ecx)
+	jne	.L9
+	movl	%eax, current_node
+	movl	%ecx, next
+	cmpl	$2, 120(%edx)
+	jne	.L10
+	movl	$0, 120(%edx)
+.L10:
+	movl	$2, 120(%ecx)
 	incl	proc_switch_count
 	movb	$72, %al
 #APP
@@ -188,7 +196,7 @@ schedule:
 .L5:
 	popl	%ebx
 	popl	%ebp
-.L14:
+.L17:
 	ret
 	.size	schedule, .-schedule
 	.section	.rodata.str1.1
@@ -275,7 +283,7 @@ call_user_handler:
 	call	print_iret_blk
 	addl	$16, %esp
 	testb	$3, 40(%ebx)
-	je	.L18
+	je	.L21
 	movl	current, %eax
 	movl	$0, 132(%eax)
 	movl	48(%ebx), %eax
@@ -287,7 +295,7 @@ call_user_handler:
 	movl	%eax, 48(%ebx)
 	movl	12(%ebp), %eax
 	movl	%eax, 36(%ebx)
-.L18:
+.L21:
 	leal	-8(%ebp), %esp
 	popl	%ebx
 	popl	%esi
@@ -298,11 +306,13 @@ call_user_handler:
 	.type	process_signals, @function
 process_signals:
 	movl	current, %eax
+	testl	%eax, %eax
+	je	.L37
 	cmpl	$0, 132(%eax)
-	je	.L31
+	je	.L37
 	movl	124(%eax), %edx
 	testl	%edx, %edx
-	je	.L31
+	je	.L37
 	pushl	%ebp
 	movl	%esp, %ebp
 	subl	$12, %esp
@@ -312,7 +322,7 @@ process_signals:
 	call	call_user_handler
 	addl	$16, %esp
 	leave
-.L31:
+.L37:
 	ret
 	.size	process_signals, .-process_signals
 	.comm	num_procs,4,4

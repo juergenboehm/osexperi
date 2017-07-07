@@ -18,7 +18,7 @@ int init_page_desc_system()
 	init_global_page_list();
 	init_buddy_system(num_pages_total);
 
-	DEBUGOUT(0, "start buddy test.\n");
+	DEBUGOUT1(0, "start buddy test.\n");
 
 	get_order_stat(0, &initial_free_mem_buddy);
 

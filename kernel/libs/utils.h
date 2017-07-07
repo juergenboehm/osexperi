@@ -23,6 +23,7 @@
 #ifdef NODEBUG
 
 #define DEBUGOUT(level, ...) do {} while(0)
+#define DEBUGOUT1(level, ...) do {} while(0)
 #define ASSERT(cond) do {} while (0)
 
 #define X_DEBUGOUT(level,...) do { \
@@ -39,6 +40,7 @@
 
 #else /* NODEBUG */
 
+
 #define DEBUGOUT(level,...) do { \
 															 if (level <= DEBUG_LEVEL) \
 															 { \
@@ -46,6 +48,20 @@
 																 printf(__VA_ARGS__); \
 															 } \
 															 } while (0)
+
+
+// We need DEBUGOUT1 for cases, where no screen is available
+// to output the debugging message (before initializing the virtual vga screens).
+
+
+#define DEBUGOUT1(level,...) do { \
+															 if (level <= DEBUG_LEVEL) \
+															 { \
+																 outb_printf("[Debug: %s:%d]", __FILE__, __LINE__); \
+																 outb_printf(__VA_ARGS__); \
+															 } \
+															 } while (0)
+
 
 
 #define ASSERT(cond) do { if (!(cond)) { DEBUGOUT(0, "%s %s\n", #cond, " failed"); while(1){}; } } while (0)

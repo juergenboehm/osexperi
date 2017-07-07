@@ -28,6 +28,9 @@ void fill_start_params()
 
 int init_kalloc_fixed()
 {
+
+	outb_printf("starting init_kalloc_fixed.\n");
+
 	fill_start_params();
 
 	pt_kalloc_fixed = (uint8_t*) align(_len32 + KERNEL_32_START_UPPER, PAGE_SIZE);
