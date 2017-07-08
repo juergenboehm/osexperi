@@ -25,6 +25,7 @@ uint32_t pci_read_word(uint16_t bus_number, uint16_t device_number, uint16_t fun
 	outl( PCI_CONFIG_ADDRESS, address);
 
 	uint32_t res = inl(PCI_CONFIG_DATA);
+
 	return res;
 
 }
@@ -138,7 +139,7 @@ void enumerate_pci_bus(pci_access_data_t* pci_addr_ide_contr)
 					printf("** Header type: %02x: sub: %02x prim: %02x sec: %02x\n\n",
 							header_type, sub_ord_bus, prim_bus, sec_bus );
 
-					waitkey();
+					//waitkey();
 				}
 			}
 		}

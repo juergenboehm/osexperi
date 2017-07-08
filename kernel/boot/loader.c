@@ -13,6 +13,8 @@ typedef uint32_t* P_U32;
 
 #define	DISKBUF_ADDR	0x9000
 
+#define MAX_KERNEL16_LEN	32768
+
 uint8_t* diskbuf_global;
 __ALIGNED(8) DAPA dapa_global;
 
@@ -69,6 +71,7 @@ int lmain()
 
 	int num_kernel_secs = KERNEL_LEN / 512;
 
+
 	DBGOUT("Kernel len = ", KERNEL_LEN);
 
 
@@ -78,6 +81,11 @@ int lmain()
 	int start_sec = offset_kernel_sec;
 
 	uint16_t dest16 = 0x0000;
+
+	// when the kernel gets longer than about 64k, dest16 overflows
+	// therefore it is limited here to MAX_KERNEL16_LEN
+	uint16_t max_dest16 = MAX_KERNEL16_LEN;
+
 	uint32_t dest32 = 0x100000;
 
 	DBGOUT("dest32 = ", dest32);
@@ -95,11 +103,14 @@ int lmain()
 
 		int to_move = min(dest16 + tf_num * 512, 0x10000) - dest16;
 
-		if (to_move > 0)
+		if (dest16 < max_dest16 && to_move > 0)
 		{
 			volatile int ret = copy_segseg( LOADER_SEG, (uint16_t)(((uint32_t)diskbuf_global) & 0xffff), to_move, KERNEL16_SEG, dest16 );
 			dest16 += to_move;
 
+		} else
+		{
+			dest16 = max_dest16;
 		}
 
 		DBGOUT("copy segseg done: to_move = ", to_move);
@@ -125,8 +136,11 @@ int lmain()
 
 	}
 
+	DBGOUT("Kernel len = ", KERNEL_LEN);
 
-		print_str("Load 4 done.\r\n");
+	print_str("Load 4 done.\r\n");
+
+	//while(1) {};
 
 /*
 	copy_segseg( 0x9000, 0x0800, 1024, LOADER_SEG, (U16)((((U32)diskbuf_global) & 0xffff) + 2048));

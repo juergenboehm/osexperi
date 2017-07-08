@@ -94,7 +94,7 @@ void prepare_process(void* fun_addr, int pid, file_t* f_stdin, file_t* f_stdout)
 
 	attach_io_block(new_process, f_stdin, f_stdout);
 
-	insert_process(new_process, &process_node_list_head, PROC_READY);
+	insert_process(new_process, &global_proc_list, PROC_READY);
 
 	uint32_t* esp0 = (uint32_t*) PROC_STACK_BEG(new_process);
 
@@ -186,7 +186,8 @@ void init_process_1_xp(void* fun_addr)
 
 	schedule_off = 1;
 
-	process_node_list_head = 0;
+	global_proc_list = 0;
+	global_free_proc_list = 0;
 
 	outb_printf("\n");
 
@@ -219,13 +220,13 @@ void init_process_1_xp(void* fun_addr)
 
 */
 
-	outb_printf("init_process_1_xp: first two processes entered..\n");
+	outb_printf("init_process_1_xp: initial processes entered..\n");
 
 	// current is the first user process
 
 	current = get_process_t();
-	insert_process(current, &process_node_list_head, PROC_READY);
-	current_node = container_of(process_node_list_head, process_node_t, link);
+	insert_process(current, &global_proc_list, PROC_READY);
+	current_node = container_of(global_proc_list, process_node_t, link);
 
 	p_tss_current = &current->proc_data.tss;
 

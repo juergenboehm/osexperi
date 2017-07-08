@@ -97,6 +97,22 @@ do { \
 		} \
 	} while (0)
 
+
+
+// for iterating
+
+#define INIT_LISTVAR(var) \
+	struct list_head* var
+
+#define FORLIST(var, init) \
+	var = (init); \
+	if (var) \
+	{ \
+		do
+
+#define END_FORLIST(var, final) \
+		while (var != (final)); }
+
 // for testing
 
 #define COMPILE_LIST_TESTS

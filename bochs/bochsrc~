@@ -49,8 +49,8 @@ config_interface: textconfig
 #display_library: nogui
 #display_library: sdl, options="fullscreen" # startup in fullscreen mode
 #display_library: term
-display_library: wx
-#display_library: x, options="hideIPS" # disable IPS output in status bar
+#display_library: wx
+display_library: x, options="hideIPS" # disable IPS output in status bar
 #display_library: x, options="gui_debug" # use GTK debugger gui
 
 #=======================================================================
@@ -728,7 +728,7 @@ user_shortcut: keys=ctrl-alt-del
 #   i440fxsupport: enabled=1, slot1=pcivga, slot2=ne2k
 #=======================================================================
 #i440fxsupport: enabled=1, slot1=pcivga
-pci: enabled=1, chipset=i440fx, slot1=pcivga
+pci: enabled=1, chipset=i430fx, slot1=pcivga
 
 #=======================================================================
 # USB_UHCI:
@@ -850,3 +850,5 @@ port_e9_hack: enabled=1
 # See the example in the Bochs sources how to write a plugin device.
 #=======================================================================
 #user_plugin: name=testdev
+
+

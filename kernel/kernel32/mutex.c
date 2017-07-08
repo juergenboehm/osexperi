@@ -56,6 +56,18 @@ int wq_wakeup(wq_t* wq)
 }
 
 
+void remove_from_wait_queues(process_t *proc)
+{
+
+}
+
+void release_sync_primitives(process_t *proc)
+{
+
+}
+
+
+
 
 
 

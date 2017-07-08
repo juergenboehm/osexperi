@@ -222,13 +222,21 @@ void kmain32()
 
 	uint32_t res = ide_init(pci_addr_ide_contr);
 
+
+	// the following structures are needed for the ide driver
+	// as far as I understand it, at least prd_table must start
+	// at a 64kB boundary.
+	// we want to eliminate the kalloc_fixed_aligned calls here.
+
 	//ide_buffer = MALLOC_FIXED_TYPE(uint8_t, 512, 0x10000);
-	ide_buffer = (uint8_t*) kalloc_fixed_aligned(512 * sizeof(uint8_t), 0x10000);
+	//ide_buffer = (uint8_t*) kalloc_fixed_aligned(512 * sizeof(uint8_t), 0x10000);
+	ide_buffer = (uint8_t*) malloc(0x10000);
 	printf("\nkmain32: ide_buffer = %08x\n", (uint32_t)ide_buffer);
 
 	//prd_table must be 16 byte aligned
 	//prd_table = MALLOC_FIXED_TYPE(prd_entry_t, 16, 2);
-	prd_table = (prd_entry_t*)kalloc_fixed_aligned(16 * sizeof(prd_entry_t), 0x10000);
+	//prd_table = (prd_entry_t*)kalloc_fixed_aligned(16 * sizeof(prd_entry_t), 0x10000);
+	prd_table = (prd_entry_t*)malloc(0x10000);
 	printf("\nkmain32: prd_table = %08x\n", (uint32_t) prd_table);
 
 	goto skip_ide_test;
@@ -238,7 +246,7 @@ void kmain32()
 	uint32_t cnt = 0;
 
 
-	skip_ide_test: waitkey();
+	skip_ide_test:
 
   goto skip_pfh_test;
 

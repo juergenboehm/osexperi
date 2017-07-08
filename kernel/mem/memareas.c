@@ -33,9 +33,9 @@ void display_bios_mem_area_table()
 				p_entry->type, p_entry->acpi );
 		p_entry++;
 
-		waitkey();
+		//waitkey();
 	}
 	printf("Fertig.\n");
-	waitkey();
+	//waitkey();
 }
 

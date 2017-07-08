@@ -24,6 +24,14 @@ proc_io_block_t*  get_proc_io_block_t();
 process_node_t* get_process_node_t();
 
 
+void free_process_node_t(process_node_t* pnd);
+void free_process_t(process_t* proc);
+void free_proc_io_block_t(proc_io_block_t* pio_blk);
+
+
+
+
+
 
 
 

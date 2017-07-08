@@ -36,6 +36,10 @@ int wq_free(wq_t* wq);
 int wq_wait(wq_t* wq);
 int wq_wakeup(wq_t* wq);
 
+void remove_from_wait_queues(process_t *proc);
+void release_sync_primitives(process_t *proc);
+
+
 
 
 #endif /* __kernel32_mutex_h */

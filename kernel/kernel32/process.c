@@ -24,7 +24,9 @@ tss_t *global_tss;
 
 //process_t* process_table[NUM_PROCESSES];
 
-struct list_head* process_node_list_head;
+struct list_head* global_proc_list;
+struct list_head* global_free_proc_list;
+
 
 process_t* current;
 process_t* next;
@@ -139,6 +141,73 @@ uint32_t num_procs;
 						\
 						"ret \n\t" \
 : )
+
+
+// current is dead, do not save or use it
+
+#define SWITCH_XP2(next_tss) asm __volatile__ ( \
+	/*	"movb $'F', %%al \n\t" */ \
+	/*	"outb %%al, $0xe9 \n\t"  */ \
+						\
+						"movl " #next_tss ", %%edx \n\t"  /* here heart of task-switch: new esp loaded */ \
+						"movl " XSTR(OFFSET_ESP) "(%%edx), %%eax \n\t" \
+						"movl %%eax, %%esp \n\t" \
+						\
+						/* "movb $'H', %%al \n\t" */ \
+						/* "outb %%al, $0xe9 \n\t" */ \
+						\
+						"movl " #next_tss ", %%edx \n\t" \
+						"movl " XSTR(OFFSET_ESP0) "(%%edx), %%eax \n\t" \
+						"movl global_tss, %%edx \n\t" \
+						"movl %%eax, " XSTR(OFFSET_ESP0) "(%%edx) \n\t" \
+						"movl " #next_tss ", %%edx \n\t" \
+						"movw " XSTR(OFFSET_SS0) "(%%edx), %%ax \n\t" \
+						"movl global_tss, %%edx \n\t" \
+						"movw %%ax, " XSTR(OFFSET_SS0) "(%%edx) \n\t" \
+						"movl " #next_tss ", %%edx \n\t" \
+						\
+						/* "movb $'I', %%al \n\t" */ \
+						/* "outb %%al, $0xe9 \n\t" */ \
+						\
+						"popw %%ax \n\t movw %%ax, %%ds \n\t" \
+						"popw %%ax \n\t" /* cs skipped, can not be loaded, only by far ret */ \
+						"popw %%ax \n\t movw %%ax, %%ss \n\t" \
+						"popw %%ax \n\t movw %%ax, %%es \n\t" \
+						"popw %%ax \n\t movw %%ax, %%gs \n\t" \
+						"popw %%ax \n\t movw %%ax, %%fs \n\t" \
+					  \
+						\
+						/* "movb $'J', %%al \n\t" */ \
+						/* "outb %%al, $0xe9 \n\t" */ \
+						\
+						"popl %%eax \n\t" \
+						"movl %%eax, %%cr3 \n\t" \
+						\
+						"popfl \n\t" \
+						\
+						"movl " XSTR(OFFSET_EBP) "(%%edx), %%eax \n\t " \
+						"movl %%eax, %%ebp \n\t" \
+						\
+						"movl next, %%eax \n\t" \
+						"movl %%eax, current \n\t" \
+						\
+						\
+						"popl %%edi \n\t" \
+						"popl %%esi \n\t" \
+						/* "popl %%edx \n\t" */ \
+						"popl %%ecx \n\t" \
+						"popl %%ebx \n\t" \
+						/* "popl %%eax \n\t" */ \
+						\
+						"movl " XSTR(OFFSET_EIP) "(%%edx), %%eax \n\t" \
+						"pushl %%eax \n\t" \
+						/* "movb $'F', %%al \n\t" */ \
+						/* "outb %%al, $0xe9 \n\t" */ \
+						\
+						"ret \n\t" \
+: )
+
+
 
 
 #if 0
@@ -338,6 +407,19 @@ void __NOINLINE schedule_1()
 
 }
 
+// this is for scheduling when current has died
+// so no saving of context can and must be done.
+// instead only next is put to run.
+void __NOINLINE schedule_2()
+{
+	//p_tss_current = &current->proc_data.tss;
+	p_tss_next = &next->proc_data.tss;
+
+	SWITCH_XP2(p_tss_next);
+
+}
+
+
 //
 // schedule()
 // current_node is the wandering pointer along the process_node_t list
@@ -353,9 +435,19 @@ void schedule()
 
 	//printf("esp = %08x\ncs = %08x\nds = %08x\n", get_esp(), get_cs(), get_ds());
 
-	current = current_node->proc;
+	if (!current)
+	{
+		outb_printf("schedule: current is 0.\n");
+		current_node = container_of(global_proc_list->next, process_node_t, link);
+	}
+	else
+	{
+		current = current_node->proc;
+		++current->proc_data.ticks;
+	}
 
-	++current->proc_data.ticks;
+	//outb_printf("schedule: current node pid = %d\n", current_node->proc->proc_data.pid);
+
 
 	do
 	{
@@ -366,22 +458,34 @@ void schedule()
 	}
 	while (status_next != PROC_READY && status_next != PROC_RUNNING );
 
-	if (current->proc_data.status == PROC_RUNNING)
+	//outb_printf("schedule: next pid = %d\n", next->proc_data.pid);
+
+	if (current)
 	{
-		current->proc_data.status = PROC_READY;
+		if (current->proc_data.status == PROC_RUNNING)
+		{
+			current->proc_data.status = PROC_READY;
+		}
 	}
 	next->proc_data.status = PROC_RUNNING;
 
 	++proc_switch_count;
 
-	//printf("next process: cnt = %d i = %d\n", proc_switch_count, i_next);
 	//printf("current = %08x next = %08x\n", (uint32_t) current, (uint32_t) next );
 
 
 	outb(0xe9, 'H');
 	outb(0xe9, 'H');
 
-	schedule_1();
+	if (current)
+	{
+		schedule_1();
+	}
+	else
+	{
+		schedule_2();
+	}
+
 
 	irq_restore(eflags);
 }
@@ -393,7 +497,11 @@ void process_signals(uint32_t esp)
 	{
 		if (current->proc_data.signal_pending)
 		{
-			if (current->proc_data.handler)
+			if (current->proc_data.handler_arg == 999)
+			{
+				exit_process(current);
+			}
+			else if (current->proc_data.handler)
 			{
 				call_user_handler(esp, current->proc_data.handler, current->proc_data.handler_arg);
 			}
@@ -439,6 +547,101 @@ void call_user_handler(uint32_t esp, uint32_t handler, uint32_t arg)
 
 	pir->esp = (uint32_t) old_esp;
 	pir->eip = handler;
+
+}
+
+void exit_process()
+{
+	destroy_process(current);
+}
+
+void free_user_memory(process_t *proc)
+{
+	page_table_entry_t *page_dir_proc = __VADDR(proc->proc_data.tss.cr3);
+
+	int i;
+	for(i = 0; i < PG_PAGE_DIR_USER_ENTRIES; ++i)
+	{
+		free_page_table(&page_dir_proc[i]);
+	}
+	free_page_directory(page_dir_proc);
+	proc->proc_data.tss.cr3 = get_cr3();
+
+}
+
+
+void destroy_io_data(process_t *proc)
+{
+	free_proc_io_block_t(proc->proc_data.io_block);
+}
+
+void take_out_of_global_proc_list(process_t *proc)
+{
+	INIT_LISTVAR(p);
+
+	FORLIST(p, global_proc_list)
+	{
+		process_node_t *pnd = container_of(p, process_node_t, link);
+
+		if (pnd->proc == proc)
+		{
+				DEBUGOUT1(0, "takes proc %08x out of global proc list.\n", (uint32_t) pnd->proc);
+				//next_node_aux = container_of(pnd->link.next, process_node_t, link);
+
+				delete_elem(&global_proc_list, &pnd->link);
+				free_process_node_t(pnd);
+				break;
+		}
+
+		p = p->next;
+
+	}
+	END_FORLIST(p, global_proc_list);
+
+	int ncnt = 0;
+	FORLIST(p, global_proc_list)
+	{
+			process_node_t *pnd = container_of(p, process_node_t, link);
+
+			DEBUGOUT1(0, "take_out: pid = %d\n", pnd->proc->proc_data.pid);
+			p = p->next;
+
+			++ncnt;
+
+	} while (ncnt < 8 || p != global_proc_list); }
+
+}
+
+
+void free_process_block(process_t *proc)
+{
+	process_node_t* pnd = get_process_node_t();
+	pnd->proc = proc;
+	prepend_list(&global_free_proc_list, &pnd->link);
+}
+
+void destroy_process(process_t* proc)
+{
+
+	proc->proc_data.status = PROC_EXIT;
+
+	free_user_memory(proc);
+	destroy_io_data(proc);
+	take_out_of_global_proc_list(proc);
+	remove_from_wait_queues(proc);
+	release_sync_primitives(proc);
+	free_process_block(proc);
+
+	current = 0;
+
+	sti();
+	// start the dying loop. when next
+	// timer hits then process is finished.
+	while (1)
+	{
+		outb(0xe9, 'D');
+		WAIT(1 << 15);
+	}
 
 }
 

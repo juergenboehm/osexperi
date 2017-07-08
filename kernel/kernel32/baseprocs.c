@@ -26,6 +26,8 @@
 #include "kernel32/baseprocs.h"
 
 
+char* proc_state_list[] = { "ready", "blocked", "running", "stopped", "exit" };
+
 
 void exit(uint32_t exit_code)
 {
@@ -63,7 +65,7 @@ void idle_forever()
 	uint32_t i = 0;
 
 	while (1) {
-		printf("I am idle. %d\n", ++i);
+		printf("I am idle (0). %d\n", ++i);
 		if (!(i % (1 << 24)))
 		{
 			outb(0xe9, 'B');
@@ -265,11 +267,12 @@ int execute_calc(int argc, char* argv[])
 
 void print_proc_info_line(process_t* proc)
 {
-	printf("pid = %d ticks = %d status = %d",
+	printf("pid = %d ticks = %d status = %s",
 			proc->proc_data.pid,
 			proc->proc_data.ticks,
-			proc->proc_data.status);
+			proc_state_list[proc->proc_data.status]);
 }
+
 
 
 int execute_sig(int argc, char* argv[])
@@ -296,39 +299,39 @@ int execute_sig(int argc, char* argv[])
 
 	int np = 0;
 
-	list_head_t *p = process_node_list_head;
 
 	int found = 0;
 
-	if (p)
+	int i;
+	for(i = 0; i < ntimes; ++i)
 	{
-		int i;
-		for(i = 0; i < ntimes; ++i)
+		uint32_t eflags = irq_cli_save();
+
+		INIT_LISTVAR(p);
+
+		FORLIST(p, global_proc_list)
 		{
-			uint32_t eflags = irq_cli_save();
-			do
+			process_node_t *pnd = container_of(p, process_node_t, link);
+
+			process_t *proc = pnd->proc;
+
+			if (proc->proc_data.pid == pid)
 			{
-				process_node_t *pnd = container_of(p, process_node_t, link);
+				proc->proc_data.handler_arg = arg;
+				proc->proc_data.signal_pending = 1;
 
-				process_t *proc = pnd->proc;
+				ret = 0;
+				found = 1;
+				break;
+			}
+			++np;
+			p = p->next;
 
-				if (proc->proc_data.pid == pid)
-				{
-					proc->proc_data.handler_arg = arg;
-					proc->proc_data.signal_pending = 1;
-
-					ret = 0;
-					found = 1;
-					break;
-				}
-				++np;
-				p = p->next;
-
-			} while (p != process_node_list_head);
-
-			irq_restore(eflags);
-			WAIT(delay);
 		}
+		END_FORLIST(p, global_proc_list);
+
+		irq_restore(eflags);
+		WAIT(delay);
 	}
 
 	if (!found)
@@ -345,12 +348,9 @@ int execute_ps(int argc, char* argv[])
 	printf("ps: started.\n");
 	int np = 0;
 
-	list_head_t *p = process_node_list_head;
-
-	if (p)
+	INIT_LISTVAR(p);
+	FORLIST(p, global_proc_list)
 	{
-		do
-		{
 			process_node_t *pnd = container_of(p, process_node_t, link);
 
 			print_proc_info_line(pnd->proc);
@@ -359,15 +359,16 @@ int execute_ps(int argc, char* argv[])
 			++np;
 			p = p->next;
 
-		} while (p != process_node_list_head);
 	}
+	END_FORLIST(p, global_proc_list);
+
 }
+
+
 
 int execute_sst(int argc, char* argv[])
 {
 	int np = 0;
-
-	list_head_t *p = process_node_list_head;
 
 	printf("sst: started.\n");
 
@@ -377,27 +378,41 @@ int execute_sst(int argc, char* argv[])
 	}
 
 	uint32_t pid = atoi(argv[1]);
-	uint32_t status = atoi(argv[2]);
 
-	if (p)
+	uint32_t status;
+	uint32_t max_status = sizeof(proc_state_list)/sizeof(proc_state_list[0]);
+	for(status = 0; status < max_status; ++status)
 	{
-		uint32_t eflags = irq_cli_save();
-		do
+		if (!strcmp(argv[2], proc_state_list[status]))
 		{
-			process_node_t *pnd = container_of(p, process_node_t, link);
-
-			if (pnd->proc->proc_data.pid == pid)
-			{
-				pnd->proc->proc_data.status = status;
-				goto unlock;
-			}
-			++np;
-			p = p->next;
-
-		} while (p != process_node_list_head);
-
-		unlock: irq_restore(eflags);
+			break;
+		}
 	}
+	if (status == max_status)
+	{
+		printf("sst: illegal status.");
+		return -1;
+	}
+
+	uint32_t eflags = irq_cli_save();
+
+	INIT_LISTVAR(p);
+	FORLIST(p, global_proc_list)
+	{
+		process_node_t *pnd = container_of(p, process_node_t, link);
+
+		if (pnd->proc->proc_data.pid == pid)
+		{
+			pnd->proc->proc_data.status = status;
+			goto unlock;
+		}
+		++np;
+		p = p->next;
+
+	}
+	END_FORLIST(p, global_proc_list)
+
+	unlock: irq_restore(eflags);
 
 }
 
@@ -417,36 +432,33 @@ int execute_spd(int argc, char* argv[])
 		to_index = atoi(argv[3]);
 	}
 
-	list_head_t *p = process_node_list_head;
-
-	if (p)
+	INIT_LISTVAR(p);
+	FORLIST(p, global_proc_list)
 	{
-		do
-		{
-			process_node_t *pnd = container_of(p, process_node_t, link);
-			process_data_t *pdata = &pnd->proc->proc_data;
+		process_node_t *pnd = container_of(p, process_node_t, link);
+		process_data_t *pdata = &pnd->proc->proc_data;
 
-			if (pdata->pid == npid) {
+		if (pdata->pid == npid) {
 
-				int i;
-				uint32_t pdentry = 0;
+			int i;
+			uint32_t pdentry = 0;
 
-				uint32_t page_dir_phys_addr = pdata->tss.cr3;
+			uint32_t page_dir_phys_addr = pdata->tss.cr3;
 
-				for(i = from_index; i <= to_index; ++i)
-				{
-						get_page_dir_entry(page_dir_phys_addr, i, &pdentry);
-						printf("page_dir_phys_addr = %08x: page dir entry[%d] = %08x\n",
-								page_dir_phys_addr, i, pdentry);
-				}
-
-				return 0;
+			for(i = from_index; i <= to_index; ++i)
+			{
+					get_page_dir_entry(page_dir_phys_addr, i, &pdentry);
+					printf("page_dir_phys_addr = %08x: page dir entry[%d] = %08x\n",
+							page_dir_phys_addr, i, pdentry);
 			}
 
-			p = p->next;
+			return 0;
+		}
 
-		} while (p != process_node_list_head);
+		p = p->next;
+
 	}
+	END_FORLIST(p, global_proc_list);
 
 	printf("spd: process not found.\n");
 
@@ -569,7 +581,7 @@ void idle_watched()
 	uint32_t i = 0;
 
 	while (1) {
-		printf("I am watched. %d\n", ++i);
+		printf("I am watched (2). %d\n", ++i);
 		++i;
 	}
 }

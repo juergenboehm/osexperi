@@ -593,19 +593,20 @@ int outb_print(char* str)
 	}
 }
 
+#define PRINTF_BUFFER_LEN	1024
 
 int outb_printf(char* format, ... )
 {
 	int i = 0;
 	char* p = format;
 
-	char buffer[1024];
+	char buffer[PRINTF_BUFFER_LEN];
 
 	va_list ap;
 
 	va_start(ap, format);
 
-	vprintf(buffer, 1024, format, ap);
+	vprintf(buffer, PRINTF_BUFFER_LEN, format, ap);
 
 	va_end(ap);
 
@@ -622,13 +623,13 @@ int printf(char* format, ... )
 	int i = 0;
 	char* p = format;
 
-	char buffer[1024];
+	char buffer[PRINTF_BUFFER_LEN];
 
 	va_list ap;
 
 	va_start(ap, format);
 
-	vprintf(buffer, 1024, format, ap);
+	vprintf(buffer, PRINTF_BUFFER_LEN, format, ap);
 
 	va_end(ap);
 
@@ -641,13 +642,13 @@ int fprintf(FILE fd, char* format, ... )
 	int i = 0;
 	char* p = format;
 
-	char buffer[1024];
+	char buffer[PRINTF_BUFFER_LEN];
 
 	va_list ap;
 
 	va_start(ap, format);
 
-	vprintf(buffer, 1024, format, ap);
+	vprintf(buffer, PRINTF_BUFFER_LEN, format, ap);
 
 	va_end(ap);
 

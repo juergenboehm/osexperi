@@ -145,7 +145,7 @@ lmain:
 	call	print_str
 	movl	$.LC9, (%esp)
 	call	print_str
-	movl	$60416, (%esp)
+	movl	$64512, (%esp)
 	call	print_U32
 	call	print_newline
 	movl	$.LC4, (%esp)
@@ -158,11 +158,13 @@ lmain:
 	call	print_U32
 	call	print_newline
 	addl	$16, %esp
-	movw	$0, -42(%ebp)
-	movl	$118, %ebx
+	xorl	%esi, %esi
+	movl	$126, %ebx
 .L11:
-	imull	$-512, %ebx, %esi
-	addl	$1108992, %esi
+	imull	$-512, %ebx, %eax
+	addl	$1113088, %eax
+	movl	%eax, %edi
+	movl	%eax, -44(%ebp)
 	subl	$12, %esp
 	pushl	$.LC4
 	call	print_str
@@ -177,7 +179,7 @@ lmain:
 	pushl	$dapa_global
 	pushl	diskbuf_global
 	pushl	$1
-	movl	$128, %eax
+	movl	$136, %eax
 	subl	%ebx, %eax
 	pushl	%eax
 	call	loadsec
@@ -188,10 +190,10 @@ lmain:
 	call	print_str
 	movl	$.LC12, (%esp)
 	call	print_str
-	movl	%esi, (%esp)
+	movl	%edi, (%esp)
 	call	print_U32
 	call	print_newline
-	movzwl	-42(%ebp), %eax
+	movzwl	%si, %eax
 	leal	512(%eax), %edi
 	addl	$16, %esp
 	cmpl	$65536, %edi
@@ -200,7 +202,9 @@ lmain:
 .L8:
 	subl	%eax, %edi
 	testl	%edi, %edi
-	jle	.L9
+	jle	.L12
+	cmpw	$-32768, %si
+	jae	.L12
 	subl	$12, %esp
 	pushl	%eax
 	pushl	$8192
@@ -210,8 +214,11 @@ lmain:
 	pushl	$4096
 	call	copy_segseg
 	movl	%eax, -28(%ebp)
-	addw	%di, -42(%ebp)
+	addl	%edi, %esi
 	addl	$32, %esp
+	jmp	.L9
+.L12:
+	movl	$-32768, %esi
 .L9:
 	subl	$12, %esp
 	pushl	$.LC4
@@ -240,16 +247,17 @@ lmain:
 	call	print_str
 	movl	$.LC15, (%esp)
 	call	print_str
-	movl	%esi, (%esp)
+	popl	%eax
+	pushl	-44(%ebp)
 	call	print_U32
 	call	print_newline
 	movl	$4096, (%esp)
 	pushl	$256
-	pushl	%esi
+	pushl	-44(%ebp)
 	pushl	%edi
 	pushl	$mm_block
 	call	copy_ext
-	movl	%eax, %esi
+	movl	%eax, %edi
 	addl	$20, %esp
 	pushl	$.LC4
 	call	print_str
@@ -257,14 +265,23 @@ lmain:
 	call	print_str
 	movl	$.LC16, (%esp)
 	call	print_str
-	movl	%esi, (%esp)
+	movl	%edi, (%esp)
 	call	print_U32
 	call	print_newline
 	addl	$16, %esp
 	decl	%ebx
 	jne	.L11
 	subl	$12, %esp
-	pushl	$.LC17
+	pushl	$.LC4
+	call	print_str
+	movl	$.LC5, (%esp)
+	call	print_str
+	movl	$.LC9, (%esp)
+	call	print_str
+	movl	$64512, (%esp)
+	call	print_U32
+	call	print_newline
+	movl	$.LC17, (%esp)
 	call	print_str
 	movl	$.LC18, (%esp)
 	call	print_str

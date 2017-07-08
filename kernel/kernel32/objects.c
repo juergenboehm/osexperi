@@ -48,3 +48,26 @@ process_node_t* get_process_node_t()
 	return p_new_node;
 }
 
+
+void free_process_node_t(process_node_t* pnd)
+{
+	free(pnd);
+}
+
+void free_process_t(process_t* proc)
+{
+	free(proc);
+}
+
+void free_proc_io_block_t(proc_io_block_t* pio_blk)
+{
+	free(pio_blk);
+}
+
+
+
+
+
+
+
+

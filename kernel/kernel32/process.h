@@ -111,6 +111,8 @@ typedef struct tss_s tss_t;
 #define PROC_BLOCKED 	1
 #define PROC_RUNNING 	2
 #define PROC_STOPPED	3
+#define PROC_EXIT			4
+
 
 #define NUM_BASE_FD_PROC	16
 
@@ -169,7 +171,8 @@ extern tss_t* global_tss;
 extern process_t* current;
 extern process_t* next;
 
-extern struct list_head* process_node_list_head;
+extern struct list_head* global_proc_list;
+extern struct list_head* global_free_proc_list;
 
 extern process_node_t* current_node;
 extern process_node_t* next_node;
@@ -193,6 +196,9 @@ void schedule();
 void process_signals(uint32_t esp);
 void call_user_handler(uint32_t esp, uint32_t handler, uint32_t arg);
 
+void exit_process();
+void free_user_memory(process_t *proc);
+void destroy_process(process_t* proc);
 
 
 // useful for inline assembly macros

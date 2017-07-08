@@ -101,6 +101,9 @@ uint32_t ide_check_status_ok(ide_ctrl_t* ide_ctrl, uint8_t drv_num)
 	}
 }
 
+#define PCICMD_REG	0x04
+#define IDETIM_REG	0x40
+
 
 uint32_t ide_init(pci_access_data_t* pci_dev)
 {
@@ -110,6 +113,17 @@ uint32_t ide_init(pci_access_data_t* pci_dev)
 
 	ide_irq_sema = 0;
 	ide_res_sema = 0;
+
+
+	uint16_t pcicmd_val = (uint16_t)(pci_read_word(pci_dev->bus_number, pci_dev->device_number,
+																		pci_dev->function_number, PCICMD_REG >> 2) & 0xffff);
+
+	uint16_t idetim_val = (uint16_t)(pci_read_word(pci_dev->bus_number, pci_dev->device_number,
+			pci_dev->function_number, IDETIM_REG >> 2) & 0xffff);
+
+
+	printf("pcicmd = %08x, idetim = %08x\n", pcicmd_val, idetim_val);
+
 
 	memset(ide_ctrl_blk, 0, sizeof(ide_ctrl_blk));
 

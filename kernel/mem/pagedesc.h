@@ -65,6 +65,8 @@ typedef struct page_desc_t
 	uint32_t flags;
 	uint32_t order;
 
+	uint32_t use_cnt;
+
 	uint32_t malloc_order;
 
 } page_desc_t;

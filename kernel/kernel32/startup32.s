@@ -300,29 +300,22 @@ kmain32:
 	call	enumerate_pci_bus
 	movl	$pci_addr_ide_contr, (%esp)
 	call	ide_init
-	popl	%eax
-	popl	%edx
-	pushl	$65536
-	pushl	$512
-	call	kalloc_fixed_aligned
+	movl	$65536, (%esp)
+	call	malloc
 	movl	%eax, ide_buffer
-	popl	%ecx
 	popl	%edx
+	popl	%ecx
 	pushl	%eax
 	pushl	$.LC15
 	call	printf
-	popl	%ecx
-	popl	%eax
-	pushl	$65536
-	pushl	$128
-	call	kalloc_fixed_aligned
+	movl	$65536, (%esp)
+	call	malloc
 	movl	%eax, prd_table
 	popl	%edx
 	popl	%ecx
 	pushl	%eax
 	pushl	$.LC16
 	call	printf
-	call	waitkey
 	call	waitkey
 	call	waitkey
 	call	waitkey

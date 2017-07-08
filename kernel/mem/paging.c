@@ -4,11 +4,12 @@
 #include "drivers/hardware.h"
 #include "libs32/kalloc.h"
 #include "libs32/klib.h"
+#include "mem/pagedesc.h"
 #include "mem/malloc.h"
 #include "mem/paging.h"
 
-
-page_table_entry_t* page_dir_sys;
+// global system page directory
+page_table_entry_t* global_page_dir_sys;
 create_page_table_t create_page_table;
 
 
@@ -189,7 +190,7 @@ int init_paging_system()
 
 	page_dir_phys_addr = ((uint32_t) __PHYS(page_dir_sys_loc));
 
-	page_dir_sys = page_dir_sys_loc;
+	global_page_dir_sys = page_dir_sys_loc;
 
 	set_cr3(page_dir_phys_addr);
 
@@ -217,7 +218,7 @@ int make_page_directory(uint32_t * page_dir_phys_addr, page_table_entry_t** page
   for(vaddr = KERNEL_UPPER; vaddr; vaddr += PAGE_SIZE)
   {
   	*(page_dir_sys_loc + (vaddr >> (PG_FRAME_BITS + PG_PAGE_TABLE_BITS))) =
-  			*(page_dir_sys + (vaddr >> (PG_FRAME_BITS + PG_PAGE_TABLE_BITS)));
+  			*(global_page_dir_sys + (vaddr >> (PG_FRAME_BITS + PG_PAGE_TABLE_BITS)));
   }
 
 	*page_dir_phys_addr = ((uint32_t) __PHYS(page_dir_sys_loc));
@@ -240,15 +241,76 @@ void page_fault_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 	asm __volatile__ ( "movl %%esp, %0" : "=g"(esp_val));
 	uint32_t lin_addr;
 	asm __volatile__ ( "movl %%cr2, %0" : "=r"(lin_addr));
-	printf("page fault = %d %d 0x%08x esp = 0x%08x cs = %08x\n", errcode, irq_num, lin_addr, esp_val,
-			(uint32_t)get_cs());
+	//printf("page fault = %d %d 0x%08x esp = 0x%08x cs = %08x\n", errcode, irq_num, lin_addr, esp_val,
+	//		(uint32_t)get_cs());
 	outb_printf("page fault = %d %d 0x%08x esp = 0x%08x cs = %08x\n", errcode, irq_num, lin_addr, esp_val,
 			(uint32_t)get_cs());
 	void *p = malloc(PAGE_SIZE);
-	uint32_t paddr = (uint32_t)__PHYS(p);
-	void* cur_page_dir_sys;
-	cur_page_dir_sys = __VADDR(get_cr3());
-	map_page(lin_addr, paddr, (page_table_entry_t*)cur_page_dir_sys, PG_BIT_P | PG_BIT_RW | PG_BIT_US );
-	WAIT((1 << 24));
+
+	if (p)
+	{
+		outb_printf("page_fault: p allocated = %08x\n", (uint32_t) p);
+		page_desc_t* p_blk_index = BLK_PTR(ADDR_TO_PDESC_INDEX(p));
+
+		++p_blk_index->use_cnt;
+
+		uint32_t paddr = (uint32_t)__PHYS(p);
+		void* cur_page_dir_sys;
+		cur_page_dir_sys = __VADDR(get_cr3());
+		map_page(lin_addr, paddr, (page_table_entry_t*)cur_page_dir_sys, PG_BIT_P | PG_BIT_RW | PG_BIT_US );
+
+		outb_printf("page_fault_handler leave.\n");
+
+		WAIT((1 << 24));
+	}
+	else
+	{
+		outb_printf("page_fault_handler: no free mem found: malloc failed.");
+		while (1) {};
+	}
 }
+
+void free_page_directory(page_table_entry_t *page_dir_proc)
+{
+	DEBUGOUT1(0, "freeing page_directory = %08x\n", (uint32_t) page_dir_proc);
+	set_cr3((uint32_t)__PHYS(global_page_dir_sys));
+	free(page_dir_proc);
+}
+
+
+
+void free_page_table_entry(page_table_entry_t* pte)
+{
+	uint32_t p_addr_frame_phys = PG_PTE_GET_FRAME_ADDRESS(*pte);
+	if (p_addr_frame_phys)
+	{
+		void* p_addr_frame = __VADDR(p_addr_frame_phys);
+		DEBUGOUT1(0, "free_page_table_entry: p_addr_frame = %08x\n", (uint32_t) p_addr_frame);
+		page_desc_t* p_addr_frame_pd = BLK_PTR(ADDR_TO_PDESC_INDEX(p_addr_frame));
+		--p_addr_frame_pd->use_cnt;
+		if (!p_addr_frame_pd->use_cnt)
+		{
+			DEBUGOUT1(0, "freeing page_frame paddr_frame = %08x\n", (uint32_t) p_addr_frame);
+			free(p_addr_frame);
+		}
+	}
+}
+
+// frees the page table pointed to by *pte from the page directory
+void free_page_table(page_table_entry_t* pte)
+{
+	if (PG_PTE_GET_FRAME_ADDRESS(*pte))
+	{
+		page_table_entry_t* ptab = (page_table_entry_t*) __VADDR(PG_PTE_GET_FRAME_ADDRESS(*pte));
+		int i;
+		for(i = 0; i < PG_PAGE_TABLE_ENTRIES; ++i)
+		{
+			free_page_table_entry(&ptab[i]);
+		}
+		// frees the page table itself
+		DEBUGOUT1(0, "free page_table itself ptab = %08x\n", (uint32_t)ptab);
+		free(ptab);
+	}
+}
+
 

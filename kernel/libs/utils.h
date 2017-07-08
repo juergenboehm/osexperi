@@ -71,6 +71,7 @@
 #define STOP while(1);
 
 #define WAIT(n) do { long __qqq; for(__qqq = 0; __qqq < (n); ++__qqq) {volatile __xxx = 0; }; } while (0)
+#define WAITVAR(var, n) do { for(var = 0; var < (n); ) {volatile var = ++var; }; } while (0)
 
 // bit fields setting in byte
 

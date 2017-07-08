@@ -59,11 +59,13 @@ void refill_malloc_nodes(uint32_t log_size)
 
 void* get_malloc_node(uint32_t log_size)
 {
-	DEBUGOUT(5, "enter get_malloc_node\n");
+	DEBUGOUT1(1, "enter get_malloc_node\n");
 
 	if (log_size >= PG_FRAME_BITS - LOG_MIN_ALLOC_SIZE)
 	{
 		uint32_t q_alloc = buddy_alloc(log_size + LOG_MIN_ALLOC_SIZE - PG_FRAME_BITS);
+
+		DEBUGOUT1(1, "q_alloc = %08x\n", q_alloc);
 
 		if (INDEX_IS_NULL(q_alloc))
 		{
@@ -89,7 +91,7 @@ void* get_malloc_node(uint32_t log_size)
 	}
 	malloc_heads[log_size] = malloc_heads[log_size]->next;
 
-	DEBUGOUT(5, "leave get_malloc_node");
+	DEBUGOUT1(1, "leave get_malloc_node\n");
 	return p_free;
 }
 
@@ -102,7 +104,7 @@ void* malloc(uint32_t size)
 	// that are acted upon by the now called code.
 	uint32_t eflags = irq_cli_save();
 
-	DEBUGOUT(0, "enter malloc(%d)\n", size);
+	DEBUGOUT1(0, "enter malloc(%d)\n", size);
 
 	uint32_t size_4 = align(size, 4);
 	ASSERT(size_4 <= (1 << (MALLOC_HEADS_NUM + LOG_MIN_ALLOC_SIZE - 1)) );
@@ -112,8 +114,10 @@ void* malloc(uint32_t size)
 		++log_size;
 	tally_log_size[log_size]++;
 
+	DEBUGOUT1(1, "log_size = %d\n", log_size);
+
 	void *p_ret = get_malloc_node(log_size);
-	DEBUGOUT(0, "leave malloc\n");
+	DEBUGOUT1(0, "leave malloc p_ret = %08x\n", (uint32_t) p_ret);
 
 	irq_restore(eflags);
 
@@ -131,6 +135,8 @@ void free(void * p)
 	page_desc_t *pdesc = BLK_PTR(q_pd);
 	ASSERT((pdesc->flags & PDESC_FLAG_MALLOC));
 	uint32_t malloc_order_log = pdesc->malloc_order;
+
+	DEBUGOUT1(0, "free(%d)\n", (1 << (malloc_order_log + LOG_MIN_ALLOC_SIZE)));
 
 	if (malloc_order_log >= PG_FRAME_BITS - LOG_MIN_ALLOC_SIZE)
 	{

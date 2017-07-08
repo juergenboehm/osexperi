@@ -24,11 +24,16 @@ void timer_irq_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 	io_wait();
 
 	uint32_t esp_val = get_esp();
+/*
 	if (timer_special_counter % 100 == 0) {
-		//printf("\n\ntimer_irq_handler: esp = 0x%08x\n\n", esp_val);
+		printf("\n\ntimer_irq_handler: esp = 0x%08x\n\n", esp_val);
 	}
+*/
 
 	schedule();
+
+	//outb_printf("before process_signals: current->pid = %d esp = %08x\n",
+	//		current->proc_data.pid, get_esp());
 
 	process_signals((uint32_t) esp);
 
