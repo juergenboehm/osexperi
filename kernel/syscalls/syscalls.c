@@ -39,6 +39,8 @@ void syscall_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 				break;
 		case SC_SYS_REGISTER_HANDLER: retval = sys_register_handler((uint32_t) ebx);
 				break;
+		case SC_SYS_FORK: retval = sys_fork(ebx);
+				break;
 		default:
 			break;
 	}
@@ -120,5 +122,11 @@ int sys_register_handler(uint32_t handler_address)
 	return 0;
 }
 
+int sys_fork(uint32_t arg)
+{
+	int ret;
+	ret = fork_process();
+	return ret;
+}
 
 

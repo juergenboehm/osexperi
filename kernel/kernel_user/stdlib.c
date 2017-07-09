@@ -69,6 +69,11 @@ int register_handler(void *address_of_handler)
 }
 
 
+int fork()
+{
+	return make_syscall1(SC_SYS_FORK, (uint32_t) 0);
+}
+
 static int kprint_str(uint32_t fd, char* str)
 {
 	int nlen = ustrlen(str);

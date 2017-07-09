@@ -811,7 +811,8 @@ void* memcpy(void* dest, void* src, size_t n)
 
 	// if critical overlap
 	// revert copy direction
-	if (1 || q < p && p < q + n)
+
+  if (q < p && p < q + n)
 	{
 		p = p + n - 1;
 		q = q + n - 1;
@@ -821,11 +822,13 @@ void* memcpy(void* dest, void* src, size_t n)
 			++i;
 		}
 	}
-
-  while (i < n)
+  else
   {
-    *p++ = *q++;
-    ++i;
+		while (i < n)
+		{
+			*p++ = *q++;
+			++i;
+		}
   }
   return dest;
 }

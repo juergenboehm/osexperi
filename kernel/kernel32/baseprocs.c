@@ -416,6 +416,33 @@ int execute_sst(int argc, char* argv[])
 
 }
 
+int execute_kill(int argc, char* argv[])
+{
+	if (argc < 2)
+	{
+		printf("kill: use: kill <pid>");
+		return -1;
+	}
+
+	uint32_t pid = atoi(argv[1]);
+
+	INIT_LISTVAR(p);
+	FORLIST(p, global_proc_list)
+	{
+		process_node_t *pnd = container_of(p, process_node_t, link);
+
+		if (pnd->proc->proc_data.pid == pid)
+		{
+				destroy_process(pnd->proc);
+				break;
+		}
+
+	}
+	END_FORLIST(p, global_proc_list);
+
+	printf("kill: kill %d done\n", pid);
+}
+
 int execute_spd(int argc, char* argv[])
 {
 
@@ -523,7 +550,8 @@ exec_struct_t my_commands[] = { {"calc", execute_calc},
 																	{"ps", execute_ps}, {"spd", execute_spd },
 																	{"mem", execute_mem},
 																	{"sig", execute_sig},
-																	{"sst", execute_sst}};
+																	{"sst", execute_sst},
+																	{"kill", execute_kill}};
 
 
 void dispatch_op(exec_struct_t *commands, int ncommands, int argc, char* argv[])

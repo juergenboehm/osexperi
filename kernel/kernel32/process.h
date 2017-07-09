@@ -3,15 +3,14 @@
 #define __kernel32_process_h
 
 #include "kerneltypes.h"
-#include "mem/paging.h"
+#include "mem/pagingdefs.h"
 #include "mem/vmem_area.h"
 
 #include "fs/vfs.h"
 
 #include "libs/lists.h"
 
-
-#define NUM_PROCESSES 16
+#define NUM_PROCESSES 32
 
 #define PROCESS_BLOCKSIZE (2 * PAGE_SIZE)
 
@@ -188,8 +187,15 @@ extern volatile uint32_t schedule_off;
 
 extern uint32_t num_procs;
 
+extern uint8_t pidbuf[NUM_PROCESSES/8];
+
+
 
 int init_global_tss();
+
+uint32_t get_new_pid();
+void release_pid(uint32_t pid);
+
 
 void schedule();
 
@@ -200,10 +206,16 @@ void exit_process();
 void free_user_memory(process_t *proc);
 void destroy_process(process_t* proc);
 
+void build_artificial_switch_save_block(
+		uint32_t ebx, uint32_t ecx, uint32_t esi, uint32_t edi, uint32_t cr3, uint32_t esp0, uint32_t* esp_new);
+
+int fork_process();
+
+
 
 // useful for inline assembly macros
 
-#define PROC_STACK_BEG(p) (((uint8_t*)p) + 8188)
+#define PROC_STACK_BEG(p) (((uint8_t*)p) + 8192)
 
 #define STR(X) #X
 #define XSTR(X) STR(X)

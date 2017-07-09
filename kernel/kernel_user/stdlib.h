@@ -104,6 +104,8 @@ int ustrlen(char *str);
 // syscalls
 
 int register_handler(void *address_of_handler);
+int fork();
+
 
 
 

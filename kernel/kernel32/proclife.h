@@ -6,7 +6,8 @@
 
 void init_proc_cr3(process_t* proc, uint32_t new_cr3);
 
-void init_proc_eip(process_t* proc, uint32_t new_eip);
+void init_proc_eip(process_t* proc, uint32_t new_eip, uint32_t new_ebp);
+
 void init_proc_eflags(process_t* proc, uint32_t new_eflags);
 
 

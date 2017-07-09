@@ -126,6 +126,14 @@ void kmain32()
 
 	current = 0;
 
+	uint32_t i;
+	for(i = 0; i < NUM_PROCESSES/8; ++i)
+	{
+		pidbuf[i] = 0;
+	}
+
+
+
 	outb_printf("kmain32 started.\n");
 
 	init_kalloc_fixed();
@@ -202,7 +210,7 @@ void kmain32()
 
   sti();
 
-	uint32_t i = 0;
+	i = 0;
 
 
 

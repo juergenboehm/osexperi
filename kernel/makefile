@@ -108,7 +108,7 @@ headersall = $(headers) $(headersboot) $(headerskernel) $(headerslibs16) $(heade
 		$(headerslibs)
 
 debugs = boot/loader.s libs16/bioslib.s kernel16/startup.s kernel32/startup32.s \
-		kernel32/process.s drivers/hardware.s kernel_user/stdlib.s
+		kernel32/process.s drivers/hardware.s kernel_user/stdlib.s kernel32/irq.s syscalls/syscalls.s
 
 # ld for loader
 

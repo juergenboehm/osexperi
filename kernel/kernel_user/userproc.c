@@ -35,7 +35,14 @@ void uproc_1()
 	uprintf("                                                       \n");
 	uprintf("                                                       \n");
 
+	uprintf("proc1: forking");
+	uint32_t ret = fork();
+	uprintf("after fork: ret = %d\n", ret);
+	uprintf("proc1: fork done.");
+
+
 	WAIT(10 * (1 << 24));
+
 
 	while (i < (1 << 30))
 	{

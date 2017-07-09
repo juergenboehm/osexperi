@@ -99,12 +99,12 @@ void prepare_process(void* fun_addr, int pid, file_t* f_stdin, file_t* f_stdout)
 	uint32_t* esp0 = (uint32_t*) PROC_STACK_BEG(new_process);
 
 	// global variable: is used in assembly code
-	esp0_global = (uint32_t) esp0;
+	// esp0_global = (uint32_t) esp0;
 
 	// user stack is set at end of procedure! here it is set 0.
 	init_proc_tss_stacks(new_process, (uint32_t) esp0, 0);
 
-	init_proc_eip(new_process, (uint32_t) fun_addr);
+	init_proc_eip(new_process, (uint32_t) fun_addr, 0);
 
 	init_proc_cr3(new_process, get_cr3());
 
@@ -129,52 +129,18 @@ void prepare_process(void* fun_addr, int pid, file_t* f_stdin, file_t* f_stdout)
 	// which of course has not happened when process
 	// is first activated.
 
-	asm __volatile__ ( \
-	"movl %%esp, stack_old \n\t" \
-	"movl %%eax, ax_old \n\t" \
-	"movl %%ecx, cx_old \n\t" \
-	\
-	"movl esp0_global, %%esp \n\t" \
-	\
-	/* "movl p_tss_next, %%edx \n\t" */ \
-	\
-	/* "pushl %%eax \n\t" */ \
-\
-	"movl $0, %%ecx \n\t" \
-/* pushl ebx ecx esi edi */ \
-	"pushl %%ecx \n\t" \
-	"pushl %%ecx \n\t" \
-	"pushl %%ecx \n\t" \
-	"pushl %%ecx \n\t" \
-	\
-	"pushfl \n\t" \
-	"popl %%ecx \n\t" \
-	"orl $0x200, %%ecx \n\t" \
-	"pushl %%ecx \n\t" \
-	\
-	\
-	"movl %%cr3, %%eax \n\t" \
-	"pushl %%eax \n\t" \
-	\
-	\
-	"pushw %%fs \n\t" \
-	"pushw %%gs \n\t" \
-	"pushw %%es \n\t" \
-	"pushw %%ss \n\t" \
-	"pushw %%cs \n\t" \
-	"pushw %%ds \n\t" \
-	\
-	"movl %%esp, stack_new\n\t" \
-	\
-	"movl stack_old, %%esp \n\t" \
-	"movl ax_old, %%eax \n\t" \
-	"movl cx_old, %%ecx \n\t" \
-	: );
+	uint32_t esp_new;
 
-	new_process->proc_data.tss.esp = stack_new;
+	build_artificial_switch_save_block(0, 0, 0, 0, get_cr3(), (uint32_t)esp0, &esp_new);
+
+	new_process->proc_data.tss.esp = esp_new;
 
 
 }
+
+uint32_t npid0;
+uint32_t npid1;
+uint32_t npid2;
 
 
 void init_process_1_xp(void* fun_addr)
@@ -191,12 +157,16 @@ void init_process_1_xp(void* fun_addr)
 
 	outb_printf("\n");
 
+	npid0 = get_new_pid();
+	npid1 = get_new_pid();
+	npid2 = get_new_pid();
+
 	// /dev/vga1
-	prepare_process(idle_forever, 0, NULL, &fixed_file_list[DEV_VGA1]);
+	prepare_process(idle_forever, npid0, NULL, &fixed_file_list[DEV_VGA1]);
 	// /dev/vga2
-	prepare_process(idle_vn, 1, NULL, &fixed_file_list[DEV_VGA2]);
+	prepare_process(idle_vn, npid1, NULL, &fixed_file_list[DEV_VGA2]);
 	// /dev/vga0
-	prepare_process(idle_watched, 2, NULL, &fixed_file_list[DEV_VGA0]);
+	prepare_process(idle_watched, npid2, NULL, &fixed_file_list[DEV_VGA0]);
 
 
 	uint32_t new_page_dir_phys_addr;
@@ -236,7 +206,9 @@ void init_process_1_xp(void* fun_addr)
 	// /dev/vga3
 	attach_io_block(current, NULL, &fixed_file_list[DEV_VGA3]);
 
-	init_proc_basic(current, 3, 0);
+	uint32_t npid3 = get_new_pid();
+
+	init_proc_basic(current, npid3 , 0);
 
 	current->proc_data.status = PROC_READY;
 
@@ -260,7 +232,7 @@ void init_process_1_xp(void* fun_addr)
 
 	init_proc_tss_segments(current, is_user_mode_process);
 
-	init_proc_eip(current, (uint32_t) fun_addr);
+	init_proc_eip(current, (uint32_t) fun_addr, 0);
 
 
 	uint32_t eflags = irq_cli_save();

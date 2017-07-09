@@ -9,7 +9,7 @@
 volatile uint32_t timer_special_counter;
 volatile uint32_t timer_sema;
 
-
+#define PROC_DBG 0
 
 void timer_irq_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 {
@@ -19,7 +19,7 @@ void timer_irq_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 	// End of Interrupt (EOI) must be send at *end* of
 	// interrupt routine
 
-	outb(0xe9, 'T');
+	//outb(0xe9, 'T');
 	outb(PIC1_COMMAND, PIC_EOI);
 	io_wait();
 
@@ -32,8 +32,10 @@ void timer_irq_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 
 	schedule();
 
-	//outb_printf("before process_signals: current->pid = %d esp = %08x\n",
-	//		current->proc_data.pid, get_esp());
+#if PROC_DBG
+	outb_printf("before process_signals: current->pid = %d esp = %08x\n",
+			current->proc_data.pid, get_esp());
+#endif
 
 	process_signals((uint32_t) esp);
 

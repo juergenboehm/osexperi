@@ -226,6 +226,10 @@ kmain32:
 	movl	%esp, %ebp
 	subl	$20, %esp
 	movl	$0, current
+	movb	$0, pidbuf
+	movb	$0, pidbuf+1
+	movb	$0, pidbuf+2
+	movb	$0, pidbuf+3
 	pushl	$.LC4
 	call	outb_printf
 	call	init_kalloc_fixed
@@ -280,7 +284,7 @@ kmain32:
 	movl	idt_table, %eax
 	movl	%eax, idt_ptr+2
 #APP
-# 199 "kernel32/startup32.c" 1
+# 207 "kernel32/startup32.c" 1
 	lidt idt_ptr
 # 0 "" 2
 #NO_APP

@@ -4,6 +4,30 @@
 
 #NO_APP
 	.text
+	.type	make_syscall1, @function
+make_syscall1:
+	pushl	%ebp
+	movl	%esp, %ebp
+	pushl	%edi
+	pushl	%esi
+	pushl	%ebx
+	movl	%eax, %esi
+	movl	%edx, %edi
+#APP
+# 19 "kernel_user/stdlib.c" 1
+	movl %esi, %eax 
+	movl %edi, %ebx 
+	int $0x80 
+	movl %eax, %esi
+# 0 "" 2
+#NO_APP
+	movl	%esi, %eax
+	popl	%ebx
+	popl	%esi
+	popl	%edi
+	popl	%ebp
+	ret
+	.size	make_syscall1, .-make_syscall1
 	.type	handler_wrapper, @function
 handler_wrapper:
 	pushl	%ebp
@@ -17,12 +41,12 @@ handler_wrapper:
 # 0 "" 2
 #NO_APP
 	cmpl	$0, -1073742064
-	je	.L2
+	je	.L4
 	subl	$12, %esp
 	pushl	8(%ebp)
 	call	*-1073742064
 	addl	$16, %esp
-.L2:
+.L4:
 #APP
 # 58 "kernel_user/stdlib.c" 1
 	popfl 
@@ -45,37 +69,37 @@ parse_chars_universal:
 	movl	%ecx, -20(%ebp)
 	movl	%eax, %ebx
 	xorl	%edi, %edi
-.L6:
+.L8:
 	movb	(%ebx), %cl
 	movb	%cl, %al
 	testb	%cl, %cl
-	je	.L10
+	je	.L12
 	movl	$1, %ecx
 	movl	%ebx, %esi
 	subl	-16(%ebp), %esi
-.L11:
+.L13:
 	testl	%ecx, %ecx
-	je	.L10
+	je	.L12
 	cmpl	8(%ebp), %esi
-	jae	.L10
+	jae	.L12
 	xorl	%ecx, %ecx
-.L12:
+.L14:
 	cmpl	-20(%ebp), %ecx
-	jge	.L25
+	jge	.L27
 	cmpb	(%edx,%ecx), %al
-	jne	.L7
+	jne	.L9
 	movl	$1, %esi
 	sall	%cl, %esi
 	orl	%esi, %edi
 	incl	%ebx
-	jmp	.L6
-.L7:
+	jmp	.L8
+.L9:
 	incl	%ecx
-	jmp	.L12
-.L25:
+	jmp	.L14
+.L27:
 	xorl	%ecx, %ecx
-	jmp	.L11
-.L10:
+	jmp	.L13
+.L12:
 	movl	12(%ebp), %eax
 	movl	%edi, (%eax)
 	movl	%ebx, %eax
@@ -98,19 +122,19 @@ __udivdi3:
 	movl	8(%ebp), %esi
 	movl	12(%ebp), %edi
 	xorl	%ecx, %ecx
-.L27:
+.L29:
 	cmpl	%edi, %edx
-	jbe	.L52
-.L28:
+	jbe	.L54
+.L30:
 	addl	%esi, %esi
 	adcl	%edi, %edi
 	incl	%ecx
-	jmp	.L27
-.L52:
-	jb	.L40
+	jmp	.L29
+.L54:
+	jb	.L42
 	cmpl	%esi, %eax
-	jae	.L28
-.L40:
+	jae	.L30
+.L42:
 	shrdl	$1, %edi, %esi
 	shrl	%edi
 	movl	%esi, -24(%ebp)
@@ -118,16 +142,16 @@ __udivdi3:
 	decl	%ecx
 	movl	$0, -28(%ebp)
 	movl	$0, -32(%ebp)
-.L30:
+.L32:
 	cmpl	-20(%ebp), %edx
-	ja	.L46
-	jb	.L42
+	ja	.L48
+	jb	.L44
 	cmpl	-24(%ebp), %eax
-	jb	.L42
-.L46:
+	jb	.L44
+.L48:
 	movl	%ecx, %edi
 	subw	$0, %di
-	js	.L42
+	js	.L44
 	subl	-24(%ebp), %eax
 	sbbl	-20(%ebp), %edx
 	movl	%ecx, %edi
@@ -139,15 +163,15 @@ __udivdi3:
 	sall	%cl, %edi
 	orl	%esi, -28(%ebp)
 	orl	%edi, -32(%ebp)
-.L31:
+.L33:
 	cmpl	-20(%ebp), %edx
-	jb	.L45
-	ja	.L30
+	jb	.L47
+	ja	.L32
 	cmpl	-24(%ebp), %eax
-	jae	.L30
-.L45:
+	jae	.L32
+.L47:
 	testw	%cx, %cx
-	jle	.L30
+	jle	.L32
 	movl	-24(%ebp), %ebx
 	movl	-20(%ebp), %esi
 	shrdl	$1, %esi, %ebx
@@ -155,8 +179,8 @@ __udivdi3:
 	movl	%ebx, -24(%ebp)
 	movl	%esi, -20(%ebp)
 	decl	%ecx
-	jmp	.L31
-.L42:
+	jmp	.L33
+.L44:
 	movl	-28(%ebp), %eax
 	movl	-32(%ebp), %edx
 	addl	$20, %esp
@@ -166,29 +190,8 @@ __udivdi3:
 	popl	%ebp
 	ret
 	.size	__udivdi3, .-__udivdi3
-	.type	make_syscall1.constprop.4, @function
-make_syscall1.constprop.4:
-	pushl	%ebp
-	movl	%esp, %ebp
-	pushl	%esi
-	pushl	%ebx
-	movl	%eax, %esi
-#APP
-# 19 "kernel_user/stdlib.c" 1
-	movl $3, %eax 
-	movl %esi, %ebx 
-	int $0x80 
-	movl %eax, %esi
-# 0 "" 2
-#NO_APP
-	movl	%esi, %eax
-	popl	%ebx
-	popl	%esi
-	popl	%ebp
-	ret
-	.size	make_syscall1.constprop.4, .-make_syscall1.constprop.4
-	.type	make_syscall3.constprop.6, @function
-make_syscall3.constprop.6:
+	.type	make_syscall3.constprop.5, @function
+make_syscall3.constprop.5:
 	pushl	%ebp
 	movl	%esp, %ebp
 	pushl	%edi
@@ -212,7 +215,7 @@ make_syscall3.constprop.6:
 	popl	%edi
 	popl	%ebp
 	ret
-	.size	make_syscall3.constprop.6, .-make_syscall3.constprop.6
+	.size	make_syscall3.constprop.5, .-make_syscall3.constprop.5
 	.globl	register_handler
 	.type	register_handler, @function
 register_handler:
@@ -220,10 +223,21 @@ register_handler:
 	movl	%esp, %ebp
 	movl	8(%ebp), %eax
 	movl	%eax, -1073742064
-	movl	$handler_wrapper, %eax
+	movl	$handler_wrapper, %edx
+	movl	$3, %eax
 	popl	%ebp
-	jmp	make_syscall1.constprop.4
+	jmp	make_syscall1
 	.size	register_handler, .-register_handler
+	.globl	fork
+	.type	fork, @function
+fork:
+	pushl	%ebp
+	movl	%esp, %ebp
+	xorl	%edx, %edx
+	movl	$4, %eax
+	popl	%ebp
+	jmp	make_syscall1
+	.size	fork, .-fork
 	.globl	ustrlen
 	.type	ustrlen, @function
 ustrlen:
@@ -231,17 +245,17 @@ ustrlen:
 	movl	%esp, %ebp
 	movl	8(%ebp), %edx
 	xorl	%eax, %eax
-.L60:
+.L62:
 	cmpb	$0, (%edx,%eax)
-	je	.L63
+	je	.L65
 	incl	%eax
-	jmp	.L60
-.L63:
+	jmp	.L62
+.L65:
 	popl	%ebp
 	ret
 	.size	ustrlen, .-ustrlen
-	.type	kprint_str.constprop.5, @function
-kprint_str.constprop.5:
+	.type	kprint_str.constprop.4, @function
+kprint_str.constprop.4:
 	pushl	%ebp
 	movl	%esp, %ebp
 	pushl	%ebx
@@ -253,8 +267,8 @@ kprint_str.constprop.5:
 	movl	%ebx, %eax
 	movl	-4(%ebp), %ebx
 	leave
-	jmp	make_syscall3.constprop.6
-	.size	kprint_str.constprop.5, .-kprint_str.constprop.5
+	jmp	make_syscall3.constprop.5
+	.size	kprint_str.constprop.4, .-kprint_str.constprop.4
 	.type	kprint_nibble, @function
 kprint_nibble:
 	pushl	%ebp
@@ -263,13 +277,13 @@ kprint_nibble:
 	andl	$15, %eax
 	leal	87(%eax), %edx
 	cmpb	$9, %al
-	ja	.L68
+	ja	.L70
 	leal	48(%eax), %edx
-.L68:
+.L70:
 	movb	%dl, -2(%ebp)
 	movb	$0, -1(%ebp)
 	leal	-2(%ebp), %eax
-	call	kprint_str.constprop.5
+	call	kprint_str.constprop.4
 	xorl	%eax, %eax
 	leave
 	ret
@@ -343,37 +357,37 @@ int_to_str.isra.1:
 	andb	$-16, -112(%ebp)
 	addb	$48, -112(%ebp)
 	cmpl	$0, 12(%ebp)
-	jne	.L76
+	jne	.L78
 	testl	%ecx, %ecx
-	jns	.L77
+	jns	.L79
 	movl	%ecx, %ebx
 	movl	%edx, %ecx
 	negl	%ecx
 	adcl	$0, %ebx
 	negl	%ebx
 	movl	$-1, -84(%ebp)
-	jmp	.L79
-.L77:
+	jmp	.L81
+.L79:
 	movl	%ecx, %eax
 	orl	%edx, %eax
-	jne	.L76
+	jne	.L78
 	movl	$0, -84(%ebp)
 	xorl	%ecx, %ecx
 	xorl	%ebx, %ebx
-.L79:
+.L81:
 	leal	-80(%ebp), %eax
 	movl	%eax, -88(%ebp)
 	movl	8(%ebp), %eax
 	xorl	%edx, %edx
 	movl	%eax, -128(%ebp)
 	movl	%edx, -124(%ebp)
-	jmp	.L78
-.L76:
+	jmp	.L80
+.L78:
 	movl	%ecx, %ebx
 	movl	%edx, %ecx
 	movl	$1, -84(%ebp)
-	jmp	.L79
-.L81:
+	jmp	.L81
+.L83:
 	pushl	-124(%ebp)
 	pushl	-128(%ebp)
 	movl	%ecx, %eax
@@ -391,103 +405,103 @@ int_to_str.isra.1:
 	incl	-88(%ebp)
 	movb	$63, %al
 	cmpl	$15, %ecx
-	ja	.L80
+	ja	.L82
 	movb	.LC0(%ecx), %al
-.L80:
+.L82:
 	movl	-88(%ebp), %ebx
 	movb	%al, -1(%ebx)
 	movl	-116(%ebp), %ecx
 	movl	%edi, %ebx
-.L78:
+.L80:
 	movl	%ebx, %eax
 	orl	%ecx, %eax
-	jne	.L81
+	jne	.L83
 	movl	-88(%ebp), %edi
 	movl	%edi, %eax
 	leal	-80(%ebp), %edx
 	subl	%edx, %edi
-	jne	.L82
+	jne	.L84
 	incl	-88(%ebp)
 	movb	$48, (%eax)
 	movl	$1, %edi
-.L82:
+.L84:
 	movl	-88(%ebp), %eax
 	movb	$0, (%eax)
 	movl	-84(%ebp), %eax
 	subl	$0, %eax
-	js	.L126
+	js	.L128
 	movl	$1, %ebx
 	cmpl	$0, -92(%ebp)
-	jne	.L83
-.L126:
+	jne	.L85
+.L128:
 	movl	-84(%ebp), %eax
 	shrl	$31, %eax
 	xorl	%ebx, %ebx
 	cmpl	$0, -96(%ebp)
 	setne	%bl
 	orl	%eax, %ebx
-.L83:
+.L85:
 	addl	%edi, %ebx
 	movl	%ebx, %eax
 	cmpl	$0, 24(%ebp)
-	jle	.L85
+	jle	.L87
 	cmpl	24(%ebp), %ebx
-	jbe	.L85
+	jbe	.L87
 	movl	24(%ebp), %eax
-.L85:
+.L87:
 	cmpl	$0, 20(%ebp)
-	jle	.L116
+	jle	.L118
 	movl	20(%ebp), %edx
 	cmpl	%edx, %eax
-	jbe	.L87
+	jbe	.L89
 	xorl	%eax, %eax
-.L88:
+.L90:
 	movb	$35, (%esi,%eax)
 	incl	%eax
 	cmpl	20(%ebp), %eax
-	jne	.L88
+	jne	.L90
 	leal	(%esi,%eax), %edx
 	movl	%edx, %eax
 	subl	%esi, %eax
 	movl	28(%ebp), %esi
 	movl	%edx, (%esi)
-	jmp	.L127
-.L116:
+	jmp	.L129
+.L118:
 	movl	%eax, %edx
-.L87:
+.L89:
 	cmpl	%ebx, %edx
-	jae	.L91
+	jae	.L93
 	movl	%edx, -84(%ebp)
 	movl	$.LC1, %eax
-	call	kprint_str.constprop.5
+	call	kprint_str.constprop.4
 	movl	-84(%ebp), %edx
 	movl	%edx, %eax
 	call	kprint_U32
 	movl	$.LC2, %eax
-	call	kprint_str.constprop.5
+	call	kprint_str.constprop.4
 	movl	%ebx, %eax
 	call	kprint_U32
 	movl	$.LC3, %eax
-	call	kprint_str.constprop.5
-.L92:
-	jmp	.L92
-.L91:
+	call	kprint_str.constprop.4
+.L94:
+	jmp	.L94
+.L93:
 	movl	%edx, %eax
 	subl	%ebx, %eax
 	movl	%eax, -88(%ebp)
 	testb	$1, 16(%ebp)
-	je	.L93
+	je	.L95
 	cmpl	$-1, -84(%ebp)
-	je	.L117
+	je	.L119
 	cmpl	$0, -92(%ebp)
-	jne	.L118
+	jne	.L120
 	cmpl	$0, -96(%ebp)
-	jne	.L119
+	jne	.L121
 	movl	%esi, %ecx
-.L109:
+.L111:
 	leal	-80(%ebp,%edi), %ebx
 	movl	%ecx, %edx
-.L97:
+.L99:
 	incl	%edx
 	movb	-1(%ebx), %al
 	movb	%al, -1(%edx)
@@ -495,59 +509,59 @@ int_to_str.isra.1:
 	movl	%edx, %eax
 	subl	%ecx, %eax
 	cmpl	%edi, %eax
-	jb	.L97
+	jb	.L99
 	xorl	%ecx, %ecx
-.L96:
+.L98:
 	cmpl	-88(%ebp), %ecx
-	je	.L129
+	je	.L131
 	movb	$32, (%edx,%ecx)
 	incl	%ecx
-	jmp	.L96
-.L129:
+	jmp	.L98
+.L131:
 	addl	%edx, %ecx
-	jmp	.L99
-.L93:
-	cmpb	$48, -112(%ebp)
-	je	.L100
-	xorl	%edx, %edx
 	jmp	.L101
-.L100:
-	cmpl	$-1, -84(%ebp)
-	je	.L120
-	cmpl	$0, -92(%ebp)
-	jne	.L121
-	cmpl	$0, -96(%ebp)
-	jne	.L122
-	movl	%esi, %ecx
-.L110:
+.L95:
+	cmpb	$48, -112(%ebp)
+	je	.L102
 	xorl	%edx, %edx
-.L103:
+	jmp	.L103
+.L102:
+	cmpl	$-1, -84(%ebp)
+	je	.L122
+	cmpl	$0, -92(%ebp)
+	jne	.L123
+	cmpl	$0, -96(%ebp)
+	jne	.L124
+	movl	%esi, %ecx
+.L112:
+	xorl	%edx, %edx
+.L105:
 	cmpl	-88(%ebp), %edx
-	je	.L130
+	je	.L132
 	movb	$48, (%ecx,%edx)
 	incl	%edx
-	jmp	.L103
-.L130:
-	addl	%ecx, %edx
 	jmp	.L105
-.L101:
+.L132:
+	addl	%ecx, %edx
+	jmp	.L107
+.L103:
 	cmpl	-88(%ebp), %edx
-	je	.L131
+	je	.L133
 	movb	$32, (%esi,%edx)
 	incl	%edx
-	jmp	.L101
-.L131:
+	jmp	.L103
+.L133:
 	addl	%esi, %edx
 	cmpl	$-1, -84(%ebp)
-	je	.L123
+	je	.L125
 	cmpl	$0, -92(%ebp)
-	jne	.L124
+	jne	.L126
 	cmpl	$0, -96(%ebp)
-	jne	.L125
-.L105:
+	jne	.L127
+.L107:
 	leal	-80(%ebp,%edi), %eax
 	movl	%edx, %ecx
-.L108:
+.L110:
 	incl	%ecx
 	movb	-1(%eax), %bl
 	movb	%bl, -1(%ecx)
@@ -555,50 +569,50 @@ int_to_str.isra.1:
 	movl	%ecx, %ebx
 	subl	%edx, %ebx
 	cmpl	%edi, %ebx
-	jb	.L108
-.L99:
+	jb	.L110
+.L101:
 	movl	%ecx, %eax
 	subl	%esi, %eax
 	movl	28(%ebp), %esi
 	movl	%ecx, (%esi)
-	jmp	.L127
-.L117:
-	movb	$45, %dl
-	jmp	.L94
-.L118:
-	movb	$43, %dl
-	jmp	.L94
+	jmp	.L129
 .L119:
-	movb	$32, %dl
-.L94:
-	leal	1(%esi), %ecx
-	movb	%dl, (%esi)
-	jmp	.L109
-.L120:
 	movb	$45, %dl
-	jmp	.L102
-.L121:
+	jmp	.L96
+.L120:
 	movb	$43, %dl
-	jmp	.L102
-.L122:
+	jmp	.L96
+.L121:
 	movb	$32, %dl
-.L102:
+.L96:
 	leal	1(%esi), %ecx
 	movb	%dl, (%esi)
-	jmp	.L110
+	jmp	.L111
+.L122:
+	movb	$45, %dl
+	jmp	.L104
 .L123:
-	movb	$45, %al
-	jmp	.L107
+	movb	$43, %dl
+	jmp	.L104
 .L124:
-	movb	$43, %al
-	jmp	.L107
+	movb	$32, %dl
+.L104:
+	leal	1(%esi), %ecx
+	movb	%dl, (%esi)
+	jmp	.L112
 .L125:
+	movb	$45, %al
+	jmp	.L109
+.L126:
+	movb	$43, %al
+	jmp	.L109
+.L127:
 	movb	$32, %al
-.L107:
+.L109:
 	movb	%al, (%edx)
 	incl	%edx
-	jmp	.L105
-.L127:
+	jmp	.L107
+.L129:
 	leal	-12(%ebp), %esp
 	popl	%ebx
 	popl	%esi
@@ -618,15 +632,15 @@ vprintf.constprop.2:
 	movl	%ecx, %ebx
 	movl	%eax, -28(%ebp)
 	movl	$1024, -36(%ebp)
-.L133:
+.L135:
 	movb	(%edi), %dl
 	testb	%dl, %dl
-	je	.L158
+	je	.L160
 	cmpl	$0, -36(%ebp)
-	je	.L158
+	je	.L160
 	cmpb	$37, %dl
 	leal	1(%edi), %eax
-	jne	.L134
+	jne	.L136
 	leal	-24(%ebp), %edi
 	pushl	%edi
 	pushl	$-9
@@ -636,64 +650,64 @@ vprintf.constprop.2:
 	popl	%esi
 	popl	%edi
 	movl	$0, -44(%ebp)
-.L135:
+.L137:
 	movsbl	(%eax), %edx
 	testb	%dl, %dl
-	je	.L160
+	je	.L162
 	leal	-48(%edx), %ecx
 	cmpb	$9, %cl
-	ja	.L175
+	ja	.L177
 	imull	$10, -44(%ebp), %ecx
 	leal	-48(%ecx,%edx), %edi
 	movl	%edi, -44(%ebp)
 	incl	%eax
-	jmp	.L135
-.L175:
+	jmp	.L137
+.L177:
 	movl	$0, -40(%ebp)
 	cmpb	$46, %dl
-	jne	.L136
-.L173:
+	jne	.L138
+.L175:
 	incl	%eax
 	movsbl	(%eax), %edx
 	leal	-48(%edx), %ecx
 	cmpb	$9, %cl
-	ja	.L136
+	ja	.L138
 	imull	$10, -40(%ebp), %ecx
 	leal	-48(%ecx,%edx), %edi
 	movl	%edi, -40(%ebp)
-	jmp	.L173
-.L160:
+	jmp	.L175
+.L162:
 	movl	$0, -40(%ebp)
-.L136:
+.L138:
 	xorl	%esi, %esi
-.L147:
+.L149:
 	movl	fmt_length_list(,%esi,4), %edi
 	movl	%eax, %edx
-.L140:
+.L142:
 	movb	(%edx), %cl
 	movb	%cl, -45(%ebp)
 	testb	%cl, %cl
-	jne	.L141
-.L144:
+	jne	.L143
+.L146:
 	cmpb	$0, (%edi)
 	leal	1(%esi), %esi
-	jne	.L171
+	jne	.L173
 	movl	%edx, %eax
-	jmp	.L146
-.L141:
+	jmp	.L148
+.L143:
 	movb	(%edi), %cl
 	testb	%cl, %cl
-	je	.L144
+	je	.L146
 	cmpb	%cl, -45(%ebp)
-	jne	.L144
+	jne	.L146
 	incl	%edx
 	incl	%edi
-	jmp	.L140
-.L171:
+	jmp	.L142
+.L173:
 	cmpl	$8, %esi
-	jne	.L147
+	jne	.L149
 	xorw	%si, %si
-.L146:
+.L148:
 	leal	-20(%ebp), %edi
 	pushl	%edi
 	pushl	$1
@@ -705,7 +719,7 @@ vprintf.constprop.2:
 	popl	%edx
 	popl	%ecx
 	testb	$1, %al
-	je	.L148
+	je	.L150
 	leal	4(%ebx), %esi
 	movl	(%ebx), %edx
 	movl	%edx, %ecx
@@ -717,17 +731,17 @@ vprintf.constprop.2:
 	pushl	-24(%ebp)
 	pushl	$0
 	pushl	$10
-	jmp	.L174
-.L148:
+	jmp	.L176
+.L150:
 	testb	$2, %al
-	je	.L150
+	je	.L152
 	leal	4(%ebx), %esi
 	movl	(%ebx), %eax
-.L151:
+.L153:
 	cmpb	$0, (%eax)
-	je	.L149
+	je	.L151
 	cmpl	$0, -36(%ebp)
-	je	.L149
+	je	.L151
 	movl	-28(%ebp), %edx
 	leal	1(%edx), %ecx
 	movl	%ecx, -28(%ebp)
@@ -735,10 +749,10 @@ vprintf.constprop.2:
 	movb	-1(%eax), %cl
 	movb	%cl, (%edx)
 	decl	-36(%ebp)
-	jmp	.L151
-.L150:
+	jmp	.L153
+.L152:
 	testb	$8, %al
-	je	.L153
+	je	.L155
 	leal	4(%ebx), %esi
 	movl	(%ebx), %edx
 	movl	%edx, %ecx
@@ -750,26 +764,26 @@ vprintf.constprop.2:
 	pushl	-24(%ebp)
 	pushl	$1
 	pushl	$8
-.L174:
+.L176:
 	movl	-28(%ebp), %eax
 	call	int_to_str.isra.1
 	subl	%eax, -36(%ebp)
 	addl	$24, %esp
-	jmp	.L149
-.L153:
+	jmp	.L151
+.L155:
 	testb	$32, %al
-	je	.L154
+	je	.L156
 	cmpl	$4, %esi
-	jne	.L155
+	jne	.L157
 	leal	8(%ebx), %esi
 	movl	(%ebx), %edx
 	movl	4(%ebx), %ecx
-	jmp	.L156
-.L155:
+	jmp	.L158
+.L157:
 	leal	4(%ebx), %esi
 	movl	(%ebx), %edx
 	xorl	%ecx, %ecx
-.L156:
+.L158:
 	leal	-28(%ebp), %eax
 	pushl	%eax
 	pushl	-40(%ebp)
@@ -777,28 +791,28 @@ vprintf.constprop.2:
 	pushl	-24(%ebp)
 	pushl	$1
 	pushl	$16
-	jmp	.L174
-.L154:
+	jmp	.L176
+.L156:
 	movl	%ebx, %esi
 	testb	$4, %al
-	je	.L149
+	je	.L151
 	addl	$4, %esi
 	movl	(%ebx), %edx
 	movl	-28(%ebp), %eax
 	movb	%dl, (%eax)
 	incl	-28(%ebp)
 	decl	-36(%ebp)
-.L149:
+.L151:
 	movl	%esi, %ebx
-	jmp	.L133
-.L134:
+	jmp	.L135
+.L136:
 	movl	-28(%ebp), %ecx
 	movb	%dl, (%ecx)
 	decl	-36(%ebp)
 	incl	-28(%ebp)
 	movl	%eax, %edi
-	jmp	.L133
-.L158:
+	jmp	.L135
+.L160:
 	movl	-28(%ebp), %eax
 	movb	$0, (%eax)
 	leal	-12(%ebp), %esp
@@ -819,18 +833,18 @@ uoutb_printf:
 	leal	-1024(%ebp), %eax
 	call	vprintf.constprop.2
 	leal	-1024(%ebp), %edx
-.L177:
+.L179:
 	movb	(%edx), %al
 	testb	%al, %al
-	je	.L180
+	je	.L182
 	incl	%edx
 #APP
 # 80 "/home/juergen/osexperi/kernel/kernel_user/stdlib.h" 1
 	outb %al, $233
 # 0 "" 2
 #NO_APP
-	jmp	.L177
-.L180:
+	jmp	.L179
+.L182:
 	xorl	%eax, %eax
 	leave
 	ret
@@ -846,7 +860,7 @@ uprintf:
 	leal	-1024(%ebp), %eax
 	call	vprintf.constprop.2
 	leal	-1024(%ebp), %eax
-	call	kprint_str.constprop.5
+	call	kprint_str.constprop.4
 	leave
 	ret
 	.size	uprintf, .-uprintf

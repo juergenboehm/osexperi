@@ -15,7 +15,10 @@ dentry_t* get_dentry_t()
 
 file_t* get_file_t()
 {
-	return 0;
+	file_t *p_new_file = (file_t*) malloc(sizeof(file_t));
+	memset(p_new_file, 0, sizeof(file_t));
+
+	return p_new_file;
 }
 
 tss_t* get_tss_t()

@@ -16,6 +16,7 @@
 #include "fs/gendrivers.h"
 
 #include "kernel32/objects.h"
+#include "kernel32/proclife.h"
 #include "kernel32/process.h"
 
 uint32_t _usercode_phys;
@@ -44,6 +45,32 @@ uint32_t proc_switch_count;
 
 volatile uint32_t schedule_off;
 uint32_t num_procs;
+
+uint8_t pidbuf[NUM_PROCESSES/8];
+
+#define TESTBIT(buf, i) (buf[i/8] & ((uint8_t)(1 << (i % 8))))
+#define SETBIT(buf, i) buf[i/8] = buf[i/8] | ((uint8_t)(1 << (i % 8)))
+#define CLRBIT(buf, i) buf[i/8] = buf[i/8] & ~((uint8_t)(1 << (i % 8)))
+
+static uint32_t pid_index = 0;
+
+uint32_t get_new_pid()
+{
+	while (TESTBIT(pidbuf, pid_index))
+	{
+		++pid_index;
+	}
+	SETBIT(pidbuf, pid_index);
+
+	outb_printf("get_new_pid: pidbuf = %08x pid_index = %d\n", *((uint32_t*)&pidbuf[0]), pid_index);
+	return pid_index;
+
+}
+
+void release_pid(uint32_t pid)
+{
+	CLRBIT(pidbuf, pid);
+}
 
 
 // experimental switch with register saving and loading from
@@ -420,6 +447,8 @@ void __NOINLINE schedule_2()
 }
 
 
+#define SCHEDULE_DBG 0
+
 //
 // schedule()
 // current_node is the wandering pointer along the process_node_t list
@@ -438,7 +467,7 @@ void schedule()
 	if (!current)
 	{
 		outb_printf("schedule: current is 0.\n");
-		current_node = container_of(global_proc_list->next, process_node_t, link);
+		current_node = container_of(global_proc_list, process_node_t, link);
 	}
 	else
 	{
@@ -446,8 +475,9 @@ void schedule()
 		++current->proc_data.ticks;
 	}
 
-	//outb_printf("schedule: current node pid = %d\n", current_node->proc->proc_data.pid);
-
+#if SCHEDULE_DBG
+	outb_printf("schedule: current node pid = %d\n", current_node->proc->proc_data.pid);
+#endif
 
 	do
 	{
@@ -458,7 +488,9 @@ void schedule()
 	}
 	while (status_next != PROC_READY && status_next != PROC_RUNNING );
 
-	//outb_printf("schedule: next pid = %d\n", next->proc_data.pid);
+#if SCHEDULE_DBG
+	outb_printf("schedule: next pid = %d\n", next->proc_data.pid);
+#endif
 
 	if (current)
 	{
@@ -474,8 +506,8 @@ void schedule()
 	//printf("current = %08x next = %08x\n", (uint32_t) current, (uint32_t) next );
 
 
-	outb(0xe9, 'H');
-	outb(0xe9, 'H');
+	//outb(0xe9, 'H');
+	//outb(0xe9, 'H');
 
 	if (current)
 	{
@@ -555,6 +587,21 @@ void exit_process()
 	destroy_process(current);
 }
 
+void free_page_directory(process_t *proc, page_table_entry_t *page_dir_proc)
+{
+	DEBUGOUT1(0, "freeing page_directory = %08x\n", (uint32_t) page_dir_proc);
+	if (proc == current)
+	{
+		set_cr3((uint32_t)__PHYS(global_page_dir_sys));
+		free(page_dir_proc);
+	}
+	else
+	{
+		free(page_dir_proc);
+	}
+}
+
+
 void free_user_memory(process_t *proc)
 {
 	page_table_entry_t *page_dir_proc = __VADDR(proc->proc_data.tss.cr3);
@@ -564,8 +611,8 @@ void free_user_memory(process_t *proc)
 	{
 		free_page_table(&page_dir_proc[i]);
 	}
-	free_page_directory(page_dir_proc);
-	proc->proc_data.tss.cr3 = get_cr3();
+
+	free_page_directory(proc, page_dir_proc);
 
 }
 
@@ -617,13 +664,16 @@ void free_process_block(process_t *proc)
 {
 	process_node_t* pnd = get_process_node_t();
 	pnd->proc = proc;
-	prepend_list(&global_free_proc_list, &pnd->link);
+	prepend_list(&global_free_proc_list, &(pnd->link));
 }
 
 void destroy_process(process_t* proc)
 {
 
+	outb_printf("destroy_process: current = %08x proc = %08x\n", (uint32_t)current, (uint32_t)proc);
 	proc->proc_data.status = PROC_EXIT;
+
+	uint32_t pid = proc->proc_data.pid;
 
 	free_user_memory(proc);
 	destroy_io_data(proc);
@@ -632,17 +682,283 @@ void destroy_process(process_t* proc)
 	release_sync_primitives(proc);
 	free_process_block(proc);
 
-	current = 0;
+	release_pid(pid);
 
-	sti();
-	// start the dying loop. when next
-	// timer hits then process is finished.
-	while (1)
+	if (current == proc)
 	{
-		outb(0xe9, 'D');
-		WAIT(1 << 15);
+		current = 0;
+		sti();
+		// start the dying loop. when next
+		// timer hits then process is finished.
+		while (1)
+		{
+			outb(0xe9, 'D');
+			WAIT(1 << 15);
+		}
 	}
 
+
+}
+
+int clone_file_t(file_t* old_file, file_t** new_file)
+{
+	DEBUGOUT1(0, "clone_file_t: sizeof(file_t) = %d\n", sizeof(file_t));
+
+	if (!old_file)
+	{
+		*new_file = old_file;
+		return 0;
+	}
+
+	file_t* pnew_file = get_file_t();
+
+	memcpy(pnew_file, old_file, sizeof(file_t));
+
+	DEBUGOUT1(0, "clone_file_t: after memcpy.\n");
+
+	pnew_file->f_dentry = old_file->f_dentry;
+	//++pnew_file->f_dentry->d_count;
+	pnew_file->f_count = 0;
+
+	*new_file = pnew_file;
+
+	DEBUGOUT1(0, "clone_file_t: leave clone_file_t.\n");
+
+	return 0;
+}
+
+
+
+int clone_proc_t(process_t* old_proc, process_t** new_proc)
+{
+	process_t* pnew_proc = get_process_t();
+
+	if (!pnew_proc)
+	{
+		return -1;
+	}
+	memcpy(pnew_proc, old_proc, sizeof(process_t));
+
+	*new_proc = pnew_proc;
+
+	return 0;
+}
+
+int clone_proc_io_block_t(proc_io_block_t* old_ioblk, proc_io_block_t** new_ioblk)
+{
+	int ret;
+	proc_io_block_t* pnew_ioblk = get_proc_io_block_t();
+
+	int i;
+	for(i = 0; i < NUM_BASE_FD_PROC; ++i)
+	{
+		 ret = clone_file_t(old_ioblk->base_fd_arr[i], &pnew_ioblk->base_fd_arr[i]);
+		 if (pnew_ioblk->base_fd_arr[i])
+		 {
+			 ++pnew_ioblk->base_fd_arr[i]->f_count;
+		 }
+	}
+
+	*new_ioblk = pnew_ioblk;
+
+	return 0;
+
+}
+
+uint32_t stack_old1;
+uint32_t stack_new1;
+uint32_t esp0_global1;
+uint32_t cr3_1;
+
+uint32_t eax_old1;
+uint32_t ecx_old1;
+
+uint32_t ebx_old2;
+uint32_t ecx_old2;
+uint32_t esi_old2;
+uint32_t edi_old2;
+
+void build_artificial_switch_save_block(
+		uint32_t ebx, uint32_t ecx, uint32_t esi, uint32_t edi, uint32_t cr3, uint32_t esp0, uint32_t* esp_new)
+{
+
+	ebx_old2 = ebx;
+	ecx_old2 = ecx;
+	esi_old2 = esi;
+	edi_old2 = edi;
+
+	cr3_1 = cr3;
+	esp0_global1 = esp0;
+
+	asm __volatile__ ( \
+	"movl %%esp, stack_old1 \n\t" \
+	"movl %%eax, eax_old1 \n\t" \
+	"movl %%ecx, ecx_old1 \n\t" \
+	\
+	"movl esp0_global1, %%esp \n\t" \
+	\
+	/* "movl p_tss_next, %%edx \n\t" */ \
+	\
+	/* "pushl %%eax \n\t" */ \
+\
+/* pushl ebx ecx esi edi */ \
+	"movl ebx_old2, %%ecx \n\t" \
+	"pushl %%ecx \n\t" \
+	"movl ecx_old2, %%ecx \n\t" \
+	"pushl %%ecx \n\t" \
+	"movl esi_old2, %%ecx \n\t" \
+	"pushl %%ecx \n\t" \
+	"movl edi_old2, %%ecx \n\t" \
+	"pushl %%ecx \n\t" \
+	\
+	"pushfl \n\t" \
+	"popl %%ecx \n\t" \
+	"orl $0x200, %%ecx \n\t" \
+	"pushl %%ecx \n\t" \
+	\
+	\
+	"movl cr3_1, %%eax \n\t" \
+	"pushl %%eax \n\t" \
+	\
+	\
+	"pushw %%fs \n\t" \
+	"pushw %%gs \n\t" \
+	"pushw %%es \n\t" \
+	"pushw %%ss \n\t" \
+	"pushw %%cs \n\t" \
+	"pushw %%ds \n\t" \
+	\
+	"movl %%esp, stack_new1\n\t" \
+	\
+	"movl stack_old1, %%esp \n\t" \
+	"movl eax_old1, %%eax \n\t" \
+	"movl ecx_old1, %%ecx \n\t" \
+	: );
+
+	*esp_new = stack_new1;
+
+}
+
+
+int fork_process()
+{
+	uint32_t ret_eip;
+	uint32_t old_bp;
+	uint32_t goal_sp;
+
+
+	DEBUGOUT1(0, "fork_process start: current = %08x", (uint32_t) current);
+
+	int ret = -1;
+	uint32_t new_page_dir_phys;
+	process_t* proc = current;
+	process_t* new_proc;
+
+	// use the offset method!
+	// (upper stack limit of child) - 76 is the position where the last valid
+	// base pointer which is statuated by irq_dispatcher (irq_stub.S)
+	// is located
+	// 8 bytes above begins the kernel stack as it was before call
+	// to irq_dispatcher
+
+	old_bp = 76;
+	goal_sp = old_bp - 8;
+	// we write the artificial schedule switch save block
+	// right after the parameter list of irq_dispatcher (see irq_stub.S)
+
+	// eip in the child gets set right after call irq_dispatch in irq_stub.S
+
+	uint32_t eflags = irq_cli_save();
+
+	ret = copy_page_tables(proc, &new_page_dir_phys);
+
+
+	if (ret)
+	{
+		goto ende;
+	}
+
+	ret = clone_proc_t(proc, &new_proc);
+
+	if (ret)
+	{
+		goto ende;
+	}
+
+	old_bp = ((uint32_t) PROC_STACK_BEG(new_proc)) - old_bp;
+	goal_sp = ((uint32_t) PROC_STACK_BEG(new_proc)) - goal_sp;
+
+	ret_eip = *((uint32_t*)(old_bp + 4));
+
+	DEBUGOUT1(0, "fork_process renew: ret_eip = %08x, old_bp = %08x\n", ret_eip, old_bp);
+
+
+	DEBUGOUT1(0, "proc_t cloned.\n");
+
+	proc_io_block_t* pnew_proc_io_block;
+
+	ret = clone_proc_io_block_t(proc->proc_data.io_block, &pnew_proc_io_block);
+
+	new_proc->proc_data.io_block = pnew_proc_io_block;
+
+	uint32_t child_pid = get_new_pid();
+
+	init_proc_basic(new_proc, child_pid, 0);
+
+	new_proc->proc_data.status = PROC_READY;
+
+	init_proc_cr3(new_proc, new_page_dir_phys);
+
+	uint32_t esp0_new = (uint32_t) PROC_STACK_BEG(new_proc);
+
+	uint32_t* esp0_new_pt = (uint32_t*) esp0_new;
+
+	// here we put the return value into %eax of the child
+	*(esp0_new_pt - 7) = 0; //  offset = 28 bytes
+
+	new_proc->proc_data.tss.esp0 = esp0_new;
+	new_proc->proc_data.tss.ss0 = KERNEL32_DS;
+
+	new_proc->proc_data.tss.ss = KERNEL32_DS;
+
+	new_proc->proc_data.tss.ebp = 0;
+
+	//esp0_global1 = goal_sp;
+
+	// prepare kernel stack of next-process = process 0
+	// so that task-switch to this process finds the stack
+	// as if it has been left by a previous task-switch
+	// which of course has not happened when process
+	// is first activated.
+
+	DEBUGOUT1(0, "before prepare fork_stack...\n");
+
+	// setup the artificial schedule switch save block
+	// for the child. Start at esp0_global1 = goal_sp
+
+	uint32_t esp_new;
+	build_artificial_switch_save_block(0, 0, 0, 0, new_page_dir_phys, goal_sp, &esp_new);
+
+
+	new_proc->proc_data.tss.esp = esp_new;
+
+	init_proc_eip(new_proc, ret_eip, 0);
+
+	DEBUGOUT1(0, "ret eip = %08x, old_bp = %08x\n", ret_eip, old_bp);
+
+	process_node_t* pnd_new = get_process_node_t();
+
+	pnd_new->proc = new_proc;
+
+	prepend_list(&global_proc_list, &(pnd_new->link));
+
+	ende:
+
+	DEBUGOUT1(0, "leaving fork parent.\n");
+
+	irq_restore(eflags);
+
+	return child_pid;
 }
 
 

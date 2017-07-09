@@ -7,9 +7,10 @@
 
 
 
-void init_proc_eip(process_t* proc, uint32_t new_eip)
+void init_proc_eip(process_t* proc, uint32_t new_eip, uint32_t new_ebp)
 {
 	proc->proc_data.tss.eip = new_eip;
+	proc->proc_data.tss.ebp = new_ebp;
 }
 
 void init_proc_eflags(process_t* proc, uint32_t new_eflags)

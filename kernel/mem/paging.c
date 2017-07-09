@@ -6,6 +6,7 @@
 #include "libs32/klib.h"
 #include "mem/pagedesc.h"
 #include "mem/malloc.h"
+#include "mem/pagingdefs.h"
 #include "mem/paging.h"
 
 // global system page directory
@@ -118,10 +119,8 @@ page_table_entry_t* create_page_table_main()
 	return pt;
 }
 
-
-
-int map_page(uint32_t vaddr, uint32_t paddr,
-				page_table_entry_t* pg_dir, uint32_t mode_bits)
+int map_page1(uint32_t vaddr, uint32_t paddr,
+				page_table_entry_t* pg_dir, uint32_t mode_bits_ptab, uint32_t mode_bits_pdir)
 {
 
 	if (vaddr < 0xc0000000) {
@@ -138,7 +137,7 @@ int map_page(uint32_t vaddr, uint32_t paddr,
 		pte = (*create_page_table)();
 
 		PG_PTE_SET_FRAME_ADDRESS(*pde, __PHYS(pte));
-		PG_PTE_SET_BITS(*pde, mode_bits);
+		PG_PTE_SET_BITS(*pde, mode_bits_pdir);
 
 	}
 	else
@@ -150,9 +149,17 @@ int map_page(uint32_t vaddr, uint32_t paddr,
 	pte = pte + pg_table_index;
 
 	PG_PTE_SET_FRAME_ADDRESS(*pte, paddr);
-	PG_PTE_SET_BITS(*pte, mode_bits);
+	PG_PTE_SET_BITS(*pte, mode_bits_ptab);
 
 	return 0;
+}
+
+
+
+int map_page(uint32_t vaddr, uint32_t paddr,
+				page_table_entry_t* pg_dir, uint32_t mode_bits)
+{
+	return map_page1(vaddr, paddr, pg_dir, mode_bits, mode_bits);
 }
 
 
@@ -270,12 +277,6 @@ void page_fault_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 	}
 }
 
-void free_page_directory(page_table_entry_t *page_dir_proc)
-{
-	DEBUGOUT1(0, "freeing page_directory = %08x\n", (uint32_t) page_dir_proc);
-	set_cr3((uint32_t)__PHYS(global_page_dir_sys));
-	free(page_dir_proc);
-}
 
 
 
@@ -312,5 +313,75 @@ void free_page_table(page_table_entry_t* pte)
 		free(ptab);
 	}
 }
+
+int copy_page_tables(process_t* proc, uint32_t *new_page_dir_phys)
+{
+
+	uint32_t pdir_index;
+	uint32_t ptable_index;
+
+	DEBUGOUT1(0,"**************copy_page_tables: enter\n");
+
+	page_table_entry_t* page_dir = __VADDR(proc->proc_data.tss.cr3);
+
+	page_table_entry_t* new_page_dir = (page_table_entry_t*) malloc(PAGE_SIZE);
+
+	for(pdir_index = PG_PAGE_DIR_USER_ENTRIES; pdir_index < PG_PAGE_DIR_ENTRIES; ++pdir_index)
+	{
+		new_page_dir[pdir_index].val = page_dir[pdir_index].val;
+	}
+
+	DEBUGOUT1(0,"**** copy_page_tables: copy_user_tables\n");
+
+	for(pdir_index = 0; pdir_index < PG_PAGE_DIR_USER_ENTRIES; ++pdir_index)
+	{
+
+		uint32_t pdir_entry_phys = PG_PTE_GET_FRAME_ADDRESS(page_dir[pdir_index]);
+
+		if (pdir_entry_phys)
+		{
+			page_table_entry_t* p_akt_pagetable = __VADDR(pdir_entry_phys);
+			uint32_t mode_bits_pdir = PG_PTE_GET_BITS(page_dir[pdir_index]);
+
+			for(ptable_index = 0; ptable_index < PG_PAGE_TABLE_ENTRIES; ++ptable_index)
+			{
+
+				uint32_t page_frame_phys = PG_PTE_GET_FRAME_ADDRESS(p_akt_pagetable[ptable_index]);
+
+				if (page_frame_phys)
+				{
+					DEBUGOUT1(0,"**** copy_page_tables: pdir_index = %d\n", pdir_index);
+
+					DEBUGOUT1(0,"**** copy_page_tables: ptable_index = %d\n", ptable_index);
+
+					page_table_entry_t* page_frame = __VADDR(page_frame_phys);
+
+
+					uint32_t mode_bits_ptab = PG_PTE_GET_BITS(p_akt_pagetable[ptable_index]);
+
+					uint32_t* p_copied_page = (uint32_t*) malloc(PAGE_SIZE);
+
+					memcpy(p_copied_page, page_frame, PAGE_SIZE);
+
+					uint32_t current_vaddr =
+							(pdir_index << (PG_FRAME_BITS + PG_PAGE_TABLE_BITS)) + (ptable_index << PG_FRAME_BITS);
+
+
+					map_page1(current_vaddr, (uint32_t)__PHYS(p_copied_page), new_page_dir, mode_bits_ptab, mode_bits_pdir);
+					DEBUGOUT1(0, "++++page_copied: vaddr = %08x, mode_bits_pdir = %08x, mode_bits_ptab = %008x\n",
+							current_vaddr, mode_bits_pdir, mode_bits_ptab);
+
+				}
+			}
+		}
+	}
+
+	*new_page_dir_phys = (uint32_t)__PHYS(new_page_dir);
+
+	return 0;
+
+
+}
+
 
 
