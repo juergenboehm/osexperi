@@ -84,4 +84,12 @@
 			(byt) = CLEAR_WINDOW_BYTE(byt, pos, wid) | (uint8_t)((val) << (pos))
 
 
+// byte strings as bits strings
+
+
+#define TESTBIT(buf, i) (buf[i/8] & ((uint8_t)(1 << (i % 8))))
+#define SETBIT(buf, i) buf[i/8] = buf[i/8] | ((uint8_t)(1 << (i % 8)))
+#define CLRBIT(buf, i) buf[i/8] = buf[i/8] & ~((uint8_t)(1 << (i % 8)))
+
+
 #endif

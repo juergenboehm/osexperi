@@ -48,17 +48,28 @@ uint32_t num_procs;
 
 uint8_t pidbuf[NUM_PROCESSES/8];
 
-#define TESTBIT(buf, i) (buf[i/8] & ((uint8_t)(1 << (i % 8))))
-#define SETBIT(buf, i) buf[i/8] = buf[i/8] | ((uint8_t)(1 << (i % 8)))
-#define CLRBIT(buf, i) buf[i/8] = buf[i/8] & ~((uint8_t)(1 << (i % 8)))
-
 static uint32_t pid_index = 0;
 
 uint32_t get_new_pid()
 {
+	int cnt = 0;
 	while (TESTBIT(pidbuf, pid_index))
 	{
 		++pid_index;
+		++cnt;
+		if (pid_index == NUM_PROCESSES)
+		{
+			pid_index = 1;
+		}
+		if (cnt >= NUM_PROCESSES)
+		{
+			break;
+		}
+	}
+	if (cnt >= NUM_PROCESSES)
+	{
+		printf("error: can not get new pid. all slots full.\n");
+		while(1) {};
 	}
 	SETBIT(pidbuf, pid_index);
 
@@ -238,7 +249,7 @@ void release_pid(uint32_t pid)
 
 
 #if 0
-// old context-swich code
+// old context-switch code
 
 // remember stack of current before switching:
 // no remember stack
@@ -671,6 +682,9 @@ void destroy_process(process_t* proc)
 {
 
 	outb_printf("destroy_process: current = %08x proc = %08x\n", (uint32_t)current, (uint32_t)proc);
+
+	uint32_t eflags = irq_cli_save();
+
 	proc->proc_data.status = PROC_EXIT;
 
 	uint32_t pid = proc->proc_data.pid;
@@ -683,6 +697,8 @@ void destroy_process(process_t* proc)
 	free_process_block(proc);
 
 	release_pid(pid);
+
+	irq_restore(eflags);
 
 	if (current == proc)
 	{
@@ -765,78 +781,31 @@ int clone_proc_io_block_t(proc_io_block_t* old_ioblk, proc_io_block_t** new_iobl
 
 }
 
-uint32_t stack_old1;
-uint32_t stack_new1;
-uint32_t esp0_global1;
-uint32_t cr3_1;
-
-uint32_t eax_old1;
-uint32_t ecx_old1;
-
-uint32_t ebx_old2;
-uint32_t ecx_old2;
-uint32_t esi_old2;
-uint32_t edi_old2;
 
 void build_artificial_switch_save_block(
 		uint32_t ebx, uint32_t ecx, uint32_t esi, uint32_t edi, uint32_t cr3, uint32_t esp0, uint32_t* esp_new)
 {
 
-	ebx_old2 = ebx;
-	ecx_old2 = ecx;
-	esi_old2 = esi;
-	edi_old2 = edi;
+	switch_save_block_t* pssb = (switch_save_block_t*) (esp0 - sizeof(switch_save_block_t));
 
-	cr3_1 = cr3;
-	esp0_global1 = esp0;
+	pssb->ds = get_ds();
+	pssb->cs = get_cs();
+	pssb->ss = get_ss();
+	pssb->es = get_es();
+	pssb->fs = get_fs();
+	pssb->gs = get_gs();
 
-	asm __volatile__ ( \
-	"movl %%esp, stack_old1 \n\t" \
-	"movl %%eax, eax_old1 \n\t" \
-	"movl %%ecx, ecx_old1 \n\t" \
-	\
-	"movl esp0_global1, %%esp \n\t" \
-	\
-	/* "movl p_tss_next, %%edx \n\t" */ \
-	\
-	/* "pushl %%eax \n\t" */ \
-\
-/* pushl ebx ecx esi edi */ \
-	"movl ebx_old2, %%ecx \n\t" \
-	"pushl %%ecx \n\t" \
-	"movl ecx_old2, %%ecx \n\t" \
-	"pushl %%ecx \n\t" \
-	"movl esi_old2, %%ecx \n\t" \
-	"pushl %%ecx \n\t" \
-	"movl edi_old2, %%ecx \n\t" \
-	"pushl %%ecx \n\t" \
-	\
-	"pushfl \n\t" \
-	"popl %%ecx \n\t" \
-	"orl $0x200, %%ecx \n\t" \
-	"pushl %%ecx \n\t" \
-	\
-	\
-	"movl cr3_1, %%eax \n\t" \
-	"pushl %%eax \n\t" \
-	\
-	\
-	"pushw %%fs \n\t" \
-	"pushw %%gs \n\t" \
-	"pushw %%es \n\t" \
-	"pushw %%ss \n\t" \
-	"pushw %%cs \n\t" \
-	"pushw %%ds \n\t" \
-	\
-	"movl %%esp, stack_new1\n\t" \
-	\
-	"movl stack_old1, %%esp \n\t" \
-	"movl eax_old1, %%eax \n\t" \
-	"movl ecx_old1, %%ecx \n\t" \
-	: );
+	pssb->cr3 = cr3;
+	pssb->eflags = (get_eflags() | (1 << 9));
 
-	*esp_new = stack_new1;
+	pssb->edi = edi;
+	pssb->esi = esi;
+	pssb->ecx = ecx;
+	pssb->ebx = ebx;
 
+	*esp_new = (esp0 - sizeof(switch_save_block_t));
+
+	return;
 }
 
 
@@ -870,7 +839,7 @@ int fork_process()
 
 	uint32_t eflags = irq_cli_save();
 
-	ret = copy_page_tables(proc, &new_page_dir_phys);
+	ret = copy_page_tables(proc, &new_page_dir_phys, PG_PTCM_COPY_FOR_COW);
 
 
 	if (ret)

@@ -21,11 +21,20 @@ dummy_handler:
 stack_fault_handler:
 	pushl	%ebp
 	movl	%esp, %ebp
-	subl	$12, %esp
-	pushl	12(%ebp)
-	pushl	8(%ebp)
+	pushl	%esi
+	pushl	%ebx
+	movl	8(%ebp), %ebx
+	movl	12(%ebp), %esi
+	pushl	%eax
+	pushl	%esi
+	pushl	%ebx
 	pushl	$.LC0
 	call	printf
+	addl	$12, %esp
+	pushl	%esi
+	pushl	%ebx
+	pushl	$.LC0
+	call	outb_printf
 	addl	$16, %esp
 .L4:
 	jmp	.L4
@@ -43,7 +52,7 @@ segment_not_present_handler:
 	pushl	12(%ebp)
 	pushl	8(%ebp)
 	pushl	$.LC1
-	call	printf
+	call	outb_printf
 	addl	$16, %esp
 .L8:
 	jmp	.L8
@@ -57,11 +66,20 @@ segment_not_present_handler:
 gpf_handler:
 	pushl	%ebp
 	movl	%esp, %ebp
-	subl	$12, %esp
-	pushl	12(%ebp)
-	pushl	8(%ebp)
+	pushl	%esi
+	pushl	%ebx
+	movl	8(%ebp), %ebx
+	movl	12(%ebp), %esi
+	pushl	%eax
+	pushl	%esi
+	pushl	%ebx
 	pushl	$.LC2
 	call	printf
+	addl	$12, %esp
+	pushl	%esi
+	pushl	%ebx
+	pushl	$.LC2
+	call	outb_printf
 	addl	$16, %esp
 .L11:
 	jmp	.L11

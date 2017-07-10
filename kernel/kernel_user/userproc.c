@@ -7,6 +7,17 @@ void my_handler(uint32_t arg)
 	uoutb_printf("\nmy handler_called: arg = %d\n", arg);
 }
 
+int fak(int n)
+{
+	if (n == 1)
+	{
+		return 1;
+	}
+	else
+	{
+		return n * fak(n-1);
+	}
+}
 
 void uproc_1()
 {
@@ -39,6 +50,25 @@ void uproc_1()
 	uint32_t ret = fork();
 	uprintf("after fork: ret = %d\n", ret);
 	uprintf("proc1: fork done.");
+
+	if (ret == 0)
+	{
+		int i;
+		for(i = 1; i < 10; ++i)
+		{
+			uprintf("fak(%d) = %d\n", i, fak(i));
+		}
+#ifdef MEM_BIG_ALLOCATE_TEST
+		uint8_t* pt = (uint8_t*)0x100000;
+
+		for(i = 0; i < 5 * 1024 * 1024; ++i)
+		{
+			pt[i] = 'W';
+		}
+		while (1) {};
+#endif
+
+	}
 
 
 	WAIT(10 * (1 << 24));

@@ -33,6 +33,8 @@ int init_kalloc_fixed()
 
 	fill_start_params();
 
+	outb_printf("_len16 = %d _len32 = %d _usercode_phys = %d\n", _len16, _len32, _usercode_phys);
+
 	pt_kalloc_fixed = (uint8_t*) align(_len32 + KERNEL_32_START_UPPER, PAGE_SIZE);
 	pt_kalloc_fixed_base = pt_kalloc_fixed;
 

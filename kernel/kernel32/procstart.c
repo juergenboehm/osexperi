@@ -247,6 +247,7 @@ void init_process_1_xp(void* fun_addr)
 	uint32_t real_usercode_phys = 0x100000 + _usercode_phys;
 	uint32_t usercode_virtual = 0x1000;
 
+
 	for(i = 0, j = 0; i < 5; ++i, j += PAGE_SIZE) {
 		map_page((usercode_virtual + j),
 				(real_usercode_phys + j), new_page_dir, PG_BIT_P | PG_BIT_RW | PG_BIT_US);

@@ -7,6 +7,15 @@
 		.globl irq_no_errcode
 
 
+// the stack is as follows when privilege escalation interrupt
+// is done:
+// 20 bytes IRQ return block (of privilege escalation type)
+// 36 bytes data pushed from the following code:
+// first 0/errcode then eax, ebx, ecx, edx, esi, edi, ebp, ds/es
+// 12 bytes for the three word parameters of irq_dispatcher
+// after call to irq_dispatcher:
+// 8 bytes: first return address, then ebp pushed on stack by irq_dispatcher
+
 		.align	IRQ_JUMP_TABLE_ALIGN
 
 irq_no_errcode:

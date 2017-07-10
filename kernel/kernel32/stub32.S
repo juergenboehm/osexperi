@@ -28,8 +28,8 @@ next:
 
 */
 
-/*
 
+/*
 
 	movl 	$(0xb8000), %edi
 	movl 	$0x100, %ecx
@@ -84,6 +84,7 @@ flush:
 
 	// 2048 pages above KERNEL_UPPER
 	movl 	$(0x800000 +  KERNEL_UPPER), %esp
+	//movl 	$(0x512000 +  KERNEL_UPPER), %esp
 
 
 

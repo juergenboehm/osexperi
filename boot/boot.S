@@ -20,7 +20,7 @@
 #define DAPA_BLOCK_SIZE 16
 
 #define START_SEC 1
-#define NUM_SEC_TO_READ 13
+#define NUM_SEC_TO_READ 17
 
 			packetsize = 0
 			always_zero = 1

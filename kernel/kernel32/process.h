@@ -163,6 +163,28 @@ typedef struct process_node_t
 } process_node_t;
 
 
+typedef struct __PACKED switch_save_block_s {
+
+uint16_t ds;
+uint16_t cs;
+uint16_t ss;
+uint16_t es;
+uint16_t gs;
+uint16_t fs;
+
+uint32_t cr3;
+uint32_t eflags;
+
+uint32_t edi;
+uint32_t esi;
+uint32_t ecx;
+uint32_t ebx;
+
+
+} switch_save_block_t;
+
+
+
 
 extern tss_t* global_tss;
 //extern process_t* process_table[NUM_PROCESSES];
@@ -190,6 +212,7 @@ extern uint32_t num_procs;
 extern uint8_t pidbuf[NUM_PROCESSES/8];
 
 
+void print_iret_blk(iret_blk_t* pir);
 
 int init_global_tss();
 

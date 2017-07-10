@@ -48,6 +48,7 @@ startA:
 
 			call			lmain
 
+
 			xor				%di, %di
 			movw			$termin_str, %si
 
@@ -65,7 +66,7 @@ loop:
 			jmp				loop
 
 ende:
-//      jmp ende
+//	        jmp ende
 
 halt:
 

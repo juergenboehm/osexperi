@@ -13,7 +13,7 @@ typedef uint32_t* P_U32;
 
 #define	DISKBUF_ADDR	0x9000
 
-#define MAX_KERNEL16_LEN	32768
+#define MAX_KERNEL16_LEN	24576
 
 uint8_t* diskbuf_global;
 __ALIGNED(8) DAPA dapa_global;
@@ -105,8 +105,13 @@ int lmain()
 
 		if (dest16 < max_dest16 && to_move > 0)
 		{
+
+			DBGOUT("dest16 = ", dest16);
+
 			volatile int ret = copy_segseg( LOADER_SEG, (uint16_t)(((uint32_t)diskbuf_global) & 0xffff), to_move, KERNEL16_SEG, dest16 );
 			dest16 += to_move;
+
+			//WAIT(1 << 24);
 
 		} else
 		{

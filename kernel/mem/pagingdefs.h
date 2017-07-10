@@ -65,7 +65,13 @@
 
 #define PG_PTE_SET_BITS(x, attr) ((x).val = (((x).val & PG_FRAME_ADDRESS_MASK) | ((uint32_t)(((attr) & PG_ATTR_MASK)))))
 
-
+//
+//modes for Page Table Copying Modes (PTCM)
+// 1 means that pages are not copied, only the references and
+// the page table entries are set read-only type
+// for later COW-operation in page_fault_handler
+#define PG_PTCM_COPY_NORMAL	0
+#define PG_PTCM_COPY_FOR_COW	1
 
 
 

@@ -114,18 +114,20 @@ void dummy_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 void stack_fault_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 {
 	printf("Stack fault: errcode = %d irq_num = %d.\n", errcode, irq_num);
+	outb_printf("Stack fault: errcode = %d irq_num = %d.\n", errcode, irq_num);
 	while (1) {}
 }
 
 void segment_not_present_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 {
-	printf("Segment not present: errcode = %d irq_num = %d.\n", errcode, irq_num);
+	outb_printf("Segment not present: errcode = %d irq_num = %d.\n", errcode, irq_num);
 	while (1) {}
 }
 
 void gpf_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 {
 	printf("General Protection Fault: errcode = %d irq_num = %d.\n", errcode, irq_num);
+	outb_printf("General Protection Fault: errcode = %d irq_num = %d.\n", errcode, irq_num);
 	while (1) {}
 }
 

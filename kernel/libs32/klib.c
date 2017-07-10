@@ -616,8 +616,6 @@ int outb_printf(char* format, ... )
 
 
 
-
-
 int printf(char* format, ... )
 {
 	int i = 0;

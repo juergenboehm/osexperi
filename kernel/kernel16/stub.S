@@ -18,6 +18,17 @@ entry16:
 	movw		%ax, %ss
 	movw		$(KERNEL16_SP), %sp
 
+// write a character 'C' yellow on blue
+// at first screen position
+
+	movw		$VGA_SEG, %ax
+	movw	 	%ax, %es
+
+	xor 		%di, %di
+	movb 		$67, %es:(%di)
+	inc 		%di
+	movb 		$0x1e, %es:(%di)
+
 	call		kmain
 
 	cli
@@ -32,7 +43,6 @@ entry16:
 	movb 		$66, %es:(%di)
 	inc 		%di
 	movb 		$0x1e, %es:(%di)
-
 
 // switch to protected mode
 
@@ -95,5 +105,7 @@ low32:
 
 //2:
 //	jmp			2b
+
+
 
 	ljmp		$0x20, $0x100000

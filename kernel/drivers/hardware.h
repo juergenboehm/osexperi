@@ -77,6 +77,15 @@ static inline uint32_t irq_cli_save()
 
 }
 
+static inline uint32_t get_eflags()
+{
+	uint32_t eflags;
+	asm __volatile__ ( "pushfl \n\t"
+										 "popl %%eax \n\t" :
+			"=a"(eflags) );
+	return eflags;
+
+}
 
 static inline void irq_restore(uint32_t eflags)
 {
@@ -116,6 +125,34 @@ static inline uint16_t get_ds()
 		uint16_t ds_val;
 		asm __volatile__("movw %%ds, %0": "=r"(ds_val));
 		return ds_val;
+}
+
+static inline uint16_t get_es()
+{
+		uint16_t es_val;
+		asm __volatile__("movw %%es, %0": "=r"(es_val));
+		return es_val;
+}
+
+static inline uint16_t get_fs()
+{
+		uint16_t fs_val;
+		asm __volatile__("movw %%fs, %0": "=r"(fs_val));
+		return fs_val;
+}
+
+static inline uint16_t get_gs()
+{
+		uint16_t gs_val;
+		asm __volatile__("movw %%gs, %0": "=r"(gs_val));
+		return gs_val;
+}
+
+static inline uint16_t get_ss()
+{
+		uint16_t ss_val;
+		asm __volatile__("movw %%ss, %0": "=r"(ss_val));
+		return ss_val;
 }
 
 

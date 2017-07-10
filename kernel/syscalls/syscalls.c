@@ -12,23 +12,23 @@
 
 #define GET_REG_32(ptr,offset) ((uint32_t*) (((uint8_t*) ptr) + offset))
 
-
 void syscall_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 {
 	outb(0xe9, 'S');
 
-	uint32_t eax = *GET_REG_32(esp, IRQ_REG_OFFSET_AX);
-	uint32_t ebx = *GET_REG_32(esp, IRQ_REG_OFFSET_BX);
-	uint32_t ecx = *GET_REG_32(esp, IRQ_REG_OFFSET_CX);
-	uint32_t edx = *GET_REG_32(esp, IRQ_REG_OFFSET_DX);
-	uint32_t esi = *GET_REG_32(esp, IRQ_REG_OFFSET_SI);
-	uint32_t edi = *GET_REG_32(esp, IRQ_REG_OFFSET_DI);
+	volatile uint32_t eax = *GET_REG_32(esp, IRQ_REG_OFFSET_AX);
+	volatile uint32_t ebx = *GET_REG_32(esp, IRQ_REG_OFFSET_BX);
+	volatile uint32_t ecx = *GET_REG_32(esp, IRQ_REG_OFFSET_CX);
+	volatile uint32_t edx = *GET_REG_32(esp, IRQ_REG_OFFSET_DX);
+	volatile uint32_t esi = *GET_REG_32(esp, IRQ_REG_OFFSET_SI);
+	volatile uint32_t edi = *GET_REG_32(esp, IRQ_REG_OFFSET_DI);
 
-	uint32_t retval = 0;
-/*
-	kprintf("syscall handler:\n eax = %08x\n ebx = %08x\n ecx = %08x\n edx = %08x\n esi = %08x\n\n",
-			eax, ebx, ecx, edx, esi);
-*/
+	volatile uint32_t retval = 0;
+
+	//outb_printf("syscall handler:\n eax = %08x\n ebx = %08x\n ecx = %08x\n edx = %08x\n esi = %08x\n\n",
+	//		eax, ebx, ecx, edx, esi);
+
+
 	switch (eax)
 	{
 		case SC_SYS_OPEN_NO: retval = sys_open((char*) ebx, (uint32_t) ecx);
@@ -45,7 +45,7 @@ void syscall_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 			break;
 	}
 
-	*(GET_REG_32(esp, IRQ_REG_OFFSET_AX)) = retval;
+	 *(GET_REG_32(esp, IRQ_REG_OFFSET_AX)) = retval;
 
 }
 

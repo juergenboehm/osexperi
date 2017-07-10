@@ -65,7 +65,7 @@ SECTIONS
 
 			 . = logic1 + lencode1 + lendata1 + lenbss1 + lenrodata1;
 
-			 aligner = ALIGN(physA + lencode1 + lendata1 + lenbss1 + lenrodata1 + 2, 512) - 2;
+			 aligner = ALIGN(physA + lencode1 + lendata1 + lenbss1 + lenrodata1 + 2, 4096) - 2;
 
 			 .alignit : AT(aligner)
 			 {

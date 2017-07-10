@@ -37,6 +37,17 @@ void timer_irq_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 			current->proc_data.pid, get_esp());
 #endif
 
+
+#if PROC_DBG
+	if (current && current->proc_data.pid == 5)
+	{
+		iret_blk_t* pir = (iret_blk_t*)(PROC_STACK_BEG(current)-sizeof(iret_blk_t));
+		outb_printf("proc pid %d: current = %08x eip user = %08x esp user = %08x\n",
+				current->proc_data.pid, (uint32_t)current,
+				pir->eip, pir->esp);
+	}
+#endif
+
 	process_signals((uint32_t) esp);
 
 

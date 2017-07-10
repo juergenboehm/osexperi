@@ -1,12 +1,12 @@
 
 
 # number of sectors that loader.bin occupies
-loader_sec = 9
+loader_sec = 12
 
 # the global debug level
 DEB_LEVEL = 0
 
-ccflags = -m32 -Os -c -DDEBUG_LEVEL=${DEB_LEVEL} -march=i386 -nostdinc -nostdlib -ffreestanding \
+ccflags = -m32 -c -DDEBUG_LEVEL=${DEB_LEVEL} -march=i386 -nostdinc -nostdlib -ffreestanding \
 		-fno-asynchronous-unwind-tables -Werror
 ccflagsS = $(ccflags) -DASM_SOURCE=1
 
@@ -108,7 +108,8 @@ headersall = $(headers) $(headersboot) $(headerskernel) $(headerslibs16) $(heade
 		$(headerslibs)
 
 debugs = boot/loader.s libs16/bioslib.s kernel16/startup.s kernel32/startup32.s \
-		kernel32/process.s drivers/hardware.s kernel_user/stdlib.s kernel32/irq.s syscalls/syscalls.s
+		kernel32/process.s drivers/hardware.s kernel_user/stdlib.s kernel32/irq.s syscalls/syscalls.s \
+		kernel_user/userproc.s
 
 # ld for loader
 

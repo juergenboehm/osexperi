@@ -132,6 +132,8 @@ void kmain32()
 		pidbuf[i] = 0;
 	}
 
+	SETBIT(pidbuf, 0);
+
 
 
 	outb_printf("kmain32 started.\n");
@@ -139,6 +141,7 @@ void kmain32()
 	init_kalloc_fixed();
 
 	outb_printf("kalloc_fixed_done.\n");
+
 
 	// now the initialization of the memory system
 	// is done right at the beginning, because

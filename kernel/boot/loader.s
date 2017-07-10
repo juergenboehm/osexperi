@@ -2,68 +2,37 @@
 #APP
 	.code16gcc	
 
-	.section	.rodata.str1.1,"aMS",@progbits,1
-.LC0:
-	.string	"Juergen Boehm 23232323232323"
 #NO_APP
-	.text
-	.globl	test_disk
-	.type	test_disk, @function
-test_disk:
-	pushl	%ebp
-	movl	%esp, %ebp
-	subl	$20, %esp
-	pushl	$4096
-	pushl	$dapa_global
-	pushl	diskbuf_global
-	pushl	$2
-	pushl	$0
-	call	loadsec
-	addl	$32, %esp
-	call	print_newline
-	xorl	%eax, %eax
-.L2:
-	movb	.LC0(%eax), %cl
-	testb	%cl, %cl
-	movl	diskbuf_global, %edx
-	je	.L6
-	movb	%cl, (%edx,%eax)
-	incl	%eax
-	jmp	.L2
-.L6:
-	movb	$0, (%edx,%eax)
-	subl	$12, %esp
-	pushl	diskbuf_global
-	call	print_str
-	xorl	%eax, %eax
-	leave
-	ret
-	.size	test_disk, .-test_disk
-	.section	.rodata.str1.1
-.LC1:
+	.comm	diskbuf_global,4,4
+	.comm	dapa_global,16,8
+	.comm	mm_block,48,8
+	.section	.rodata
+.LC0:
 	.string	"*** PROTOS starting ***\r\n"
-.LC2:
+.LC1:
 	.string	"\r\nPointer Size = "
-.LC3:
+.LC2:
 	.string	"Pointer Size = "
-.LC4:
+.LC3:
 	.string	"boot/loader.c"
-.LC5:
+.LC4:
 	.string	":"
-.LC6:
+.LC5:
 	.string	"int Size = "
-.LC7:
+.LC6:
 	.string	"Pointer Content = "
-.LC8:
+.LC7:
 	.string	"\r\nDisk trial access done.\r\n"
-.LC9:
+.LC8:
 	.string	"Kernel len = "
-.LC10:
+.LC9:
 	.string	"dest32 = "
-.LC11:
+.LC10:
 	.string	"to do = "
-.LC12:
+.LC11:
 	.string	"loadsec done: dest32 = "
+.LC12:
+	.string	"dest16 = "
 .LC13:
 	.string	"copy segseg done: to_move = "
 .LC14:
@@ -82,14 +51,10 @@ test_disk:
 lmain:
 	pushl	%ebp
 	movl	%esp, %ebp
-	pushl	%edi
-	pushl	%esi
-	pushl	%ebx
-	subl	$44, %esp
+	subl	$120, %esp
 	movl	$36864, diskbuf_global
 	call	print_newline
-	subl	$12, %esp
-	pushl	$.LC1
+	movl	$.LC0, (%esp)
 	call	print_str
 	call	print_newline
 	movl	$1, (%esp)
@@ -100,6 +65,11 @@ lmain:
 	call	print_newline
 	movl	$4, (%esp)
 	call	print_U32
+	movl	$.LC1, (%esp)
+	call	print_str
+	movl	$4, (%esp)
+	call	print_U32
+	call	print_newline
 	movl	$.LC2, (%esp)
 	call	print_str
 	movl	$4, (%esp)
@@ -107,27 +77,26 @@ lmain:
 	call	print_newline
 	movl	$.LC3, (%esp)
 	call	print_str
-	movl	$4, (%esp)
-	call	print_U32
-	call	print_newline
 	movl	$.LC4, (%esp)
 	call	print_str
 	movl	$.LC5, (%esp)
+	call	print_str
+	movl	$4, (%esp)
+	call	print_U32
+	call	print_newline
+	movb	$64, -73(%ebp)
+	leal	-73(%ebp), %eax
+	movl	%eax, -28(%ebp)
+	movl	-28(%ebp), %eax
+	movl	%eax, -32(%ebp)
+	movl	$.LC3, (%esp)
+	call	print_str
+	movl	$.LC4, (%esp)
 	call	print_str
 	movl	$.LC6, (%esp)
 	call	print_str
-	movl	$4, (%esp)
-	call	print_U32
-	call	print_newline
-	movb	$64, -29(%ebp)
-	leal	-29(%ebp), %ebx
-	movl	$.LC4, (%esp)
-	call	print_str
-	movl	$.LC5, (%esp)
-	call	print_str
-	movl	$.LC7, (%esp)
-	call	print_str
-	movl	%ebx, (%esp)
+	movl	-32(%ebp), %eax
+	movl	%eax, (%esp)
 	call	print_U32
 	call	print_newline
 	call	print_newline
@@ -137,148 +106,202 @@ lmain:
 	movl	$-1430532899, (%esp)
 	call	print_U32
 	call	test_disk
-	movl	$.LC8, (%esp)
+	movl	$.LC7, (%esp)
+	call	print_str
+	movl	$12, -36(%ebp)
+	movl	$1, -40(%ebp)
+	movl	-40(%ebp), %eax
+	movl	-36(%ebp), %edx
+	addl	%edx, %eax
+	movl	%eax, -44(%ebp)
+	movl	$187, -48(%ebp)
+	movl	$.LC3, (%esp)
 	call	print_str
 	movl	$.LC4, (%esp)
 	call	print_str
-	movl	$.LC5, (%esp)
+	movl	$.LC8, (%esp)
+	call	print_str
+	movl	$95744, (%esp)
+	call	print_U32
+	call	print_newline
+	movl	$1, -52(%ebp)
+	movl	-48(%ebp), %eax
+	movl	%eax, -12(%ebp)
+	movl	-44(%ebp), %eax
+	movl	%eax, -16(%ebp)
+	movw	$0, -18(%ebp)
+	movw	$24576, -54(%ebp)
+	movl	$1048576, -24(%ebp)
+	movl	$.LC3, (%esp)
+	call	print_str
+	movl	$.LC4, (%esp)
 	call	print_str
 	movl	$.LC9, (%esp)
 	call	print_str
-	movl	$64512, (%esp)
+	movl	-24(%ebp), %eax
+	movl	%eax, (%esp)
 	call	print_U32
 	call	print_newline
-	movl	$.LC4, (%esp)
+	jmp	.L2
+.L7:
+	movl	-12(%ebp), %edx
+	movl	-52(%ebp), %eax
+	cmpl	%edx, %eax
+	jle	.L3
+	movl	%edx, %eax
+.L3:
+	movl	%eax, -60(%ebp)
+	movl	$.LC3, (%esp)
 	call	print_str
-	movl	$.LC5, (%esp)
+	movl	$.LC4, (%esp)
 	call	print_str
 	movl	$.LC10, (%esp)
 	call	print_str
-	movl	$1048576, (%esp)
+	movl	-12(%ebp), %eax
+	movl	%eax, (%esp)
 	call	print_U32
 	call	print_newline
-	addl	$16, %esp
-	xorl	%esi, %esi
-	movl	$126, %ebx
-.L11:
-	imull	$-512, %ebx, %eax
-	addl	$1113088, %eax
-	movl	%eax, %edi
-	movl	%eax, -44(%ebp)
-	subl	$12, %esp
-	pushl	$.LC4
+	movl	diskbuf_global, %ecx
+	movl	-60(%ebp), %eax
+	movzwl	%ax, %edx
+	movl	-16(%ebp), %eax
+	movl	$4096, 16(%esp)
+	movl	$dapa_global, 12(%esp)
+	movl	%ecx, 8(%esp)
+	movl	%edx, 4(%esp)
+	movl	%eax, (%esp)
+	call	loadsec
+	movl	$.LC3, (%esp)
 	call	print_str
-	movl	$.LC5, (%esp)
+	movl	$.LC4, (%esp)
 	call	print_str
 	movl	$.LC11, (%esp)
 	call	print_str
-	movl	%ebx, (%esp)
+	movl	-24(%ebp), %eax
+	movl	%eax, (%esp)
 	call	print_U32
 	call	print_newline
-	movl	$4096, (%esp)
-	pushl	$dapa_global
-	pushl	diskbuf_global
-	pushl	$1
-	movl	$136, %eax
-	subl	%ebx, %eax
-	pushl	%eax
-	call	loadsec
-	addl	$20, %esp
-	pushl	$.LC4
+	movzwl	-18(%ebp), %eax
+	movl	-60(%ebp), %edx
+	sall	$9, %edx
+	addl	%edx, %eax
+	cmpl	$65536, %eax
+	jle	.L4
+	movl	$65536, %eax
+.L4:
+	movzwl	-18(%ebp), %edx
+	subl	%edx, %eax
+	movl	%eax, -64(%ebp)
+	movw	-18(%ebp), %ax
+	cmpw	-54(%ebp), %ax
+	jae	.L5
+	cmpl	$0, -64(%ebp)
+	jle	.L5
+	movl	$.LC3, (%esp)
 	call	print_str
-	movl	$.LC5, (%esp)
+	movl	$.LC4, (%esp)
 	call	print_str
 	movl	$.LC12, (%esp)
 	call	print_str
-	movl	%edi, (%esp)
+	movzwl	-18(%ebp), %eax
+	movl	%eax, (%esp)
 	call	print_U32
 	call	print_newline
-	movzwl	%si, %eax
-	leal	512(%eax), %edi
-	addl	$16, %esp
-	cmpl	$65536, %edi
-	jle	.L8
-	movl	$65536, %edi
-.L8:
-	subl	%eax, %edi
-	testl	%edi, %edi
-	jle	.L12
-	cmpw	$-32768, %si
-	jae	.L12
-	subl	$12, %esp
-	pushl	%eax
-	pushl	$8192
-	pushl	%edi
-	movzwl	diskbuf_global, %eax
-	pushl	%eax
-	pushl	$4096
+	movzwl	-18(%ebp), %edx
+	movl	diskbuf_global, %eax
+	movzwl	%ax, %eax
+	movl	%edx, 16(%esp)
+	movl	$8192, 12(%esp)
+	movl	-64(%ebp), %edx
+	movl	%edx, 8(%esp)
+	movl	%eax, 4(%esp)
+	movl	$4096, (%esp)
 	call	copy_segseg
-	movl	%eax, -28(%ebp)
-	addl	%edi, %esi
-	addl	$32, %esp
-	jmp	.L9
-.L12:
-	movl	$-32768, %esi
-.L9:
-	subl	$12, %esp
-	pushl	$.LC4
+	movl	%eax, -80(%ebp)
+	movl	-64(%ebp), %eax
+	addw	%ax, -18(%ebp)
+	jmp	.L6
+.L5:
+	movw	-54(%ebp), %ax
+	movw	%ax, -18(%ebp)
+.L6:
+	movl	$.LC3, (%esp)
 	call	print_str
-	movl	$.LC5, (%esp)
+	movl	$.LC4, (%esp)
 	call	print_str
 	movl	$.LC13, (%esp)
 	call	print_str
-	movl	%edi, (%esp)
+	movl	-64(%ebp), %eax
+	movl	%eax, (%esp)
 	call	print_U32
 	call	print_newline
-	movzwl	diskbuf_global, %edi
-	addl	$65536, %edi
-	movl	$.LC4, (%esp)
+	movl	diskbuf_global, %eax
+	movzwl	%ax, %eax
+	addl	$65536, %eax
+	movl	%eax, -68(%ebp)
+	movl	$.LC3, (%esp)
 	call	print_str
-	movl	$.LC5, (%esp)
+	movl	$.LC4, (%esp)
 	call	print_str
 	movl	$.LC14, (%esp)
 	call	print_str
-	movl	%edi, (%esp)
+	movl	-68(%ebp), %eax
+	movl	%eax, (%esp)
 	call	print_U32
 	call	print_newline
-	movl	$.LC4, (%esp)
+	movl	$.LC3, (%esp)
 	call	print_str
-	movl	$.LC5, (%esp)
+	movl	$.LC4, (%esp)
 	call	print_str
 	movl	$.LC15, (%esp)
 	call	print_str
-	popl	%eax
-	pushl	-44(%ebp)
+	movl	-24(%ebp), %eax
+	movl	%eax, (%esp)
 	call	print_U32
 	call	print_newline
-	movl	$4096, (%esp)
-	pushl	$256
-	pushl	-44(%ebp)
-	pushl	%edi
-	pushl	$mm_block
+	movl	-60(%ebp), %eax
+	sall	$9, %eax
+	movl	%eax, %edx
+	shrl	$31, %edx
+	addl	%edx, %eax
+	sarl	%eax
+	movzwl	%ax, %eax
+	movl	$4096, 16(%esp)
+	movl	%eax, 12(%esp)
+	movl	-24(%ebp), %eax
+	movl	%eax, 8(%esp)
+	movl	-68(%ebp), %eax
+	movl	%eax, 4(%esp)
+	movl	$mm_block, (%esp)
 	call	copy_ext
-	movl	%eax, %edi
-	addl	$20, %esp
-	pushl	$.LC4
+	movl	%eax, -72(%ebp)
+	movl	-60(%ebp), %eax
+	sall	$9, %eax
+	addl	%eax, -24(%ebp)
+	movl	$.LC3, (%esp)
 	call	print_str
-	movl	$.LC5, (%esp)
+	movl	$.LC4, (%esp)
 	call	print_str
 	movl	$.LC16, (%esp)
 	call	print_str
-	movl	%edi, (%esp)
+	movl	-72(%ebp), %eax
+	movl	%eax, (%esp)
 	call	print_U32
 	call	print_newline
-	addl	$16, %esp
-	decl	%ebx
-	jne	.L11
-	subl	$12, %esp
-	pushl	$.LC4
+	movl	-60(%ebp), %eax
+	addl	%eax, -16(%ebp)
+	movl	-60(%ebp), %eax
+	subl	%eax, -12(%ebp)
+.L2:
+	cmpl	$0, -12(%ebp)
+	jg	.L7
+	movl	$.LC3, (%esp)
 	call	print_str
-	movl	$.LC5, (%esp)
+	movl	$.LC4, (%esp)
 	call	print_str
-	movl	$.LC9, (%esp)
+	movl	$.LC8, (%esp)
 	call	print_str
-	movl	$64512, (%esp)
+	movl	$95744, (%esp)
 	call	print_U32
 	call	print_newline
 	movl	$.LC17, (%esp)
@@ -286,15 +309,59 @@ lmain:
 	movl	$.LC18, (%esp)
 	call	print_str
 	movl	$69, %eax
-	leal	-12(%ebp), %esp
-	popl	%ebx
-	popl	%esi
-	popl	%edi
-	popl	%ebp
+	leave
 	ret
 	.size	lmain, .-lmain
-	.comm	mm_block,48,8
-	.comm	dapa_global,16,8
-	.comm	diskbuf_global,4,4
+	.section	.rodata
+.LC19:
+	.string	"Juergen Boehm 23232323232323"
+	.text
+	.globl	test_disk
+	.type	test_disk, @function
+test_disk:
+	pushl	%ebp
+	movl	%esp, %ebp
+	subl	$56, %esp
+	movl	diskbuf_global, %eax
+	movl	$4096, 16(%esp)
+	movl	$dapa_global, 12(%esp)
+	movl	%eax, 8(%esp)
+	movl	$2, 4(%esp)
+	movl	$0, (%esp)
+	call	loadsec
+	call	print_newline
+	movl	$.LC19, -20(%ebp)
+	movl	-20(%ebp), %eax
+	movl	%eax, -16(%ebp)
+	movl	$0, -12(%ebp)
+	jmp	.L10
+.L11:
+	movl	diskbuf_global, %edx
+	movl	-12(%ebp), %eax
+	leal	(%edx,%eax), %ecx
+	movl	-16(%ebp), %eax
+	leal	1(%eax), %edx
+	movl	%edx, -16(%ebp)
+	movb	(%eax), %al
+	movb	%al, (%ecx)
+	incl	-12(%ebp)
+.L10:
+	movl	-16(%ebp), %eax
+	movb	(%eax), %al
+	testb	%al, %al
+	jne	.L11
+	movl	diskbuf_global, %edx
+	movl	-12(%ebp), %eax
+	addl	%eax, %edx
+	movl	-16(%ebp), %eax
+	movb	(%eax), %al
+	movb	%al, (%edx)
+	movl	diskbuf_global, %eax
+	movl	%eax, (%esp)
+	call	print_str
+	movl	$0, %eax
+	leave
+	ret
+	.size	test_disk, .-test_disk
 	.ident	"GCC: (GNU) 4.8.2 20140120 (Red Hat 4.8.2-15)"
 	.section	.note.GNU-stack,"",@progbits

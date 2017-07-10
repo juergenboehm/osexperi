@@ -433,9 +433,12 @@ int execute_kill(int argc, char* argv[])
 
 		if (pnd->proc->proc_data.pid == pid)
 		{
+				printf("kill: destroy_process pid = %d\n", pid);
 				destroy_process(pnd->proc);
 				break;
 		}
+
+		p = p->next;
 
 	}
 	END_FORLIST(p, global_proc_list);

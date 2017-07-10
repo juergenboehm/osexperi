@@ -4,6 +4,7 @@
 #include "drivers/hardware.h"
 #include "libs32/kalloc.h"
 #include "libs32/klib.h"
+#include "kernel32/process.h"
 #include "mem/pagedesc.h"
 #include "mem/malloc.h"
 #include "mem/pagingdefs.h"
@@ -21,6 +22,10 @@ static uint8_t* ptx = (uint8_t*)0xb8000;
 // present and writable
 #define PG_BIT_PW (PG_BIT_P | PG_BIT_RW)
 
+void* get_page(uint32_t mode)
+{
+	return malloc(PAGE_SIZE);
+}
 
 void wait(uint32_t n)
 {
@@ -124,7 +129,7 @@ int map_page1(uint32_t vaddr, uint32_t paddr,
 {
 
 	if (vaddr < 0xc0000000) {
-		DEBUGOUT(0, "enter map_page vaddr = %08x, paddr = %08x\n", vaddr, paddr);
+		DEBUGOUT1(0, "enter map_page vaddr = %08x, paddr = %08x\n", vaddr, paddr);
 	}
 
 	uint32_t pg_dir_index = PG_PAGE_DIR_INDEX(vaddr);
@@ -136,12 +141,18 @@ int map_page1(uint32_t vaddr, uint32_t paddr,
 	{
 		pte = (*create_page_table)();
 
+		// outb_printf("create_page_table case.\n");
+
 		PG_PTE_SET_FRAME_ADDRESS(*pde, __PHYS(pte));
 		PG_PTE_SET_BITS(*pde, mode_bits_pdir);
 
 	}
 	else
 	{
+
+		//outb_printf("non create_page_table case.\n");
+
+		PG_PTE_SET_BITS(*pde, mode_bits_pdir);
 		uint32_t phys_pte = PG_PTE_GET_FRAME_ADDRESS(*pde);
 		pte = __VADDR(phys_pte);
 	}
@@ -241,6 +252,40 @@ void get_page_dir_entry(uint32_t page_dir_phys_addr, uint32_t index, uint32_t *p
 	*pdentry = pdirbase[index].val;
 }
 
+page_table_entry_t *resolve_pde_vaddr(uint32_t lin_addr, page_table_entry_t* cur_page_dir_sys)
+{
+	uint32_t pd_index = PG_PAGE_DIR_INDEX(lin_addr);
+	uint32_t pde_phys = PG_PTE_GET_FRAME_ADDRESS(cur_page_dir_sys[pd_index]);
+	uint32_t pde_flags = PG_PTE_GET_BITS(cur_page_dir_sys[pd_index]);
+	if (pde_flags & PG_BIT_P)
+	{
+		return cur_page_dir_sys + pd_index;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+page_table_entry_t *resolve_pte_vaddr(uint32_t lin_addr, page_table_entry_t* cur_page_dir_sys)
+{
+
+	uint32_t pd_index = PG_PAGE_DIR_INDEX(lin_addr);
+	uint32_t pt_index = PG_PAGE_TABLE_INDEX(lin_addr);
+
+	uint32_t pde_phys = PG_PTE_GET_FRAME_ADDRESS(cur_page_dir_sys[pd_index]);
+	uint32_t pde_flags = PG_PTE_GET_BITS(cur_page_dir_sys[pd_index]);
+	if (pde_flags & PG_BIT_P)
+	{
+		page_table_entry_t *pde_ptr = __VADDR(pde_phys);
+		return pde_ptr + pt_index;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
 
 void page_fault_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 {
@@ -250,29 +295,113 @@ void page_fault_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 	asm __volatile__ ( "movl %%cr2, %0" : "=r"(lin_addr));
 	//printf("page fault = %d %d 0x%08x esp = 0x%08x cs = %08x\n", errcode, irq_num, lin_addr, esp_val,
 	//		(uint32_t)get_cs());
-	outb_printf("page fault = %d %d 0x%08x esp = 0x%08x cs = %08x\n", errcode, irq_num, lin_addr, esp_val,
-			(uint32_t)get_cs());
-	void *p = malloc(PAGE_SIZE);
 
-	if (p)
+	iret_blk_t* pir = (iret_blk_t*)(PROC_STACK_BEG(current) - sizeof(iret_blk_t));
+
+	outb_printf("page fault = %d %08x esp = %08x cs = %08x ds = %08x\n", errcode, lin_addr, esp_val,
+			(uint32_t)get_cs(), (uint32_t)get_ds());
+
+	print_iret_blk(pir);
+
+	void* cur_page_dir_sys;
+	cur_page_dir_sys = __VADDR(get_cr3());
+
+
+	uint32_t in_usermode = errcode & PG_BIT_US;
+	uint32_t was_a_write = errcode & PG_BIT_RW;
+	uint32_t not_present = !(errcode & PG_BIT_P);
+	uint32_t protection_violation = errcode & PG_BIT_P;
+
+	if (!in_usermode)
 	{
-		outb_printf("page_fault: p allocated = %08x\n", (uint32_t) p);
-		page_desc_t* p_blk_index = BLK_PTR(ADDR_TO_PDESC_INDEX(p));
+		outb_printf("page_fault_handler: error in supervisor mode.");
+		while (1) {};
+	}
 
-		++p_blk_index->use_cnt;
+	if (protection_violation && in_usermode && was_a_write)
+	{
+		// COW case
 
+		outb_printf("page_fault_handler: doing copy on write.\n");
+
+		void *p = get_page(0);
+
+		uint32_t lin_addr1 = (PG_PAGE_DIR_INDEX(lin_addr) << 22) + (PG_PAGE_TABLE_INDEX(lin_addr) << 12);
+
+		outb_printf("normalized lin_addr = %08x\n", lin_addr1);
+
+
+		page_table_entry_t* pde = resolve_pde_vaddr(lin_addr, cur_page_dir_sys);
+		page_table_entry_t* pte = resolve_pte_vaddr(lin_addr, cur_page_dir_sys);
+
+		uint32_t pde_bits = PG_PTE_GET_BITS(*pde);
+		uint32_t pte_bits = PG_PTE_GET_BITS(*pte);
+
+		outb_printf("pde_bits = %08x pte_bits = %08x\n", pde_bits, pte_bits);
+
+		pte_bits |= PG_BIT_RW;
+		pde_bits |= PG_BIT_RW;
+
+		outb_printf("new: pde_bits = %08x pte_bits = %08x\n", pde_bits, pte_bits);
+
+		uint32_t phys_addr_frame = PG_PTE_GET_FRAME_ADDRESS(*pte);
+
+		void *p_old = __VADDR(phys_addr_frame);
+
+		outb_printf("p = %08x p_old = %08x\n", (uint32_t)p, (uint32_t)p_old);
+
+		memcpy(p, p_old, PAGE_SIZE);
+
+#ifdef PARANOID
+		uint8_t* pp = p;
+		uint8_t* qq = p_old;
+		int i;
+		for(i = 0; i < PAGE_SIZE; ++i)
+		{
+			if (pp[i] != qq[i])
+			{
+				outb_printf("error error error.");
+			}
+		}
+#endif
+
+		outb_printf("memcpy done.\n");
+
+		map_page1(lin_addr, (uint32_t)__PHYS(p), cur_page_dir_sys, pte_bits, pde_bits);
+
+		outb_printf("map_page1 done.\n");
+
+		return;
+
+	}
+
+	if (in_usermode)
+	{
+		void *p = get_page(0);
 		uint32_t paddr = (uint32_t)__PHYS(p);
-		void* cur_page_dir_sys;
-		cur_page_dir_sys = __VADDR(get_cr3());
-		map_page(lin_addr, paddr, (page_table_entry_t*)cur_page_dir_sys, PG_BIT_P | PG_BIT_RW | PG_BIT_US );
 
-		outb_printf("page_fault_handler leave.\n");
+		if (p)
+		{
+			outb_printf("page_fault: p allocated = %08x\n", (uint32_t) p);
+			page_desc_t* p_blk_index = BLK_PTR(ADDR_TO_PDESC_INDEX(p));
 
-		WAIT((1 << 24));
+			++p_blk_index->use_cnt;
+
+			map_page(lin_addr, paddr, (page_table_entry_t*)cur_page_dir_sys, PG_BIT_P | PG_BIT_RW | PG_BIT_US );
+
+			outb_printf("page_fault_handler leave.\n");
+
+			//WAIT((1 << 24));
+		}
+		else
+		{
+			outb_printf("page_fault_handler: no free mem found: malloc failed.");
+			while (1) {};
+		}
 	}
 	else
 	{
-		outb_printf("page_fault_handler: no free mem found: malloc failed.");
+		outb_printf("page_fault_handler: protection violation.\n");
 		while (1) {};
 	}
 }
@@ -300,9 +429,10 @@ void free_page_table_entry(page_table_entry_t* pte)
 // frees the page table pointed to by *pte from the page directory
 void free_page_table(page_table_entry_t* pte)
 {
-	if (PG_PTE_GET_FRAME_ADDRESS(*pte))
+	uint32_t pte_frame_address = PG_PTE_GET_FRAME_ADDRESS(*pte);
+	if (pte_frame_address)
 	{
-		page_table_entry_t* ptab = (page_table_entry_t*) __VADDR(PG_PTE_GET_FRAME_ADDRESS(*pte));
+		page_table_entry_t* ptab = (page_table_entry_t*) __VADDR(pte_frame_address);
 		int i;
 		for(i = 0; i < PG_PAGE_TABLE_ENTRIES; ++i)
 		{
@@ -314,11 +444,14 @@ void free_page_table(page_table_entry_t* pte)
 	}
 }
 
-int copy_page_tables(process_t* proc, uint32_t *new_page_dir_phys)
+
+int copy_page_tables(process_t* proc, uint32_t *new_page_dir_phys, uint32_t mode)
 {
 
 	uint32_t pdir_index;
 	uint32_t ptable_index;
+
+	bool do_cow_prepare = mode & PG_PTCM_COPY_FOR_COW;
 
 	DEBUGOUT1(0,"**************copy_page_tables: enter\n");
 
@@ -359,17 +492,37 @@ int copy_page_tables(process_t* proc, uint32_t *new_page_dir_phys)
 
 					uint32_t mode_bits_ptab = PG_PTE_GET_BITS(p_akt_pagetable[ptable_index]);
 
-					uint32_t* p_copied_page = (uint32_t*) malloc(PAGE_SIZE);
 
-					memcpy(p_copied_page, page_frame, PAGE_SIZE);
+					uint32_t* p_copied_page = 0;
+					if (!do_cow_prepare)
+					{
+						p_copied_page = (uint32_t*) malloc(PAGE_SIZE);
+
+						memcpy(p_copied_page, page_frame, PAGE_SIZE);
+					}
 
 					uint32_t current_vaddr =
 							(pdir_index << (PG_FRAME_BITS + PG_PAGE_TABLE_BITS)) + (ptable_index << PG_FRAME_BITS);
 
+					if (do_cow_prepare)
+					{
+						mode_bits_ptab &= ~PG_BIT_RW;
+						mode_bits_pdir &= ~PG_BIT_RW;
+					}
 
-					map_page1(current_vaddr, (uint32_t)__PHYS(p_copied_page), new_page_dir, mode_bits_ptab, mode_bits_pdir);
-					DEBUGOUT1(0, "++++page_copied: vaddr = %08x, mode_bits_pdir = %08x, mode_bits_ptab = %008x\n",
-							current_vaddr, mode_bits_pdir, mode_bits_ptab);
+					if (!do_cow_prepare)
+					{
+						map_page1(current_vaddr, (uint32_t)__PHYS(p_copied_page), new_page_dir,
+													mode_bits_ptab, mode_bits_pdir);
+					}
+					else
+					{
+						map_page1(current_vaddr, page_frame_phys, new_page_dir,
+												mode_bits_ptab, mode_bits_pdir);
+					}
+					DEBUGOUT1(0,
+							"++++page_copied: vaddr = %08x, page_frame_phys = %08x, mode_bits_pdir = %08x, mode_bits_ptab = %008x\n",
+							current_vaddr, page_frame_phys, mode_bits_pdir, mode_bits_ptab);
 
 				}
 			}

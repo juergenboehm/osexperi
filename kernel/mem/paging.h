@@ -35,6 +35,9 @@ typedef page_table_entry_t* (*create_page_table_t)();
 
 extern create_page_table_t create_page_table;
 
+void* get_page(uint32_t mode);
+
+
 int make_page_directory(uint32_t* page_dir_phys_addr, page_table_entry_t** page_dir_sys_ret);
 
 int map_page1(uint32_t vaddr, uint32_t paddr,
@@ -48,7 +51,7 @@ void page_fault_handler(uint32_t errcode, uint32_t irq_num, void* esp);
 
 void free_page_table(page_table_entry_t* pte);
 
-int copy_page_tables(process_t* proc, uint32_t *new_page_dir_phys);
+int copy_page_tables(process_t* proc, uint32_t *new_page_dir_phys, uint32_t mode);
 
 
 #endif
