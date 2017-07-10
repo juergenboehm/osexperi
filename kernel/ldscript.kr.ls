@@ -9,6 +9,28 @@ logic2 = 0xc0100000;
 
 logic2x = 0x00001000;
 
+/*
+
+***************** 10 07 2017: VERY IMPORTANT NOTE ***********************************
+
+the loader scripts are now in a new logic without making use of
+length computations of sections for setting the .
+
+Instead a much simpler logic following the scheme
+
+<name_sec>: AT(phys<Beg> + <name_sec> - <current logic>)
+
+is used.
+
+This removed an annoying bug in userproc.c
+where a new global variable introduced for testing
+gots wrongly placed and therefore wrongly addressed (which lead to
+failure of uprintf() )
+
+
+*/
+
+
 SECTIONS
 {
 
@@ -16,7 +38,7 @@ SECTIONS
 
 			 	. = logic1;
 
-			 	.text1 : AT(physA)
+			 	.text1 : AT(physA + code1 - logic1)
 			 	{
 			 		code1 = .;
 					*Aux.o(.text)
@@ -27,9 +49,9 @@ SECTIONS
 				lencode1 = code1end - code1;
 
 
-				. = logic1 + lencode1;
+/*				. = logic1 + lencode1; */
 
-       .data1 : AT(physA + lencode1)
+       .data1 : AT(physA + data1 - logic1)
 			  {
 					data1 = .;
 					*Aux.o(.data)
@@ -40,9 +62,9 @@ SECTIONS
 				lendata1 = data1end - data1;
 
 
-			 . = logic1 + lencode1 + lendata1;
+	/*		 . = logic1 + lencode1 + lendata1; */
 
-       .bss1 : AT(physA + lencode1 + lendata1)
+       .bss1 : AT(physA + bss1 - logic1)
 			 {
 			 		bss1 = .;
 			 		*16.o(.bss1)
@@ -52,9 +74,9 @@ SECTIONS
 
 			 lenbss1 = bss1end - bss1;
 
-			 . = logic1 + lencode1 + lendata1 + lenbss1;
+/*			 . = logic1 + lencode1 + lendata1 + lenbss1; */
 
-			 .rodata1 : AT(physA + lencode1 + lendata1 + lenbss1)
+			 .rodata1 : AT(physA + rodata1 - logic1)
 			 {
 			 		rodata1 = .;
 					*16.o(.rodata1*)
@@ -63,9 +85,9 @@ SECTIONS
 
 			 lenrodata1 = rodata1end - rodata1;
 
-			 . = logic1 + lencode1 + lendata1 + lenbss1 + lenrodata1;
+/*			 . = logic1 + lencode1 + lendata1 + lenbss1 + lenrodata1; */
 
-			 aligner = ALIGN(physA + lencode1 + lendata1 + lenbss1 + lenrodata1 + 2, 4096) - 2;
+			 aligner = ALIGN(physA + . - logic1 + 2, 4096) - 2;
 
 			 .alignit : AT(aligner)
 			 {
@@ -81,7 +103,7 @@ SECTIONS
 
 		. = logic2;
 
-	 	.text2 : AT(physAx)
+	 	.text2 : AT(physAx + code2 - logic2)
 	 	{
 	 		code2 = .;
 			*32.o(.text2)
@@ -91,9 +113,9 @@ SECTIONS
 		lencode2 = code2end - code2;
 
 
-		. = logic2 + lencode2;
+/*		. = logic2 + lencode2; */
 
-       .data2 : AT(physAx + lencode2)
+       .data2 : AT(physAx + data2 - logic2)
 			  {
 					data2 = .;
 					*32.o(.data2)
@@ -103,9 +125,9 @@ SECTIONS
 				lendata2 = data2end - data2;
 
 
-			 . = logic2 + lencode2 + lendata2;
+/*			 . = logic2 + lencode2 + lendata2; */
 
-       .bss2 : AT(physAx + lencode2 + lendata2)
+       .bss2 : AT(physAx + bss2 - logic2)
 			 {
 			 		bss2 = .;
 			 		*32.o(.bss2)
@@ -115,9 +137,9 @@ SECTIONS
 
 			 lenbss2 = bss2end - bss2;
 
-			 . = logic2 + lencode2 + lendata2 + lenbss2;
+/*			 . = logic2 + lencode2 + lendata2 + lenbss2; */
 
-			 .rodata2 : AT(physAx + lencode2 + lendata2 + lenbss2)
+			 .rodata2 : AT(physAx + rodata2 - logic2)
 			 {
 			 		rodata2 = .;
 					*32.o(.rodata2*)
@@ -126,9 +148,9 @@ SECTIONS
 
 			 lenrodata2 = rodata2end - rodata2;
 
-			 . = logic2 + lencode2 + lendata2 + lenbss2 + lenrodata2;
+/*			 . = logic2 + lencode2 + lendata2 + lenbss2 + lenrodata2; */
 
-			 aligner2 = ALIGN(physAx + lencode2 + lendata2 + lenbss2 + lenrodata2 + 2, 4096) - 2;
+			 aligner2 = ALIGN(physAx + . - logic2 + 2, 4096) - 2;
 
 			 .alignit2 : AT(aligner2)
 			 {
@@ -154,9 +176,9 @@ SECTIONS
 		lencode2x = code2endx - code2x;
 
 
-		. = logic2x + lencode2x;
+	/*	. = logic2x + lencode2x; */
 
-       .data2x : AT(physAxx + lencode2x)
+       .data2x : AT(physAxx + data2x - logic2x)
 			  {
 					data2x = .;
 					*32_user.o(.data2u)
@@ -166,9 +188,9 @@ SECTIONS
 				lendata2x = data2endx - data2x;
 
 
-			 . = logic2x + lencode2x + lendata2x;
+	/*		 . = logic2x + lencode2x + lendata2x; */
 
-       .bss2x : AT(physAxx + lencode2x + lendata2x)
+       .bss2x : AT(physAxx + bss2x - logic2x)
 			 {
 			 		bss2x = .;
 			 		*32_user.o(.bss2u)
@@ -178,9 +200,9 @@ SECTIONS
 
 			 lenbss2x = bss2endx - bss2x;
 
-			 . = logic2x + lencode2x + lendata2x + lenbss2x;
+	/*		 . = logic2x + lencode2x + lendata2x + lenbss2x; */
 
-			 .rodata2x : AT(physAxx + lencode2x + lendata2x + lenbss2x)
+			 .rodata2x : AT(physAxx + rodata2x - logic2x)
 			 {
 			 		rodata2x = .;
 					*32_user.o(.rodata2u*)
@@ -189,9 +211,9 @@ SECTIONS
 
 			 lenrodata2x = rodata2endx - rodata2x;
 
-			 . = logic2x + lencode2x + lendata2x + lenbss2x + lenrodata2x;
+			 . = rodata2endx;
 
-			 aligner2x = ALIGN(physAxx + lencode2x + lendata2x + lenbss2x + lenrodata2x + 2, 512) - 2;
+			 aligner2x = ALIGN(physAxx + . - logic2x + 2, 512) - 2;
 
 			 .alignit2x : AT(aligner2x)
 			 {

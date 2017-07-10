@@ -27,6 +27,18 @@ void* get_page(uint32_t mode)
 	return malloc(PAGE_SIZE);
 }
 
+void* get_page_with_refcnt(uint32_t mode)
+{
+	void* p = malloc(PAGE_SIZE);
+	if (p)
+	{
+		page_desc_t* pd = BLK_PTR(ADDR_TO_PDESC_INDEX(p));
+		++pd->use_cnt;
+	}
+	return p;
+}
+
+
 void wait(uint32_t n)
 {
 	volatile uint32_t i = 0;
@@ -324,7 +336,7 @@ void page_fault_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 
 		outb_printf("page_fault_handler: doing copy on write.\n");
 
-		void *p = get_page(0);
+		void *p = get_page_with_refcnt(0);
 
 		uint32_t lin_addr1 = (PG_PAGE_DIR_INDEX(lin_addr) << 22) + (PG_PAGE_TABLE_INDEX(lin_addr) << 12);
 
@@ -352,19 +364,6 @@ void page_fault_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 
 		memcpy(p, p_old, PAGE_SIZE);
 
-#ifdef PARANOID
-		uint8_t* pp = p;
-		uint8_t* qq = p_old;
-		int i;
-		for(i = 0; i < PAGE_SIZE; ++i)
-		{
-			if (pp[i] != qq[i])
-			{
-				outb_printf("error error error.");
-			}
-		}
-#endif
-
 		outb_printf("memcpy done.\n");
 
 		map_page1(lin_addr, (uint32_t)__PHYS(p), cur_page_dir_sys, pte_bits, pde_bits);
@@ -377,15 +376,12 @@ void page_fault_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 
 	if (in_usermode)
 	{
-		void *p = get_page(0);
+		void *p = get_page_with_refcnt(0);
 		uint32_t paddr = (uint32_t)__PHYS(p);
 
 		if (p)
 		{
 			outb_printf("page_fault: p allocated = %08x\n", (uint32_t) p);
-			page_desc_t* p_blk_index = BLK_PTR(ADDR_TO_PDESC_INDEX(p));
-
-			++p_blk_index->use_cnt;
 
 			map_page(lin_addr, paddr, (page_table_entry_t*)cur_page_dir_sys, PG_BIT_P | PG_BIT_RW | PG_BIT_US );
 
@@ -411,28 +407,28 @@ void page_fault_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 
 void free_page_table_entry(page_table_entry_t* pte)
 {
-	uint32_t p_addr_frame_phys = PG_PTE_GET_FRAME_ADDRESS(*pte);
-	if (p_addr_frame_phys)
+	uint32_t pte_val = PG_PTE_GET_FRAME_ADDRESS(*pte);
+	if (pte_val)
 	{
-		void* p_addr_frame = __VADDR(p_addr_frame_phys);
-		DEBUGOUT1(0, "free_page_table_entry: p_addr_frame = %08x\n", (uint32_t) p_addr_frame);
-		page_desc_t* p_addr_frame_pd = BLK_PTR(ADDR_TO_PDESC_INDEX(p_addr_frame));
+		void* pte_val_vaddr = __VADDR(pte_val);
+		DEBUGOUT1(0, "free_page_table_entry: p_addr_frame = %08x\n", (uint32_t) pte_val);
+		page_desc_t* p_addr_frame_pd = BLK_PTR(ADDR_TO_PDESC_INDEX(pte_val_vaddr));
 		--p_addr_frame_pd->use_cnt;
 		if (!p_addr_frame_pd->use_cnt)
 		{
-			DEBUGOUT1(0, "freeing page_frame paddr_frame = %08x\n", (uint32_t) p_addr_frame);
-			free(p_addr_frame);
+			DEBUGOUT1(0, "freeing page_frame paddr_frame = %08x\n", (uint32_t) pte_val);
+			free(pte_val_vaddr);
 		}
 	}
 }
 
-// frees the page table pointed to by *pte from the page directory
-void free_page_table(page_table_entry_t* pte)
+// frees the page table pointed to by *pde from the page directory
+void free_page_table(page_table_entry_t* pde)
 {
-	uint32_t pte_frame_address = PG_PTE_GET_FRAME_ADDRESS(*pte);
-	if (pte_frame_address)
+	uint32_t pde_val = PG_PTE_GET_FRAME_ADDRESS(*pde);
+	if (pde_val)
 	{
-		page_table_entry_t* ptab = (page_table_entry_t*) __VADDR(pte_frame_address);
+		page_table_entry_t* ptab = (page_table_entry_t*) __VADDR(pde_val);
 		int i;
 		for(i = 0; i < PG_PAGE_TABLE_ENTRIES; ++i)
 		{
@@ -496,7 +492,7 @@ int copy_page_tables(process_t* proc, uint32_t *new_page_dir_phys, uint32_t mode
 					uint32_t* p_copied_page = 0;
 					if (!do_cow_prepare)
 					{
-						p_copied_page = (uint32_t*) malloc(PAGE_SIZE);
+						p_copied_page = (uint32_t*) get_page_with_refcnt(0);
 
 						memcpy(p_copied_page, page_frame, PAGE_SIZE);
 					}

@@ -72,6 +72,13 @@ fak:
 	leave
 	ret
 	.size	fak, .-fak
+	.globl	testq
+	.data
+	.align 4
+	.type	testq, @object
+	.size	testq, 4
+testq:
+	.long	1
 	.section	.rodata
 	.align 4
 .LC1:
@@ -142,6 +149,7 @@ uproc_1:
 .L11:
 	cmpl	$9, -24(%ebp)
 	jle	.L12
+	movl	$998, testq
 .L10:
 	movl	$0, -28(%ebp)
 	jmp	.L13

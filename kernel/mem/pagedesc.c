@@ -382,6 +382,7 @@ uint32_t init_global_page_list()
 				// declare 2060 pages (about 8437 kB) as NOMEM kernel memory
 				// this is not used in the buddy system
 				// it contains all the allocations done in the buildup phase by kalloc_fixed_aligned
+				// and the kernel stack at KERNEL_UPPER + 0x800000
 				if (j >= KERNEL_32_START_PAGE && j <= KERNEL_32_START_PAGE + 2060 /*- 256*/ )
 					continue;
 

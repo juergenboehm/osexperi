@@ -16,7 +16,7 @@ SECTIONS
 
 				. = logic2;
 
-			 	.text2 : AT(physA32)
+			 	.text2 : AT(physA32 + code2 - logic2)
 			 	{ 
 			 		code2 = .;
 					*.o(.text)
@@ -26,9 +26,9 @@ SECTIONS
 				lencode2 = code2end - code2;
 				
 																
-				. = logic2 + lencode2;
+				/*. = logic2 + lencode2;*/
 									
-       .data2 : AT(physA32 + lencode2)
+       .data2 : AT(physA32 + data2 - logic2)
 			  { 
 					data2 = .;
 					*.o(.data) 
@@ -38,9 +38,9 @@ SECTIONS
 				lendata2 = data2end - data2;
 				
 								
-			 . = logic2 + lencode2 + lendata2;
+		/*	 . = logic2 + lencode2 + lendata2; */
 
-       .bss2 : AT(physA32 + lencode2 + lendata2)
+       .bss2 : AT(physA32 + bss2 - logic2)
 			 {
 			 		bss2 = .; 
 			 		*.o(.bss)
@@ -50,9 +50,9 @@ SECTIONS
 			 
 			 lenbss2 = bss2end - bss2;
 			 
-			 . = logic2 + lencode2 + lendata2 + lenbss2;
+		/*	 . = logic2 + lencode2 + lendata2 + lenbss2; */
 			 
-			 .rodata2 : AT(physA32 + lencode2 + lendata2 + lenbss2)
+			 .rodata2 : AT(physA32 + rodata2 - logic2)
 			 {
 			 		rodata2 = .;
 					*.o(.rodata*)
@@ -61,11 +61,11 @@ SECTIONS
 			 
 			 lenrodata2 = rodata2end - rodata2;
 			 
-			 . = logic2 + lencode2 + lendata2 + lenbss2 + lenrodata2;
+		/*	 . = logic2 + lencode2 + lendata2 + lenbss2 + lenrodata2; */
 
 
 /*			 
-			 aligner2 = ALIGN(physA32 + lencode2 + lendata2 + lenbss2 + lenrodata2 + 2, 512) - 2;
+			 aligner2 = ALIGN(physA32 + . - logic2 + 2, 512) - 2;
 			 			 
 			 .alignit2 : AT(aligner2)
 			 {

@@ -19,7 +19,7 @@ SECTIONS
 
 			 	. = logic1;
        
-			 	.text1 : AT(physA16)
+			 	.text1 : AT(physA16 + code1 - logic1)
 			 	{ 
 			 		code1 = .;
 					*.o(.text)
@@ -29,9 +29,9 @@ SECTIONS
 				lencode1 = code1end - code1;
 				
 																
-				. = logic1 + lencode1;
+/*				. = logic1 + lencode1; */
 									
-       .data1 : AT(physA16 + lencode1)
+       .data1 : AT(physA16 + data1 - logic1)
 			  { 
 					data1 = .;
 					*.o(.data) 
@@ -41,9 +41,9 @@ SECTIONS
 				lendata1 = data1end - data1;
 				
 								
-			 . = logic1 + lencode1 + lendata1;
+/*			 . = logic1 + lencode1 + lendata1; */
 
-       .bss1 : AT(physA16 + lencode1 + lendata1)
+       .bss1 : AT(physA16 + bss1 - logic1)
 			 {
 			 		bss1 = .; 
 			 		*.o(.bss)
@@ -53,9 +53,9 @@ SECTIONS
 			 
 			 lenbss1 = bss1end - bss1;
 			 
-			 . = logic1 + lencode1 + lendata1 + lenbss1;
+/*			 . = logic1 + lencode1 + lendata1 + lenbss1; */
 			 
-			 .rodata1 : AT(physA16 + lencode1 + lendata1 + lenbss1)
+			 .rodata1 : AT(physA16 + rodata1 - logic1)
 			 {
 			 		rodata1 = .;
 					*.o(.rodata*)
@@ -64,7 +64,7 @@ SECTIONS
 			 
 			 lenrodata1 = rodata1end - rodata1;
 			 
-			 . = logic1 + lencode1 + lendata1 + lenbss1 + lenrodata1;
+/*			 . = logic1 + lencode1 + lendata1 + lenbss1 + lenrodata1; */
 			 
 
 /*

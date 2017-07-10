@@ -49,7 +49,7 @@ void get_page_dir_entry(uint32_t page_dir_phys_addr, uint32_t index, uint32_t *p
 
 void page_fault_handler(uint32_t errcode, uint32_t irq_num, void* esp);
 
-void free_page_table(page_table_entry_t* pte);
+void free_page_table(page_table_entry_t* pde);
 
 int copy_page_tables(process_t* proc, uint32_t *new_page_dir_phys, uint32_t mode);
 

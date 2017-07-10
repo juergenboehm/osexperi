@@ -19,6 +19,9 @@ int fak(int n)
 	}
 }
 
+int testq = 1;
+
+
 void uproc_1()
 {
 	//timer_schedule_on = 1;
@@ -42,7 +45,7 @@ void uproc_1()
 
 	register_handler(my_handler);
 
-	uprintf("proc_1: presenting: the primes: cs = 0x%08x ds = 0x%08x\n", uget_cs(), uget_ds());
+	uprintf("proc_1: presenting: the primes: cs = 0x%08x ds = 0x%08x\n", (uint32_t)uget_cs(), (uint32_t)uget_ds());
 	uprintf("                                                       \n");
 	uprintf("                                                       \n");
 
@@ -67,6 +70,8 @@ void uproc_1()
 		}
 		while (1) {};
 #endif
+
+		testq = 998;
 
 	}
 
