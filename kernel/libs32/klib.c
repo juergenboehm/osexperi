@@ -12,6 +12,20 @@
 
 // the workers for printing
 
+static uint8_t *ptqq = (uint8_t*)0xc00b8000;
+
+void raw_print_char(char *p)
+{
+	while (*p)
+	{
+		*ptqq++ = *p;
+		*ptqq++ = 0x1e;
+		++p;
+	}
+}
+
+
+
 // the prehistoric k.. workers
 
 void kprint_char(uint8_t ch)
@@ -588,7 +602,7 @@ int outb_print(char* str)
 {
 	char *p = str;
 	while (*p) {
-		outb(0xe9, *p);
+		outb_0xe9( *p);
 		++p;
 	}
 }
@@ -612,6 +626,26 @@ int outb_printf(char* format, ... )
 
 	outb_print(buffer);
 
+}
+
+int raw_printf(char* format, ... )
+{
+	int i = 0;
+	char* p = format;
+
+	char buffer[PRINTF_BUFFER_LEN];
+
+	va_list ap;
+
+	va_start(ap, format);
+
+	vprintf(buffer, PRINTF_BUFFER_LEN, format, ap);
+
+	va_end(ap);
+
+	raw_print_char(buffer);
+
+	return 0;
 }
 
 
@@ -656,6 +690,18 @@ int fprintf(FILE fd, char* format, ... )
 
 int sprintf(char* s, char* format, ... )
 {
+	int i = 0;
+	char* p = format;
+
+	va_list ap;
+
+	va_start(ap, format);
+
+	vprintf(s, PRINTF_BUFFER_LEN, format, ap);
+
+	va_end(ap);
+
+	return 0;
 }
 
 

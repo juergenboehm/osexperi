@@ -68,7 +68,7 @@ void keyb_irq_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 	} else {
 
 
-		outb(0xe9, (uint8_t)( keyb_scan_code & 0x000000ff));
+		outb_0xe9( (uint8_t)( keyb_scan_code & 0x000000ff));
 
 		keyb_sema = 1;
 		if (! is_full_queue(&keyb_queue))

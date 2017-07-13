@@ -1,37 +1,15 @@
 	.file	"syscalls.c"
-	.text
-	.type	outb, @function
-outb:
-	pushl	%ebp
-	movl	%esp, %ebp
-	subl	$8, %esp
-	movl	8(%ebp), %eax
-	movl	12(%ebp), %edx
-	movw	%ax, -4(%ebp)
-	movb	%dl, -8(%ebp)
-	movl	-4(%ebp), %edx
-	movb	-8(%ebp), %al
-#APP
-# 25 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
-	outb %al, %dx
-# 0 "" 2
-#NO_APP
-	leave
-	ret
-	.size	outb, .-outb
 #APP
 	.code16gcc	
 
 #NO_APP
+	.text
 	.globl	syscall_handler
 	.type	syscall_handler, @function
 syscall_handler:
 	pushl	%ebp
 	movl	%esp, %ebp
 	subl	$56, %esp
-	movl	$83, 4(%esp)
-	movl	$233, (%esp)
-	call	outb
 	movl	16(%ebp), %eax
 	movl	28(%eax), %eax
 	movl	%eax, -12(%ebp)
@@ -53,28 +31,28 @@ syscall_handler:
 	movl	$0, -36(%ebp)
 	movl	-12(%ebp), %eax
 	cmpl	$4, %eax
-	ja	.L11
-	movl	.L5(,%eax,4), %eax
+	ja	.L10
+	movl	.L4(,%eax,4), %eax
 	jmp	*%eax
 	.section	.rodata
 	.align 4
 	.align 4
-.L5:
-	.long	.L4
+.L4:
+	.long	.L3
+	.long	.L5
 	.long	.L6
 	.long	.L7
 	.long	.L8
-	.long	.L9
 	.text
-.L4:
+.L3:
 	movl	-20(%ebp), %edx
 	movl	-16(%ebp), %eax
 	movl	%edx, 4(%esp)
 	movl	%eax, (%esp)
 	call	sys_open
 	movl	%eax, -36(%ebp)
-	jmp	.L10
-.L6:
+	jmp	.L9
+.L5:
 	movl	-24(%ebp), %ecx
 	movl	-20(%ebp), %eax
 	movl	%eax, %edx
@@ -84,8 +62,8 @@ syscall_handler:
 	movl	%eax, (%esp)
 	call	sys_read
 	movl	%eax, -36(%ebp)
-	jmp	.L10
-.L7:
+	jmp	.L9
+.L6:
 	movl	-24(%ebp), %ecx
 	movl	-20(%ebp), %eax
 	movl	%eax, %edx
@@ -95,22 +73,22 @@ syscall_handler:
 	movl	%eax, (%esp)
 	call	sys_write
 	movl	%eax, -36(%ebp)
-	jmp	.L10
-.L8:
+	jmp	.L9
+.L7:
 	movl	-16(%ebp), %eax
 	movl	%eax, (%esp)
 	call	sys_register_handler
 	movl	%eax, -36(%ebp)
-	jmp	.L10
-.L9:
+	jmp	.L9
+.L8:
 	movl	-16(%ebp), %eax
 	movl	%eax, (%esp)
 	call	sys_fork
 	movl	%eax, -36(%ebp)
-	jmp	.L10
-.L11:
-	nop
+	jmp	.L9
 .L10:
+	nop
+.L9:
 	movl	16(%ebp), %eax
 	leal	28(%eax), %edx
 	movl	-36(%ebp), %eax
@@ -139,12 +117,12 @@ sys_read:
 	movl	(%eax,%edx,4), %eax
 	movl	%eax, -16(%ebp)
 	cmpl	$0, -16(%ebp)
-	je	.L15
+	je	.L14
 	movl	-16(%ebp), %eax
 	movl	16(%eax), %eax
 	movl	4(%eax), %eax
 	testl	%eax, %eax
-	je	.L16
+	je	.L15
 	movl	-16(%ebp), %eax
 	movl	16(%eax), %eax
 	movl	4(%eax), %eax
@@ -157,13 +135,13 @@ sys_read:
 	movl	%edx, (%esp)
 	call	*%eax
 	movl	%eax, -12(%ebp)
-	jmp	.L18
-.L16:
-	movl	$-1, -12(%ebp)
-	jmp	.L18
+	jmp	.L17
 .L15:
+	movl	$-1, -12(%ebp)
+	jmp	.L17
+.L14:
 	movl	$-3, -12(%ebp)
-.L18:
+.L17:
 	movl	-12(%ebp), %eax
 	leave
 	ret
@@ -180,12 +158,12 @@ sys_write:
 	movl	(%eax,%edx,4), %eax
 	movl	%eax, -16(%ebp)
 	cmpl	$0, -16(%ebp)
-	je	.L21
+	je	.L20
 	movl	-16(%ebp), %eax
 	movl	16(%eax), %eax
 	movl	8(%eax), %eax
 	testl	%eax, %eax
-	je	.L22
+	je	.L21
 	movl	-16(%ebp), %eax
 	movl	16(%eax), %eax
 	movl	8(%eax), %eax
@@ -198,13 +176,13 @@ sys_write:
 	movl	%edx, (%esp)
 	call	*%eax
 	movl	%eax, -12(%ebp)
-	jmp	.L24
-.L22:
-	movl	$-2, -12(%ebp)
-	jmp	.L24
+	jmp	.L23
 .L21:
+	movl	$-2, -12(%ebp)
+	jmp	.L23
+.L20:
 	movl	$-3, -12(%ebp)
-.L24:
+.L23:
 	movl	-12(%ebp), %eax
 	leave
 	ret

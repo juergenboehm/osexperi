@@ -8,7 +8,7 @@
 	.comm	mm_block,48,8
 	.section	.rodata
 .LC0:
-	.string	"*** PROTOS starting ***\r\n"
+	.string	"*** osexperi starting ***\r\n"
 .LC1:
 	.string	"\r\nPointer Size = "
 .LC2:
@@ -52,6 +52,14 @@ lmain:
 	pushl	%ebp
 	movl	%esp, %ebp
 	subl	$120, %esp
+	movl	$16, 8(%esp)
+	movl	$0, 4(%esp)
+	movl	$dapa_global, (%esp)
+	call	memset16
+	movl	$48, 8(%esp)
+	movl	$0, 4(%esp)
+	movl	$mm_block, (%esp)
+	call	memset16
 	movl	$36864, diskbuf_global
 	call	print_newline
 	movl	$.LC0, (%esp)
@@ -108,20 +116,20 @@ lmain:
 	call	test_disk
 	movl	$.LC7, (%esp)
 	call	print_str
-	movl	$12, -36(%ebp)
+	movl	$13, -36(%ebp)
 	movl	$1, -40(%ebp)
 	movl	-40(%ebp), %eax
 	movl	-36(%ebp), %edx
 	addl	%edx, %eax
 	movl	%eax, -44(%ebp)
-	movl	$187, -48(%ebp)
+	movl	$186, -48(%ebp)
 	movl	$.LC3, (%esp)
 	call	print_str
 	movl	$.LC4, (%esp)
 	call	print_str
 	movl	$.LC8, (%esp)
 	call	print_str
-	movl	$95744, (%esp)
+	movl	$95232, (%esp)
 	call	print_U32
 	call	print_newline
 	movl	$1, -52(%ebp)
@@ -301,7 +309,7 @@ lmain:
 	call	print_str
 	movl	$.LC8, (%esp)
 	call	print_str
-	movl	$95744, (%esp)
+	movl	$95232, (%esp)
 	call	print_U32
 	call	print_newline
 	movl	$.LC17, (%esp)

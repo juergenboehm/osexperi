@@ -21,6 +21,10 @@ init_gdtptr:
 	pushl	%ebp
 	movl	%esp, %ebp
 	subl	$40, %esp
+	movl	$6, 8(%esp)
+	movl	$0, 4(%esp)
+	movl	$gdt_ptr_provis, (%esp)
+	call	memset16
 	movl	$.LC0, (%esp)
 	call	print_str
 	movl	$.LC1, (%esp)
@@ -46,7 +50,7 @@ init_gdtptr:
 	movl	-12(%ebp), %eax
 	movl	%eax, gdt_ptr_provis+2
 #APP
-# 44 "kernel16/startup.c" 1
+# 46 "kernel16/startup.c" 1
 	lgdt gdt_ptr_provis
 # 0 "" 2
 #NO_APP
@@ -60,7 +64,7 @@ enable_a20:
 	movl	%esp, %ebp
 	subl	$16, %esp
 #APP
-# 53 "kernel16/startup.c" 1
+# 55 "kernel16/startup.c" 1
 	movw $0x2401, %ax
 	int $0x15
 	movb $0, %al
@@ -85,7 +89,7 @@ keyb_wait:
 	movb	%dl, -4(%ebp)
 	movb	%al, -8(%ebp)
 #APP
-# 67 "kernel16/startup.c" 1
+# 69 "kernel16/startup.c" 1
 	1: 
 	testb $0xff, -8(%ebp) 
 	jz 3f 
@@ -119,7 +123,7 @@ keyb_send_cmd:
 	call	keyb_wait
 	movb	-4(%ebp), %al
 #APP
-# 88 "kernel16/startup.c" 1
+# 90 "kernel16/startup.c" 1
 	outb %al, $0x64
 # 0 "" 2
 #NO_APP
@@ -139,7 +143,7 @@ keyb_send_data:
 	call	keyb_wait
 	movb	-4(%ebp), %al
 #APP
-# 97 "kernel16/startup.c" 1
+# 99 "kernel16/startup.c" 1
 	outb %al, $0x60
 # 0 "" 2
 #NO_APP
@@ -157,7 +161,7 @@ keyb_get_data:
 	movl	$1, (%esp)
 	call	keyb_wait
 #APP
-# 107 "kernel16/startup.c" 1
+# 109 "kernel16/startup.c" 1
 	inb $0x60, %al
 # 0 "" 2
 #NO_APP
@@ -173,7 +177,7 @@ enable_a20_keyb:
 	movl	%esp, %ebp
 	subl	$20, %esp
 #APP
-# 116 "kernel16/startup.c" 1
+# 118 "kernel16/startup.c" 1
 	cli
 # 0 "" 2
 #NO_APP
@@ -192,7 +196,7 @@ enable_a20_keyb:
 	movl	$174, (%esp)
 	call	keyb_send_cmd
 #APP
-# 128 "kernel16/startup.c" 1
+# 130 "kernel16/startup.c" 1
 	sti
 # 0 "" 2
 #NO_APP
@@ -200,14 +204,111 @@ enable_a20_keyb:
 	leave
 	ret
 	.size	enable_a20_keyb, .-enable_a20_keyb
+	.globl	enable_a20_bios_15
+	.type	enable_a20_bios_15, @function
+enable_a20_bios_15:
+	pushl	%ebp
+	movl	%esp, %ebp
+	pushl	%edi
+	pushl	%esi
+	pushl	%ebx
+	subl	$20, %esp
+	movl	$0, -16(%ebp)
+#APP
+# 139 "kernel16/startup.c" 1
+	pushl %ebp 
+	pushal 
+	pushw %ds 
+	 pushw %es 
+	 pushw %fs 
+	 pushw %gs 
+	movw     $0x2403, %ax                #--- A20-Gate Support --- 
+	int     $0x15  
+	jb      .a20_ns                  # INT 15h is not supported 
+	cmpb    $0, %ah 
+	jnz     .a20_ns                  # INT 15h is not supported 
+	movw    $0x2402, %ax                # --- A20-Gate Status --- 
+	int     $0x15 
+	jb      .a20_failed              # couldn't get status 
+	cmpb    $0, %ah 
+	jnz     .a20_failed              #couldn't get status 
+	cmpb    $0x01, %al 
+	jz      .a20_already_activated           # A20 is already activated 
+	movw     $0x2401, %ax           # --- A20-Gate Activate --- 
+	int     $0x15 
+	jb      .a20_failed               #couldn't activate the gate 
+	cmp     $0, %ah 
+	jnz     .a20_failed              # couldn't activate the gate 
+	movl		$0x1234, -32(%ebp) 
+	jmp		.ende 
+	 .a20_already_activated: 
+	movl		$0x5678, -32(%ebp) 
+	jmp		.ende 
+	 .a20_ns: 
+	movl	$0xabab, -32(%ebp) 
+	jmp 		.ende 
+	 .a20_failed: 
+	movl $0xcdcd, -32(%ebp) 
+	.ende: 
+	popw %gs 
+	 popw %fs 
+	 popw %es 
+	 popw %ds 
+	popal 
+	popl %ebp 
+	
+# 0 "" 2
+#NO_APP
+	movl	-32(%ebp), %eax
+	movl	%eax, -16(%ebp)
+	movl	-16(%ebp), %eax
+	addl	$20, %esp
+	popl	%ebx
+	popl	%esi
+	popl	%edi
+	popl	%ebp
+	ret
+	.size	enable_a20_bios_15, .-enable_a20_bios_15
+	.globl	set_video_mode
+	.type	set_video_mode, @function
+set_video_mode:
+	pushl	%ebp
+	movl	%esp, %ebp
+	pushl	%edi
+	pushl	%esi
+	pushl	%ebx
+	subl	$20, %esp
+	movl	8(%ebp), %eax
+	movb	%al, -32(%ebp)
+	movb	$0, -13(%ebp)
+#APP
+# 185 "kernel16/startup.c" 1
+	movb $0, %ah 
+	movb -32(%ebp), %al 
+	 int $0x10 
+	movb %al, -29(%ebp)
+# 0 "" 2
+#NO_APP
+	movb	-29(%ebp), %al
+	movb	%al, -13(%ebp)
+	movzbl	-13(%ebp), %eax
+	addl	$20, %esp
+	popl	%ebx
+	popl	%esi
+	popl	%edi
+	popl	%ebp
+	ret
+	.size	set_video_mode, .-set_video_mode
 	.section	.rodata
 .LC4:
 	.string	"\r\nKernel primary loaded.\r\n"
 .LC5:
 	.string	"a_20 ok = "
 .LC6:
-	.string	"err mem map = "
+	.string	"a_20 bios 15 retcode = "
 .LC7:
+	.string	"err mem map = "
+.LC8:
 	.string	"len mem map = "
 	.text
 	.globl	kmain
@@ -215,13 +316,14 @@ enable_a20_keyb:
 kmain:
 	pushl	%ebp
 	movl	%esp, %ebp
-	subl	$56, %esp
+	pushl	%edi
+	subl	$52, %esp
 	movl	$0, -12(%ebp)
 	movl	$.LC4, (%esp)
 	call	print_str
 	movl	$0, -12(%ebp)
-	jmp	.L12
-.L13:
+	jmp	.L16
+.L17:
 	movl	-12(%ebp), %eax
 	movw	$0, gdt_table_provis+2(,%eax,8)
 	movl	-12(%ebp), %eax
@@ -285,9 +387,13 @@ kmain:
 	movl	-12(%ebp), %eax
 	movb	%dl, gdt_table_provis+5(,%eax,8)
 	incl	-12(%ebp)
-.L12:
-	cmpl	$3, -12(%ebp)
-	jle	.L13
+.L16:
+	cmpl	$7, -12(%ebp)
+	jle	.L17
+	movl	$64, 8(%esp)
+	movl	$0, 4(%esp)
+	movl	$gdt_table_provis, (%esp)
+	call	memset16
 	movw	$0, gdt_table_provis+18
 	movb	$0, gdt_table_provis+20
 	movb	$0, gdt_table_provis+23
@@ -496,17 +602,17 @@ kmain:
 	movb	%al, gdt_table_provis+61
 	movl	$gdt_table_provis+32, -16(%ebp)
 	movl	$0, -12(%ebp)
-	jmp	.L14
-.L15:
+	jmp	.L18
+.L19:
 	movl	-16(%ebp), %eax
 	leal	8(%eax), %edx
 	movl	%edx, -16(%ebp)
 	movl	%eax, (%esp)
 	call	print_gdt_entry
 	incl	-12(%ebp)
-.L14:
+.L18:
 	cmpl	$1, -12(%ebp)
-	jle	.L15
+	jle	.L19
 	call	init_gdtptr
 	call	enable_a20_keyb
 	movl	%eax, -20(%ebp)
@@ -520,22 +626,8 @@ kmain:
 	movl	%eax, (%esp)
 	call	print_U32
 	call	print_newline
-	movl	$0, -32(%ebp)
-	leal	-32(%ebp), %eax
-	movl	%eax, 8(%esp)
-	movl	$0, 4(%esp)
-	movl	$20480, (%esp)
-	call	get_mem_map
+	call	enable_a20_bios_15
 	movl	%eax, -24(%ebp)
-	movl	$65280, -28(%ebp)
-	movl	-28(%ebp), %eax
-	leal	4(%eax), %edx
-	movl	%edx, -28(%ebp)
-	movl	-24(%ebp), %edx
-	movl	%edx, (%eax)
-	movl	-32(%ebp), %edx
-	movl	-28(%ebp), %eax
-	movl	%edx, (%eax)
 	movl	$.LC0, (%esp)
 	call	print_str
 	movl	$.LC1, (%esp)
@@ -546,17 +638,77 @@ kmain:
 	movl	%eax, (%esp)
 	call	print_U32
 	call	print_newline
+	movl	$0, -36(%ebp)
+	leal	-36(%ebp), %eax
+	movl	%eax, 8(%esp)
+	movl	$0, 4(%esp)
+	movl	$12288, (%esp)
+	call	get_mem_map
+	movl	%eax, -28(%ebp)
+	movl	$65280, -32(%ebp)
+	movl	-32(%ebp), %eax
+	leal	4(%eax), %edx
+	movl	%edx, -32(%ebp)
+	movl	-28(%ebp), %edx
+	movl	%edx, (%eax)
+	movl	-36(%ebp), %edx
+	movl	-32(%ebp), %eax
+	movl	%edx, (%eax)
 	movl	$.LC0, (%esp)
 	call	print_str
 	movl	$.LC1, (%esp)
 	call	print_str
 	movl	$.LC7, (%esp)
 	call	print_str
-	movl	-32(%ebp), %eax
+	movl	-28(%ebp), %eax
 	movl	%eax, (%esp)
 	call	print_U32
 	call	print_newline
-	leave
+	movl	$.LC0, (%esp)
+	call	print_str
+	movl	$.LC1, (%esp)
+	call	print_str
+	movl	$.LC8, (%esp)
+	call	print_str
+	movl	-36(%ebp), %eax
+	movl	%eax, (%esp)
+	call	print_U32
+	call	print_newline
+	movl	$.LC0, (%esp)
+	call	print_str
+	movl	$.LC1, (%esp)
+	call	print_str
+	movl	$.LC5, (%esp)
+	call	print_str
+	movl	-20(%ebp), %eax
+	movl	%eax, (%esp)
+	call	print_U32
+	call	print_newline
+	movl	$.LC0, (%esp)
+	call	print_str
+	movl	$.LC1, (%esp)
+	call	print_str
+	movl	$.LC6, (%esp)
+	call	print_str
+	movl	-24(%ebp), %eax
+	movl	%eax, (%esp)
+	call	print_U32
+	call	print_newline
+#APP
+# 313 "kernel16/startup.c" 1
+	movw		$0xb800, %ax 
+	movw		%ax, %es 
+	xor		%di, %di 
+	movb		$70, %es:(%di) 
+	inc		%di 
+	movb		$0x1e, %es:(%di) 
+	
+# 0 "" 2
+#NO_APP
+	movl	$0, %eax
+	addl	$52, %esp
+	popl	%edi
+	popl	%ebp
 	ret
 	.size	kmain, .-kmain
 	.ident	"GCC: (GNU) 4.8.2 20140120 (Red Hat 4.8.2-15)"

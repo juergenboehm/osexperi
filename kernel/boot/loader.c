@@ -24,10 +24,13 @@ __ALIGNED(8) move_mem_block mm_block;
 int lmain()
 {
 
+	memset16(&dapa_global, 0, sizeof(dapa_global));
+	memset16(&mm_block, 0, sizeof(mm_block));
+
 	diskbuf_global = (uint8_t*)(DISKBUF_ADDR);
 
 	print_newline();
-	print_str("*** PROTOS starting ***\r\n");
+	print_str("*** osexperi starting ***\r\n");
 
 	print_newline();
 	print_U32(sizeof(uint8_t));

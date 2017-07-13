@@ -45,7 +45,9 @@
 
 // memory layout
 
-#define MAX_ADDRESS_PHYS 0x3fffffff
+// 0x40000000 = 1G
+//#define MAX_ADDRESS_PHYS 0x3fffffff
+#define MAX_ADDRESS_PHYS 0x0fffffff
 
 
 #define KERNEL_UPPER	0xc0000000

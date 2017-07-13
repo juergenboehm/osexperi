@@ -143,6 +143,8 @@ void cursor_to_line_col(int screen, int line, int col)
 
 }
 
+
+
 void update_cursor(int screen)
 {
 	cursor_to_line_col(screen, screen_info_blks[screen].out_y, screen_info_blks[screen].out_x);

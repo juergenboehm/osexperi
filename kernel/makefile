@@ -1,7 +1,7 @@
 
 
 # number of sectors that loader.bin occupies
-loader_sec = 12
+loader_sec = 13
 
 # the global debug level
 DEB_LEVEL = 0

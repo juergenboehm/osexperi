@@ -3,12 +3,13 @@
 
 	.text
 	.code16
-	.globl	kmain
+//	.globl	kmain
 	.globl	entry16
 
 
 entry16:
 
+	cli
 
 	movw		$(KERNEL16_SEG), %ax
 	movw		%ax, %ds
@@ -18,20 +19,23 @@ entry16:
 	movw		%ax, %ss
 	movw		$(KERNEL16_SP), %sp
 
+	sti
+
 // write a character 'C' yellow on blue
 // at first screen position
 
+
 	movw		$VGA_SEG, %ax
 	movw	 	%ax, %es
+
 
 	xor 		%di, %di
 	movb 		$67, %es:(%di)
 	inc 		%di
 	movb 		$0x1e, %es:(%di)
 
-	call		kmain
+	calll		kmain
 
-	cli
 
 // write a character 'B' yellow on blue
 // at first screen position
@@ -39,10 +43,16 @@ entry16:
 	movw		$VGA_SEG, %ax
 	movw	 	%ax, %es
 
+
 	xor 		%di, %di
 	movb 		$66, %es:(%di)
 	inc 		%di
 	movb 		$0x1e, %es:(%di)
+
+hhh:
+//	jmp			hhh
+
+	cli
 
 // switch to protected mode
 

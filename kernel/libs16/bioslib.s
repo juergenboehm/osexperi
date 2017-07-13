@@ -2,7 +2,7 @@
 #APP
 	.code16gcc	
 
-	.section	.rodata.str1.1,"aMS",@progbits,1
+	.section	.rodata
 .LC0:
 	.string	"libs16/bioslib.c"
 .LC1:
@@ -19,38 +19,39 @@ copy_segseg:
 	pushl	%edi
 	pushl	%esi
 	pushl	%ebx
-	subl	$40, %esp
-	movl	8(%ebp), %eax
-	movl	%eax, -32(%ebp)
+	subl	$44, %esp
+	movl	8(%ebp), %ebx
 	movl	12(%ebp), %ecx
-	movl	%ecx, -36(%ebp)
-	movl	20(%ebp), %eax
-	movl	%eax, %esi
-	movl	24(%ebp), %ebx
-	pushl	$.LC0
+	movl	20(%ebp), %edx
+	movl	24(%ebp), %eax
+	movw	%bx, -28(%ebp)
+	movw	%cx, -32(%ebp)
+	movw	%dx, -36(%ebp)
+	movw	%ax, -40(%ebp)
+	movl	$.LC0, (%esp)
 	call	print_str
 	movl	$.LC1, (%esp)
 	call	print_str
 	movl	$.LC2, (%esp)
 	call	print_str
-	movl	%esi, -28(%ebp)
-	movzwl	-28(%ebp), %eax
+	movzwl	-36(%ebp), %eax
 	sall	$4, %eax
-	movzwl	%bx, %edx
+	movl	%eax, %edx
+	movzwl	-40(%ebp), %eax
 	addl	%edx, %eax
 	movl	%eax, (%esp)
 	call	print_U32
 	call	print_newline
 #APP
-# 13 "libs16/bioslib.c" 1
+# 15 "libs16/bioslib.c" 1
 	push %es 
 	 push %fs 
-	movw -32(%ebp), %ax 
-	movw %ax, %es 
 	movw -28(%ebp), %ax 
+	movw %ax, %es 
+	movw -36(%ebp), %ax 
 	movw %ax, %fs 
-	movw -36(%ebp), %si 
-	movw %bx, %di 
+	movw -32(%ebp), %si 
+	movw -40(%ebp), %di 
 	movl 16(%ebp), %ecx 
 	.LOOPXXX: 
 	 movb %es:(%si), %al 
@@ -65,8 +66,8 @@ copy_segseg:
 	 
 # 0 "" 2
 #NO_APP
-	xorl	%eax, %eax
-	leal	-12(%ebp), %esp
+	movl	$0, %eax
+	addl	$44, %esp
 	popl	%ebx
 	popl	%esi
 	popl	%edi
@@ -79,50 +80,163 @@ copy_ext:
 	pushl	%ebp
 	movl	%esp, %ebp
 	pushl	%esi
-	pushl	%ebx
-	movl	8(%ebp), %edx
+	subl	$52, %esp
+	movl	20(%ebp), %edx
+	movl	24(%ebp), %eax
+	movw	%dx, -28(%ebp)
+	movw	%ax, -32(%ebp)
+	movl	8(%ebp), %eax
+	addl	$16, %eax
+	movl	%eax, -12(%ebp)
+	movl	8(%ebp), %eax
+	addl	$24, %eax
+	movl	%eax, -16(%ebp)
+	movl	$8, 8(%esp)
+	movl	$0, 4(%esp)
+	movl	-12(%ebp), %eax
+	movl	%eax, (%esp)
+	call	memset16
+	movl	$8, 8(%esp)
+	movl	$0, 4(%esp)
+	movl	-16(%ebp), %eax
+	movl	%eax, (%esp)
+	call	memset16
 	movl	12(%ebp), %eax
-	movl	16(%ebp), %ecx
-	movw	%ax, 18(%edx)
-	movl	%eax, %ebx
-	shrl	$16, %ebx
-	movb	%bl, 20(%edx)
-	shrl	$24, %eax
-	movb	%al, 23(%edx)
-	movw	$-1, 16(%edx)
-	andb	$48, 22(%edx)
-	movb	21(%edx), %al
-	andl	$-111, %eax
-	orl	$-112, %eax
-	movb	%al, 21(%edx)
-	movw	%cx, 26(%edx)
-	movl	%ecx, %eax
+	movl	-12(%ebp), %edx
+	movw	%ax, 2(%edx)
+	movl	12(%ebp), %eax
 	shrl	$16, %eax
-	movb	%al, 28(%edx)
-	shrl	$24, %ecx
-	movb	%cl, 31(%edx)
-	movw	$-1, 24(%edx)
-	andb	$48, 30(%edx)
-	movb	29(%edx), %al
-	andl	$1, %eax
-	orl	$-112, %eax
+	movb	%al, %dl
+	movl	-12(%ebp), %eax
+	movb	%dl, 4(%eax)
+	movl	12(%ebp), %eax
+	shrl	$24, %eax
+	movb	%al, %dl
+	movl	-12(%ebp), %eax
+	movb	%dl, 7(%eax)
+	movl	-12(%ebp), %eax
+	movw	$-1, (%eax)
+	movl	-12(%ebp), %eax
+	movb	6(%eax), %al
+	andl	$-16, %eax
+	movb	%al, %dl
+	movl	-12(%ebp), %eax
+	movb	%dl, 6(%eax)
+	movl	-12(%ebp), %eax
+	movb	6(%eax), %al
+	andl	$127, %eax
+	movb	%al, %dl
+	movl	-12(%ebp), %eax
+	movb	%dl, 6(%eax)
+	movl	-12(%ebp), %eax
+	movb	6(%eax), %al
+	andl	$-65, %eax
+	movb	%al, %dl
+	movl	-12(%ebp), %eax
+	movb	%dl, 6(%eax)
+	movl	-12(%ebp), %eax
+	movb	5(%eax), %al
+	orl	$-128, %eax
+	movb	%al, %dl
+	movl	-12(%ebp), %eax
+	movb	%dl, 5(%eax)
+	movl	-12(%ebp), %eax
+	movb	5(%eax), %al
+	andl	$-97, %eax
+	movb	%al, %dl
+	movl	-12(%ebp), %eax
+	movb	%dl, 5(%eax)
+	movl	-12(%ebp), %eax
+	movb	5(%eax), %al
+	orl	$16, %eax
+	movb	%al, %dl
+	movl	-12(%ebp), %eax
+	movb	%dl, 5(%eax)
+	movl	-12(%ebp), %eax
+	movb	5(%eax), %al
+	andl	$-15, %eax
+	movb	%al, %dl
+	movl	-12(%ebp), %eax
+	movb	%dl, 5(%eax)
+	movl	16(%ebp), %eax
+	movl	-16(%ebp), %edx
+	movw	%ax, 2(%edx)
+	movl	16(%ebp), %eax
+	shrl	$16, %eax
+	movb	%al, %dl
+	movl	-16(%ebp), %eax
+	movb	%dl, 4(%eax)
+	movl	16(%ebp), %eax
+	shrl	$24, %eax
+	movb	%al, %dl
+	movl	-16(%ebp), %eax
+	movb	%dl, 7(%eax)
+	movl	-16(%ebp), %eax
+	movw	$-1, (%eax)
+	movl	-16(%ebp), %eax
+	movb	6(%eax), %al
+	andl	$-16, %eax
+	movb	%al, %dl
+	movl	-16(%ebp), %eax
+	movb	%dl, 6(%eax)
+	movl	-16(%ebp), %eax
+	movb	6(%eax), %al
+	andl	$127, %eax
+	movb	%al, %dl
+	movl	-16(%ebp), %eax
+	movb	%dl, 6(%eax)
+	movl	-16(%ebp), %eax
+	movb	6(%eax), %al
+	andl	$-65, %eax
+	movb	%al, %dl
+	movl	-16(%ebp), %eax
+	movb	%dl, 6(%eax)
+	movl	-16(%ebp), %eax
+	movb	5(%eax), %al
+	orl	$-128, %eax
+	movb	%al, %dl
+	movl	-16(%ebp), %eax
+	movb	%dl, 5(%eax)
+	movl	-16(%ebp), %eax
+	movb	5(%eax), %al
+	andl	$-97, %eax
+	movb	%al, %dl
+	movl	-16(%ebp), %eax
+	movb	%dl, 5(%eax)
+	movl	-16(%ebp), %eax
+	movb	5(%eax), %al
+	orl	$16, %eax
+	movb	%al, %dl
+	movl	-16(%ebp), %eax
+	movb	%dl, 5(%eax)
+	movl	-16(%ebp), %eax
+	movb	5(%eax), %al
+	andl	$-15, %eax
 	orl	$2, %eax
-	movb	%al, 29(%edx)
-	movl	$0, (%edx)
-	movl	$0, 4(%edx)
-	movl	$0, 8(%edx)
-	movl	$0, 12(%edx)
-	movl	$0, 32(%edx)
-	movl	$0, 36(%edx)
-	movl	$0, 40(%edx)
-	movl	$0, 44(%edx)
+	movb	%al, %dl
+	movl	-16(%ebp), %eax
+	movb	%dl, 5(%eax)
+	movl	8(%ebp), %eax
+	movl	$0, (%eax)
+	movl	$0, 4(%eax)
+	movl	8(%ebp), %eax
+	movl	$0, 8(%eax)
+	movl	$0, 12(%eax)
+	movl	8(%ebp), %eax
+	movl	$0, 32(%eax)
+	movl	$0, 36(%eax)
+	movl	8(%ebp), %eax
+	movl	$0, 40(%eax)
+	movl	$0, 44(%eax)
+	movl	8(%ebp), %eax
+	movl	%eax, %edx
 #APP
-# 62 "libs16/bioslib.c" 1
+# 67 "libs16/bioslib.c" 1
 	push %es 
-	movw 24(%ebp), %ax
+	movw -32(%ebp), %ax
 	movw %ax, %es
 	movw %dx, %si
-	movw 20(%ebp), %cx
+	movw -28(%ebp), %cx
 	movw $0x8700, %ax
 	int  $0x15
 	pop  %es
@@ -132,8 +246,9 @@ copy_ext:
 	
 # 0 "" 2
 #NO_APP
-	movzwl	%dx, %eax
-	popl	%ebx
+	movw	%dx, -18(%ebp)
+	movzwl	-18(%ebp), %eax
+	addl	$52, %esp
 	popl	%esi
 	popl	%ebp
 	ret
@@ -144,27 +259,32 @@ print_char:
 	pushl	%ebp
 	movl	%esp, %ebp
 	pushl	%ebx
-	pushl	%eax
+	subl	$4, %esp
 	movl	8(%ebp), %eax
 	movb	%al, -8(%ebp)
 #APP
-# 88 "libs16/bioslib.c" 1
-	movb	-8(%ebp), %al
-# 0 "" 2
-# 89 "libs16/bioslib.c" 1
-	movb $0x0e, %ah
-# 0 "" 2
-# 90 "libs16/bioslib.c" 1
-	movb	$0x00, %bh
-# 0 "" 2
-# 91 "libs16/bioslib.c" 1
-	movb	$0x0c, %bl
-# 0 "" 2
-# 92 "libs16/bioslib.c" 1
-	int $0x10
+# 94 "libs16/bioslib.c" 1
+	pushl %ebp 
+	pushal 
+	pushw %ds 
+	 pushw %es 
+	 pushw %fs 
+	 pushw %gs 
+	movb	-8(%ebp), %al 
+	movb $0x0e, %ah 
+	movb	$0x00, %bh 
+	movb	$0x0c, %bl 
+	int $0x10 
+	popw %gs 
+	 popw %fs 
+	 popw %es 
+	 popw %ds 
+	popal 
+	popl %ebp 
+	
 # 0 "" 2
 #NO_APP
-	popl	%edx
+	addl	$4, %esp
 	popl	%ebx
 	popl	%ebp
 	ret
@@ -174,64 +294,136 @@ print_char:
 init_DAPA:
 	pushl	%ebp
 	movl	%esp, %ebp
+	subl	$8, %esp
+	movl	12(%ebp), %edx
+	movl	24(%ebp), %eax
+	movw	%dx, -4(%ebp)
+	movw	%ax, -8(%ebp)
 	movl	20(%ebp), %eax
 	movb	$16, (%eax)
+	movl	20(%ebp), %eax
 	movb	$0, 1(%eax)
-	movl	12(%ebp), %edx
-	movw	%dx, 2(%eax)
-	movl	16(%ebp), %edx
-	movw	%dx, 4(%eax)
-	movl	24(%ebp), %edx
-	movw	%dx, 6(%eax)
+	movl	20(%ebp), %edx
+	movl	-4(%ebp), %eax
+	movw	%ax, 2(%edx)
+	movl	16(%ebp), %eax
+	movl	20(%ebp), %edx
+	movw	%ax, 4(%edx)
+	movl	20(%ebp), %edx
+	movl	-8(%ebp), %eax
+	movw	%ax, 6(%edx)
+	movl	20(%ebp), %eax
 	movl	8(%ebp), %edx
 	movl	%edx, 8(%eax)
+	movl	20(%ebp), %eax
 	movl	$0, 12(%eax)
-	xorl	%eax, %eax
-	popl	%ebp
+	movl	$0, %eax
+	leave
 	ret
 	.size	init_DAPA, .-init_DAPA
+	.globl	do_read_write_13
+	.type	do_read_write_13, @function
+do_read_write_13:
+	pushl	%ebp
+	movl	%esp, %ebp
+	pushl	%esi
+	subl	$28, %esp
+	movl	12(%ebp), %eax
+	movl	16(%ebp), %ecx
+	movl	20(%ebp), %edx
+	movw	%ax, -24(%ebp)
+	movb	%cl, -28(%ebp)
+	movb	%dl, -32(%ebp)
+	movb	$0, -5(%ebp)
+	movl	$5, -12(%ebp)
+	jmp	.L9
+.L12:
+	movb	$0, -5(%ebp)
+	movl	8(%ebp), %eax
+	movl	%eax, %ecx
+#APP
+# 140 "libs16/bioslib.c" 1
+	pushl %ebp 
+	pushal 
+	pushw %ds 
+	 pushw %es 
+	 pushw %fs 
+	 pushw %gs 
+	.retry:movw %cx, %si 
+	movw -24(%ebp), %ax 
+	 movw %ax, %ds 
+	movb -28(%ebp), %ah 
+	movb -32(%ebp), %dl 
+	int $0x13 
+	jc .err 
+	popw %gs 
+	 popw %fs 
+	 popw %es 
+	 popw %ds 
+	popal 
+	popl %ebp 
+	movb $0, %cl 
+	jmp .ende 
+	.err: 
+	popw %gs 
+	 popw %fs 
+	 popw %es 
+	 popw %ds 
+	popal 
+	popl %ebp 
+	movb %ah, %cl 
+	.ende: 
+	
+# 0 "" 2
+#NO_APP
+	movb	%cl, -5(%ebp)
+	cmpb	$0, -5(%ebp)
+	jne	.L10
+	jmp	.L11
+.L10:
+	decl	-12(%ebp)
+.L9:
+	cmpl	$0, -12(%ebp)
+	jne	.L12
+.L11:
+	movzbl	-5(%ebp), %eax
+	addl	$28, %esp
+	popl	%esi
+	popl	%ebp
+	ret
+	.size	do_read_write_13, .-do_read_write_13
 	.globl	loadsec
 	.type	loadsec, @function
 loadsec:
 	pushl	%ebp
 	movl	%esp, %ebp
-	pushl	%esi
-	pushl	%ebx
-	pushl	%eax
-	movl	20(%ebp), %ebx
+	subl	$44, %esp
+	movl	12(%ebp), %edx
 	movl	24(%ebp), %eax
-	movw	%ax, -12(%ebp)
-	movzwl	%ax, %eax
-	pushl	%eax
-	pushl	%ebx
-	pushl	16(%ebp)
-	movzwl	12(%ebp), %eax
-	pushl	%eax
-	pushl	8(%ebp)
+	movw	%dx, -20(%ebp)
+	movw	%ax, -24(%ebp)
+	movb	$0, -1(%ebp)
+	movzwl	-24(%ebp), %edx
+	movzwl	-20(%ebp), %eax
+	movl	%edx, 16(%esp)
+	movl	20(%ebp), %edx
+	movl	%edx, 12(%esp)
+	movl	16(%ebp), %edx
+	movl	%edx, 8(%esp)
+	movl	%eax, 4(%esp)
+	movl	8(%ebp), %eax
+	movl	%eax, (%esp)
 	call	init_DAPA
-#APP
-# 126 "libs16/bioslib.c" 1
-	movw %bx, %si
-# 0 "" 2
-# 127 "libs16/bioslib.c" 1
-	movw -12(%ebp), %ax 
-	 movw %ax, %ds
-# 0 "" 2
-# 128 "libs16/bioslib.c" 1
-	movb $66, %ah
-# 0 "" 2
-# 129 "libs16/bioslib.c" 1
-	movb $128, %dl
-# 0 "" 2
-# 130 "libs16/bioslib.c" 1
-	int $0x13
-# 0 "" 2
-#NO_APP
-	xorl	%eax, %eax
-	leal	-8(%ebp), %esp
-	popl	%ebx
-	popl	%esi
-	popl	%ebp
+	movzwl	-24(%ebp), %eax
+	movl	$128, 12(%esp)
+	movl	$66, 8(%esp)
+	movl	%eax, 4(%esp)
+	movl	20(%ebp), %eax
+	movl	%eax, (%esp)
+	call	do_read_write_13
+	movb	%al, -1(%ebp)
+	movzbl	-1(%ebp), %eax
+	leave
 	ret
 	.size	loadsec, .-loadsec
 	.globl	writesec
@@ -239,43 +431,33 @@ loadsec:
 writesec:
 	pushl	%ebp
 	movl	%esp, %ebp
-	pushl	%esi
-	pushl	%ebx
-	pushl	%eax
-	movl	20(%ebp), %ebx
+	subl	$44, %esp
+	movl	12(%ebp), %edx
 	movl	24(%ebp), %eax
-	movw	%ax, -12(%ebp)
-	movzwl	%ax, %eax
-	pushl	%eax
-	pushl	%ebx
-	pushl	16(%ebp)
-	movzwl	12(%ebp), %eax
-	pushl	%eax
-	pushl	8(%ebp)
+	movw	%dx, -20(%ebp)
+	movw	%ax, -24(%ebp)
+	movb	$0, -1(%ebp)
+	movzwl	-24(%ebp), %edx
+	movzwl	-20(%ebp), %eax
+	movl	%edx, 16(%esp)
+	movl	20(%ebp), %edx
+	movl	%edx, 12(%esp)
+	movl	16(%ebp), %edx
+	movl	%edx, 8(%esp)
+	movl	%eax, 4(%esp)
+	movl	8(%ebp), %eax
+	movl	%eax, (%esp)
 	call	init_DAPA
-#APP
-# 140 "libs16/bioslib.c" 1
-	movw %bx, %si
-# 0 "" 2
-# 141 "libs16/bioslib.c" 1
-	movw -12(%ebp), %ax 
-	 movw %ax, %ds
-# 0 "" 2
-# 142 "libs16/bioslib.c" 1
-	movb $67, %ah
-# 0 "" 2
-# 143 "libs16/bioslib.c" 1
-	movb $128, %dl
-# 0 "" 2
-# 144 "libs16/bioslib.c" 1
-	int $0x13
-# 0 "" 2
-#NO_APP
-	xorl	%eax, %eax
-	leal	-8(%ebp), %esp
-	popl	%ebx
-	popl	%esi
-	popl	%ebp
+	movzwl	-24(%ebp), %eax
+	movl	$128, 12(%esp)
+	movl	$67, 8(%esp)
+	movl	%eax, 4(%esp)
+	movl	20(%ebp), %eax
+	movl	%eax, (%esp)
+	call	do_read_write_13
+	movb	%al, -1(%ebp)
+	movzbl	-1(%ebp), %eax
+	leave
 	ret
 	.size	writesec, .-writesec
 	.globl	loadsec_fd
@@ -283,50 +465,60 @@ writesec:
 loadsec_fd:
 	pushl	%ebp
 	movl	%esp, %ebp
-	pushl	%edi
 	pushl	%esi
 	pushl	%ebx
-	subl	$20, %esp
-	movl	8(%ebp), %eax
-	movl	24(%ebp), %edx
-	movw	%dx, -32(%ebp)
+	subl	$24, %esp
 	movl	12(%ebp), %edx
-	movb	%dl, -18(%ebp)
+	movl	24(%ebp), %eax
+	movw	%dx, -28(%ebp)
+	movw	%ax, -32(%ebp)
+	movl	-28(%ebp), %eax
+	movb	%al, -19(%ebp)
+	movl	8(%ebp), %eax
 	movl	$18, %ecx
-	xorl	%edx, %edx
+	movl	$0, %edx
 	divl	%ecx
-	movb	%al, %cl
-	andl	$1, %ecx
-	movb	%cl, -17(%ebp)
-	movl	%eax, %ecx
-	shrw	%cx
-	movb	%cl, -16(%ebp)
-	shrw	$3, %ax
+	movl	%edx, %eax
+	incl	%eax
+	movb	%al, -14(%ebp)
+	movl	8(%ebp), %edx
+	movl	$954437177, %eax
+	mull	%edx
+	movl	%edx, %eax
+	shrl	$2, %eax
+	movw	%ax, -16(%ebp)
+	movl	-16(%ebp), %eax
+	andl	$1, %eax
+	movb	%al, -20(%ebp)
+	movl	-16(%ebp), %eax
+	shrw	%ax
+	movw	%ax, -18(%ebp)
+	movw	-18(%ebp), %ax
+	movb	%al, -21(%ebp)
+	movw	-18(%ebp), %ax
+	shrw	$2, %ax
 	andl	$-64, %eax
-	incl	%edx
+	movb	%al, %dl
+	movb	-14(%ebp), %al
 	orl	%edx, %eax
-	movb	%al, -15(%ebp)
+	movb	%al, -22(%ebp)
 	movl	16(%ebp), %eax
-	movw	%ax, -14(%ebp)
-	xorl	%edi, %edi
-	movl	$1, %esi
-.L14:
-	movl	%edi, %eax
-	cmpb	$2, %al
-	ja	.L17
-	testl	%esi, %esi
-	je	.L17
+	movw	%ax, -24(%ebp)
+	movl	$1, -12(%ebp)
+	movb	$0, -13(%ebp)
+	jmp	.L19
+.L21:
 #APP
-# 180 "libs16/bioslib.c" 1
+# 230 "libs16/bioslib.c" 1
 	push	%es 
 	movw -32(%ebp), %ax 
 	 movw %ax, %es 
-	 movw -14(%ebp), %bx 
+	 movw -24(%ebp), %bx 
 	 movb $0x02, %ah 
-	 movb -18(%ebp), %al 
-	 movb -16(%ebp), %ch 
-	 movb -15(%ebp), %cl 
-	 movb -17(%ebp), %dh 
+	 movb -19(%ebp), %al 
+	 movb -21(%ebp), %ch 
+	 movb -22(%ebp), %cl 
+	 movb -20(%ebp), %dh 
 	 movb $0, %dl 
 	 int $0x13 
 	movl $0x0, %eax 
@@ -336,24 +528,29 @@ loadsec_fd:
 	
 # 0 "" 2
 #NO_APP
-	incl	%edi
-	jmp	.L14
-.L17:
-	movl	%esi, %eax
-	addl	$20, %esp
+	movl	%esi, -12(%ebp)
+	incb	-13(%ebp)
+.L19:
+	cmpl	$0, -12(%ebp)
+	je	.L20
+	cmpb	$2, -13(%ebp)
+	jbe	.L21
+.L20:
+	movl	-12(%ebp), %eax
+	addl	$24, %esp
 	popl	%ebx
 	popl	%esi
-	popl	%edi
 	popl	%ebp
 	ret
 	.size	loadsec_fd, .-loadsec_fd
-	.section	.rodata.str1.1
+	.section	.rodata
 .LC3:
 	.string	"size_entry: "
 .LC4:
 	.string	"get_mem_map_first: err: "
 .LC5:
 	.string	"get_mem_map_first: ebx_val: "
+	.align 4
 .LC6:
 	.string	"get_mem_map_first: err (second): "
 	.text
@@ -365,49 +562,58 @@ get_mem_map_step:
 	pushl	%edi
 	pushl	%esi
 	pushl	%ebx
-	subl	$56, %esp
+	subl	$44, %esp
+	movl	8(%ebp), %eax
+	movw	%ax, -44(%ebp)
+	movl	$0, -28(%ebp)
 	movl	24(%ebp), %eax
 	movl	(%eax), %eax
-	movl	%eax, -44(%ebp)
-	movb	$0, -25(%ebp)
+	movl	%eax, -32(%ebp)
+	movb	$0, -33(%ebp)
+	movl	12(%ebp), %eax
+	movl	%eax, %esi
 #APP
-# 225 "libs16/bioslib.c" 1
+# 275 "libs16/bioslib.c" 1
 	pushw %es 
-	movw 8(%ebp), %ax 
+	movw -44(%ebp), %ax 
 	movw %ax, %es 
-	movw 12(%ebp), %di 
-	movl -44(%ebp), %ebx 
+	movw %si, %di 
+	movl -32(%ebp), %ebx 
 	movl $0x534D4150, %edx 
 	movl $24, %ecx 
 	movl $0xe820, %eax 
 	int	$0x15 
-	movb %cl, -25(%ebp) 
+	movb %cl, -33(%ebp) 
 	cmp $0x18, %cl 
 	.L9900: je 1f 
 	addw $0x14, %di 
 	movl $0xffffffff, %es:(%di) 
 	1: movl $0x0, %edx 
 	rcll $1, %edx 
-	movl %edx, %esi 
-	movl %ebx, -44(%ebp) 
+	movl %edx, -48(%ebp) 
+	movl %ebx, %esi 
 	popw %es 
 	
 # 0 "" 2
 #NO_APP
-	movl	24(%ebp), %ecx
-	movl	-44(%ebp), %ebx
-	movl	%ebx, (%ecx)
+	movl	-48(%ebp), %eax
+	movl	%eax, -28(%ebp)
+	movl	%esi, -32(%ebp)
+	movl	24(%ebp), %eax
+	movl	-32(%ebp), %edx
+	movl	%edx, (%eax)
 	movl	12(%ebp), %eax
 	leal	24(%eax), %edx
 	movl	20(%ebp), %eax
 	movl	%edx, (%eax)
-	pushl	$.LC0
+	movl	$.LC0, (%esp)
 	call	print_str
 	movl	$.LC1, (%esp)
 	call	print_str
 	movl	$.LC3, (%esp)
 	call	print_str
-	movzbl	-25(%ebp), %eax
+	movb	-33(%ebp), %al
+	movzbl	%al, %eax
 	movl	%eax, (%esp)
 	call	print_U32
 	call	print_newline
@@ -417,7 +623,8 @@ get_mem_map_step:
 	call	print_str
 	movl	$.LC4, (%esp)
 	call	print_str
-	movl	%esi, (%esp)
+	movl	-28(%ebp), %eax
+	movl	%eax, (%esp)
 	call	print_U32
 	call	print_newline
 	movl	$.LC0, (%esp)
@@ -426,48 +633,52 @@ get_mem_map_step:
 	call	print_str
 	movl	$.LC5, (%esp)
 	call	print_str
-	movl	%ebx, (%esp)
+	movl	-32(%ebp), %eax
+	movl	%eax, (%esp)
 	call	print_U32
 	call	print_newline
-	addl	$16, %esp
-	testl	%esi, %esi
-	je	.L27
-	movl	$1, %eax
-	cmpl	$0, -44(%ebp)
-	jne	.L24
-.L27:
-	testl	%esi, %esi
-	sete	%dl
-	xorl	%eax, %eax
-	cmpl	$0, -44(%ebp)
-	sete	%al
-	andl	%edx, %eax
+	cmpl	$0, -32(%ebp)
+	je	.L24
+	cmpl	$0, -28(%ebp)
+	jne	.L25
 .L24:
+	cmpl	$0, -32(%ebp)
+	jne	.L26
+	cmpl	$0, -28(%ebp)
+	jne	.L26
+.L25:
+	movl	$1, %eax
+	jmp	.L27
+.L26:
+	movl	$0, %eax
+.L27:
 	movl	16(%ebp), %edx
 	movl	%eax, (%edx)
-	subl	$12, %esp
-	pushl	$.LC0
+	movl	$.LC0, (%esp)
 	call	print_str
 	movl	$.LC1, (%esp)
 	call	print_str
 	movl	$.LC6, (%esp)
 	call	print_str
-	movl	%esi, (%esp)
+	movl	-28(%ebp), %eax
+	movl	%eax, (%esp)
 	call	print_U32
 	call	print_newline
-	movl	%esi, %eax
-	leal	-12(%ebp), %esp
+	movl	-28(%ebp), %eax
+	addl	$44, %esp
 	popl	%ebx
 	popl	%esi
 	popl	%edi
 	popl	%ebp
 	ret
 	.size	get_mem_map_step, .-get_mem_map_step
-	.section	.rodata.str1.1
+	.section	.rodata
 .LC7:
 	.string	"get_mem_map: len_map: "
+	.align 4
 .LC8:
 	.string	"get_mem_map: increment len_map"
+	.align 4
 .LC9:
 	.string	"get_mem_map: increment len_map (after)"
 .LC10:
@@ -478,104 +689,106 @@ get_mem_map_step:
 get_mem_map:
 	pushl	%ebp
 	movl	%esp, %ebp
-	pushl	%edi
-	pushl	%esi
-	pushl	%ebx
 	subl	$56, %esp
-	movl	8(%ebp), %esi
-	movl	12(%ebp), %edi
-	movl	16(%ebp), %ebx
-	pushl	$.LC0
+	movl	8(%ebp), %eax
+	movw	%ax, -28(%ebp)
+	movl	$.LC0, (%esp)
 	call	print_str
 	movl	$.LC1, (%esp)
 	call	print_str
 	movl	$.LC7, (%esp)
 	call	print_str
-	movl	%ebx, (%esp)
+	movl	16(%ebp), %eax
+	movl	%eax, (%esp)
 	call	print_U32
 	call	print_newline
-	movl	%edi, -36(%ebp)
-	movl	$0, -32(%ebp)
-	movl	$0, -28(%ebp)
-	movzwl	%si, %eax
-	movl	%eax, -44(%ebp)
-	leal	-32(%ebp), %edx
-	movl	%edx, (%esp)
-	leal	-36(%ebp), %ecx
-	pushl	%ecx
-	leal	-28(%ebp), %esi
-	pushl	%esi
-	pushl	%edi
-	pushl	%eax
+	movl	12(%ebp), %eax
+	movl	%eax, -16(%ebp)
+	movl	$0, -12(%ebp)
+	movl	$0, -20(%ebp)
+	movl	$0, -24(%ebp)
+	movl	-16(%ebp), %edx
+	movzwl	-28(%ebp), %eax
+	leal	-20(%ebp), %ecx
+	movl	%ecx, 16(%esp)
+	leal	-16(%ebp), %ecx
+	movl	%ecx, 12(%esp)
+	leal	-24(%ebp), %ecx
+	movl	%ecx, 8(%esp)
+	movl	%edx, 4(%esp)
+	movl	%eax, (%esp)
 	call	get_mem_map_step
-	movl	%eax, %edi
-	addl	$32, %esp
-	testl	%eax, %eax
-	jne	.L33
-	subl	$12, %esp
-	pushl	$.LC0
+	movl	%eax, -12(%ebp)
+	cmpl	$0, -12(%ebp)
+	jne	.L30
+	movl	$.LC0, (%esp)
 	call	print_str
 	movl	$.LC1, (%esp)
 	call	print_str
 	movl	$.LC8, (%esp)
 	call	print_str
-	popl	%edx
-	pushl	(%ebx)
+	movl	16(%ebp), %eax
+	movl	(%eax), %eax
+	movl	%eax, (%esp)
 	call	print_U32
 	call	print_newline
-	incl	(%ebx)
+	movl	16(%ebp), %eax
+	movl	(%eax), %eax
+	leal	1(%eax), %edx
+	movl	16(%ebp), %eax
+	movl	%edx, (%eax)
 	movl	$.LC0, (%esp)
 	call	print_str
 	movl	$.LC1, (%esp)
 	call	print_str
 	movl	$.LC9, (%esp)
 	call	print_str
-	popl	%ecx
-	pushl	(%ebx)
+	movl	16(%ebp), %eax
+	movl	(%eax), %eax
+	movl	%eax, (%esp)
 	call	print_U32
 	call	print_newline
-	addl	$16, %esp
-.L33:
-	subl	$12, %esp
-	pushl	$.LC0
+.L30:
+	movl	$.LC0, (%esp)
 	call	print_str
 	movl	$.LC1, (%esp)
 	call	print_str
 	movl	$.LC10, (%esp)
 	call	print_str
-	popl	%eax
-	pushl	-32(%ebp)
+	movl	-20(%ebp), %eax
+	movl	%eax, (%esp)
 	call	print_U32
 	call	print_newline
-	addl	$16, %esp
-.L34:
-	testl	%edi, %edi
-	jne	.L36
-.L38:
-	cmpl	$0, -28(%ebp)
-	jne	.L36
-	subl	$12, %esp
-	leal	-32(%ebp), %eax
-	pushl	%eax
-	leal	-36(%ebp), %eax
-	pushl	%eax
-	pushl	%esi
-	pushl	-36(%ebp)
-	pushl	-44(%ebp)
+	jmp	.L31
+.L33:
+	movl	-16(%ebp), %edx
+	movzwl	-28(%ebp), %eax
+	leal	-20(%ebp), %ecx
+	movl	%ecx, 16(%esp)
+	leal	-16(%ebp), %ecx
+	movl	%ecx, 12(%esp)
+	leal	-24(%ebp), %ecx
+	movl	%ecx, 8(%esp)
+	movl	%edx, 4(%esp)
+	movl	%eax, (%esp)
 	call	get_mem_map_step
-	movl	%eax, %edi
-	addl	$32, %esp
+	movl	%eax, -12(%ebp)
+	cmpl	$0, -12(%ebp)
+	jne	.L31
+	movl	16(%ebp), %eax
+	movl	(%eax), %eax
+	leal	1(%eax), %edx
+	movl	16(%ebp), %eax
+	movl	%edx, (%eax)
+.L31:
+	cmpl	$0, -12(%ebp)
+	jne	.L32
+	movl	-24(%ebp), %eax
 	testl	%eax, %eax
-	jne	.L34
-	incl	(%ebx)
-	jmp	.L38
-.L36:
-	movl	%edi, %eax
-	leal	-12(%ebp), %esp
-	popl	%ebx
-	popl	%esi
-	popl	%edi
-	popl	%ebp
+	je	.L33
+.L32:
+	movl	-12(%ebp), %eax
+	leave
 	ret
 	.size	get_mem_map, .-get_mem_map
 	.ident	"GCC: (GNU) 4.8.2 20140120 (Red Hat 4.8.2-15)"

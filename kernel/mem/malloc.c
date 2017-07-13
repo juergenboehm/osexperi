@@ -121,6 +121,8 @@ void* malloc(uint32_t size)
 
 	irq_restore(eflags);
 
+	ASSERT(p_ret != 0);
+
 	return p_ret;
 }
 
@@ -133,7 +135,7 @@ void free(void * p)
 
 	uint32_t q_pd = ADDR_TO_PDESC_INDEX(p);
 	page_desc_t *pdesc = BLK_PTR(q_pd);
-	ASSERT((pdesc->flags & PDESC_FLAG_MALLOC));
+	//ASSERT((pdesc->flags & PDESC_FLAG_MALLOC));
 	uint32_t malloc_order_log = pdesc->malloc_order;
 
 	DEBUGOUT1(0, "free(%d)\n", (1 << (malloc_order_log + LOG_MIN_ALLOC_SIZE)));

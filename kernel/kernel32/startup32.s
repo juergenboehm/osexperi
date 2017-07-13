@@ -395,7 +395,7 @@ kmain32:
 	movl	idt_table, %eax
 	movl	%eax, idt_ptr+2
 #APP
-# 210 "kernel32/startup32.c" 1
+# 218 "kernel32/startup32.c" 1
 	lidt idt_ptr
 # 0 "" 2
 #NO_APP

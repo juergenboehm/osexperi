@@ -14,6 +14,16 @@ _startmain:
 
 startA:
 
+			cli
+
+			movw			$LOADER16_SEG, %ax
+			movw			%ax, %ds
+
+ 	  		movw 			%ax, %ss
+			movw 			$0x8000, %sp
+
+			sti
+
       // print 'C'
 			movb			$67, %al
 			movb 			$0x0e, %ah
@@ -32,19 +42,9 @@ startA:
 			movb			$0x0c, %bl
 			int				$0x10
 
-			cli
-
-		  movw 			$LOADER16_SEG, %ax
-   		movw 			%ax, %ss
-   		movw 			$0x8000, %sp
-
-			movw			$LOADER16_SEG, %ax
-			movw			%ax, %ds
-
 			movw			$VGA_MEM_SEG, %ax	# address of VGA mem: 0xb8000
 			movw			%ax, %es
 
-			sti
 
 			call			lmain
 

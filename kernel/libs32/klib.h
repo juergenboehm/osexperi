@@ -61,6 +61,7 @@ typedef uint32_t FILE;
 // for system use, prints raw on the screen
 int kprintf(char* format, ... );
 int outb_printf(char* format, ... );
+int raw_printf(char* format, ... );
 
 
 int printf(char* format, ... );
@@ -108,6 +109,7 @@ void* memset(void* dest, uint8_t val, size_t n);
 int kprint_str(uint32_t fd, char* str);
 
 // old print routines written initially
+
 
 void kprint_str_raw(char* str);
 

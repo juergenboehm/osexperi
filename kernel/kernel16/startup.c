@@ -28,6 +28,8 @@ lim_addr_ptr gdt_ptr_provis;
 void __NOINLINE init_gdtptr ()
 {
 
+	memset16(&gdt_ptr_provis, 0, sizeof(lim_addr_ptr));
+
 	DBGOUT("sizeof(GDT_ENTRY) = ", sizeof(descriptor_t));
 
 	// gdt_ptr_provis.lim = GDT_TABLE_PROVIS_LEN * sizeof(gdt_entry) - 1;
@@ -130,6 +132,66 @@ int enable_a20_keyb()
 		return 0;
 }
 
+uint32_t enable_a20_bios_15()
+{
+	uint32_t retcode = 0;
+
+	asm __volatile__ (
+		PUSH_THE_REGS \
+		"movw     $0x2403, %%ax                #--- A20-Gate Support --- \n\t" \
+		"int     $0x15  \n\t" \
+		"jb      .a20_ns                  # INT 15h is not supported \n\t" \
+		"cmpb    $0, %%ah \n\t" \
+		"jnz     .a20_ns                  # INT 15h is not supported \n\t" \
+		\
+		"movw    $0x2402, %%ax                # --- A20-Gate Status --- \n\t" \
+		"int     $0x15 \n\t" \
+		"jb      .a20_failed              # couldn't get status \n\t" \
+		"cmpb    $0, %%ah \n\t" \
+		"jnz     .a20_failed              #couldn't get status \n\t" \
+		 \
+		"cmpb    $0x01, %%al \n\t" \
+		"jz      .a20_already_activated           # A20 is already activated \n\t" \
+		 \
+		"movw     $0x2401, %%ax           # --- A20-Gate Activate --- \n\t" \
+		"int     $0x15 \n\t" \
+		"jb      .a20_failed               #couldn't activate the gate \n\t" \
+		"cmp     $0, %%ah \n\t" \
+		"jnz     .a20_failed              # couldn't activate the gate \n\t" \
+		"movl		$0x1234, %0 \n\t"
+		"jmp		.ende \n\t " \
+		".a20_already_activated: \n\t" \
+		"movl		$0x5678, %0 \n\t"
+		"jmp		.ende \n\t " \
+		".a20_ns: \n\t"
+		"movl	$0xabab, %0 \n\t" \
+		"jmp 		.ende \n\t " \
+		".a20_failed: \n\t" \
+		"movl $0xcdcd, %0 \n\t" \
+		".ende: \n\t" \
+		\
+		POP_THE_REGS
+   : "=g"(retcode) : : "%eax", "%ebx", "%ecx", "%edx", "%esi", "%edi" );
+
+	return retcode;
+
+}
+
+uint32_t set_video_mode(uint8_t mode)
+{
+
+	uint8_t retcode = 0;
+
+	asm __volatile__ (
+			"movb $0, %%ah \n\t" \
+			"movb %1, %%al \n\t " \
+			"int $0x10 \n\t" \
+			"movb %%al, %0" \
+			: "=g"(retcode) : "g"(mode) : "%eax", "%ebx", "%ecx", "%edx", "%esi", "%edi" );
+
+	return retcode;
+}
+
 
 /*
 
@@ -187,14 +249,17 @@ int __NOINLINE enable_a20_keyb_asm()
 
 int kmain()
 {
+
 	int i = 0;
 
 	print_str("\r\nKernel primary loaded.\r\n");
 
-	for(i = 0; i < 4; ++i )
+	for(i = 0; i < GDT_TABLE_PROVIS_LEN; ++i )
 	{
 		DESCRIPTOR_SET_SEG_ZERO(gdt_table_provis[i]);
 	}
+
+	memset16(&gdt_table_provis, 0, sizeof(gdt_table_provis));
 
 	DESCRIPTOR_SET_CODE_SEG(gdt_table_provis[KERNEL_16_CS_GDT_INDEX], KPL);
 	DESCRIPTOR_SET_DATA_SEG(gdt_table_provis[KERNEL_16_DS_GDT_INDEX], KPL);
@@ -220,8 +285,11 @@ int kmain()
 
 	init_gdtptr();
 	int ok = enable_a20_keyb();
-
 	DBGOUT("a_20 ok = ", ok);
+
+	uint32_t retcode = enable_a20_bios_15();
+	DBGOUT("a_20 bios 15 retcode = ", retcode);
+
 
 	size_t len_map = 0;
 
@@ -229,12 +297,28 @@ int kmain()
 
 	uint32_t* pt = (uint32_t*)BIOS_MEM_AREA_HANDLE;
 	*pt++ = err;
-	*pt = len_map;
+	*pt = (uint32_t) len_map;
 
 	// copy_segseg(KERNEL16_SEG, 4 * 512, 512, 0x3000, 0x0000);
 
 	DBGOUT("err mem map = ", err);
 	DBGOUT("len mem map = ", len_map);
 
+	DBGOUT("a_20 ok = ", ok);
+	DBGOUT("a_20 bios 15 retcode = ", retcode);
+
+	//retcode = set_video_mode(3);
+	//DBGOUT("set video mode retcode = ", retcode);
+
+	asm __volatile__ (
+			"movw		$0xb800, %%ax \n\t"
+			"movw		%%ax, %%es \n\t"
+			"xor		%%di, %%di \n\t"
+			"movb		$70, %%es:(%%di) \n\t"
+			"inc		%%di \n\t"
+			"movb		$0x1e, %%es:(%%di) \n\t"
+			: : : "%di", "%ax" );
+
+	return 0;
 
 }

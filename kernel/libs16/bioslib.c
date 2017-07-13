@@ -5,6 +5,8 @@
 #include "libs16/print16.h"
 
 
+
+
 __NOINLINE __volatile__ int copy_segseg(uint16_t old_seg, uint16_t old_offs, int len, uint16_t new_seg, uint16_t new_offs)
 {
 
@@ -39,6 +41,9 @@ int __NOINLINE copy_ext(move_mem_block* pmmb, uint32_t start, uint32_t goal, uin
 {
 	descriptor_t* src = &(pmmb->gdte_source);
 	descriptor_t* dest = &(pmmb->gdte_dest);
+
+	memset16(src, 0, sizeof(descriptor_t));
+	memset16(dest, 0, sizeof(descriptor_t));
 
 	DESCRIPTOR_SET_GD_P_DPL_S_TYP(*src, start, 0xffff, 0, 0, 1, 0, 1, 0);
 	DESCRIPTOR_SET_GD_P_DPL_S_TYP(*dest, goal, 0xffff, 0, 0, 1, 0, 1, 1);
@@ -83,13 +88,18 @@ int __NOINLINE copy_ext(move_mem_block* pmmb, uint32_t start, uint32_t goal, uin
 
 // BIOS character print routine
 
+
 __NOINLINE void print_char(uint8_t ch)
 {
-	asm("movb	%0, %%al" : : "m" (ch): "%ax");
-	asm("movb $0x0e, %%ah" : : : "%ax" );
-	asm("movb	$0x00, %%bh": : : "%bh" );
-	asm("movb	$0x0c, %%bl": : : "%bl" );
-	asm("int $0x10" );
+	asm __volatile__ (
+	PUSH_THE_REGS \
+	"movb	%0, %%al \n\t" \
+	"movb $0x0e, %%ah \n\t" \
+	"movb	$0x00, %%bh \n\t" \
+	"movb	$0x0c, %%bl \n\t" \
+	"int $0x10 \n\t" \
+	POP_THE_REGS
+	: : "g"(ch): "%ax", "%bx");
 
 }
 
@@ -119,31 +129,71 @@ int __NOINLINE init_DAPA(uint32_t lba, uint16_t numsec, uint8_t* bufp, DAPA* dap
 
 // load from hard disk
 
+int do_read_write_13(DAPA* dapa, uint16_t loader_ds, uint8_t rw_code, uint8_t disk_code)
+{
+	uint8_t retcode = 0;
+	int retry_cnt = 5;
+
+	while (retry_cnt)
+	{
+		retcode = 0;
+		asm (
+				PUSH_THE_REGS \
+				\
+			".retry:"
+			"movw %1, %%si \n\t" \
+		 "movw %2, %%ax \n\t movw %%ax, %%ds \n\t" \
+		 "movb %3, %%ah \n\t" \
+		 "movb %4, %%dl \n\t" \
+		 "int $0x13 \n\t" \
+		 "jc .err \n\t" \
+		 \
+		 POP_THE_REGS \
+		 \
+		 "movb $0, %0 \n\t" \
+		 "jmp .ende \n\t" \
+		 ".err: \n\t" \
+		 \
+		 POP_THE_REGS \
+		 \
+		 "movb %%ah, %0 \n\t" \
+		 ".ende: \n\t" \
+		 : "=g"(retcode) :
+				"g" ((uint16_t)(((uint32_t) dapa) & 0xffff)),
+				"g" ((uint16_t) loader_ds),
+				"g" (rw_code),
+				"g" (disk_code)
+				: "%si", "%ax", "%dl");
+
+		if (!retcode)
+				break;
+		--retry_cnt;
+	}
+
+	return retcode;
+}
+
+
 int __NOINLINE loadsec( uint32_t lba, uint16_t numsec, uint8_t* bufp, DAPA* dapa, uint16_t loader_ds)
 {
+	uint8_t retcode = 0;
 
 	init_DAPA( lba, numsec, bufp, dapa, loader_ds);
-	asm( "movw %0, %%si" : : "g" ((uint16_t)(((uint32_t) dapa) & 0xffff)) : "%si" );
-	asm( "movw %0, %%ax \n\t movw %%ax, %%ds" : : "m" ((uint16_t) loader_ds) : "%ax");
-	asm( "movb %0, %%ah" : : "i" (BIOS_READ_DISK) : "%ah");
-	asm( "movb %0, %%dl" : : "i" (DISK_CODE) : "%dl" );
-	asm( "int $0x13");
+	retcode = do_read_write_13(dapa, loader_ds, BIOS_READ_DISK, DISK_CODE);
 
-	return 0;
+	return retcode;
 }
 
 
 int __NOINLINE writesec(	uint32_t lba, uint16_t numsec, uint8_t* bufp, DAPA* dapa, uint16_t loader_ds)
 {
 
-	init_DAPA( lba, numsec, bufp, dapa, loader_ds);
-	asm( "movw %0, %%si" : : "g" ((uint16_t)(((uint32_t) dapa) & 0xffff)) : "%si" );
-	asm( "movw %0, %%ax \n\t movw %%ax, %%ds" : : "m" ((uint16_t) loader_ds) : "%ax");
-	asm( "movb %0, %%ah" : : "i" (BIOS_WRITE_DISK) : "%ah" );
-	asm( "movb %0, %%dl" : : "i" (DISK_CODE) : "%dl" );
-	asm( "int $0x13");
+	uint8_t retcode = 0;
 
-	return 0;
+	init_DAPA( lba, numsec, bufp, dapa, loader_ds);
+	retcode = do_read_write_13(dapa, loader_ds, BIOS_WRITE_DISK, DISK_CODE);
+
+	return retcode;
 }
 
 
@@ -224,6 +274,7 @@ int __NOINLINE __volatile__ get_mem_map_step(uint16_t buf_seg, uint8_t* bufp, bo
 
 	asm __volatile__
 	(
+		\
 		"pushw %%es \n\t"
 		"movw %3, %%ax \n\t"
 		"movw %%ax, %%es \n\t"
@@ -242,7 +293,9 @@ int __NOINLINE __volatile__ get_mem_map_step(uint16_t buf_seg, uint8_t* bufp, bo
 		"rcll $1, %%edx \n\t"
 		"movl %%edx, %0 \n\t"
 		"movl %%ebx, %1 \n\t"
-		"popw %%es \n\t" :
+		"popw %%es \n\t" \
+		\
+		:
 				"=g"(err), "=g"(ebx_val), "=g"(size_entry) : "g"(buf_seg), "g"((uint16_t)((uint32_t)(bufp) & 0xffff)),
 				 "g"(ebx_val):
 						"%eax", "%ebx", "%ecx", "%edx", "%edi", "memory" );

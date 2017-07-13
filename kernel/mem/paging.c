@@ -24,7 +24,11 @@ static uint8_t* ptx = (uint8_t*)0xb8000;
 
 void* get_page(uint32_t mode)
 {
-	return malloc(PAGE_SIZE);
+	void* p = malloc(PAGE_SIZE);
+	if (p)
+	{
+		memset(p, 0, PAGE_SIZE);
+	}
 }
 
 void* get_page_with_refcnt(uint32_t mode)
@@ -32,6 +36,7 @@ void* get_page_with_refcnt(uint32_t mode)
 	void* p = malloc(PAGE_SIZE);
 	if (p)
 	{
+		memset(p, 0, PAGE_SIZE);
 		page_desc_t* pd = BLK_PTR(ADDR_TO_PDESC_INDEX(p));
 		++pd->use_cnt;
 	}
@@ -222,7 +227,12 @@ int init_paging_system()
 
 	global_page_dir_sys = page_dir_sys_loc;
 
+	raw_printf("before set_cr3 page_dir_phys_addr = %08x addr init_paging_system = %08x ",
+			(uint32_t) page_dir_phys_addr, (uint32_t) &init_paging_system);
+
 	set_cr3(page_dir_phys_addr);
+
+	raw_printf("after set_cr3 ");
 
 	return 0;
 
@@ -318,6 +328,8 @@ void page_fault_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 	void* cur_page_dir_sys;
 	cur_page_dir_sys = __VADDR(get_cr3());
 
+	uint32_t is_userarea_lin_addr = lin_addr < KERNEL_UPPER;
+
 
 	uint32_t in_usermode = errcode & PG_BIT_US;
 	uint32_t was_a_write = errcode & PG_BIT_RW;
@@ -326,11 +338,17 @@ void page_fault_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 
 	if (!in_usermode)
 	{
-		outb_printf("page_fault_handler: error in supervisor mode.");
+		outb_printf("page_fault_handler: error in supervisor mode.\n");
 		while (1) {};
 	}
 
-	if (protection_violation && in_usermode && was_a_write)
+	if (in_usermode && !is_userarea_lin_addr && protection_violation)
+	{
+		outb_printf("page_fault_handler: illegal access from user code to system area.\n");
+		while (1) {};
+	}
+
+	if (protection_violation && in_usermode && was_a_write && is_userarea_lin_addr)
 	{
 		// COW case
 
@@ -362,6 +380,9 @@ void page_fault_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 
 		outb_printf("p = %08x p_old = %08x\n", (uint32_t)p, (uint32_t)p_old);
 
+		page_desc_t* pdesc = BLK_PTR(ADDR_TO_PDESC_INDEX(p_old));
+		--pdesc->use_cnt;
+
 		memcpy(p, p_old, PAGE_SIZE);
 
 		outb_printf("memcpy done.\n");
@@ -374,7 +395,7 @@ void page_fault_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 
 	}
 
-	if (in_usermode)
+	if (in_usermode && is_userarea_lin_addr)
 	{
 		void *p = get_page_with_refcnt(0);
 		uint32_t paddr = (uint32_t)__PHYS(p);
@@ -391,7 +412,7 @@ void page_fault_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 		}
 		else
 		{
-			outb_printf("page_fault_handler: no free mem found: malloc failed.");
+			outb_printf("page_fault_handler: no free mem found: malloc failed.\n");
 			while (1) {};
 		}
 	}
@@ -414,7 +435,7 @@ void free_page_table_entry(page_table_entry_t* pte)
 		DEBUGOUT1(0, "free_page_table_entry: p_addr_frame = %08x\n", (uint32_t) pte_val);
 		page_desc_t* p_addr_frame_pd = BLK_PTR(ADDR_TO_PDESC_INDEX(pte_val_vaddr));
 		--p_addr_frame_pd->use_cnt;
-		if (!p_addr_frame_pd->use_cnt)
+		if (!p_addr_frame_pd->use_cnt && !(p_addr_frame_pd->flags & PDESC_FLAG_NOMEM))
 		{
 			DEBUGOUT1(0, "freeing page_frame paddr_frame = %08x\n", (uint32_t) pte_val);
 			free(pte_val_vaddr);
@@ -453,7 +474,7 @@ int copy_page_tables(process_t* proc, uint32_t *new_page_dir_phys, uint32_t mode
 
 	page_table_entry_t* page_dir = __VADDR(proc->proc_data.tss.cr3);
 
-	page_table_entry_t* new_page_dir = (page_table_entry_t*) malloc(PAGE_SIZE);
+	page_table_entry_t* new_page_dir = (page_table_entry_t*) get_page(0);
 
 	for(pdir_index = PG_PAGE_DIR_USER_ENTRIES; pdir_index < PG_PAGE_DIR_ENTRIES; ++pdir_index)
 	{
@@ -513,6 +534,11 @@ int copy_page_tables(process_t* proc, uint32_t *new_page_dir_phys, uint32_t mode
 					}
 					else
 					{
+
+						page_desc_t* pdesc = BLK_PTR(ADDR_TO_PDESC_INDEX(page_frame));
+
+						++pdesc->use_cnt;
+
 						map_page1(current_vaddr, page_frame_phys, new_page_dir,
 												mode_bits_ptab, mode_bits_pdir);
 					}

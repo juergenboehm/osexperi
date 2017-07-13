@@ -84,7 +84,7 @@ static int uoutb_kprint_str(uint32_t fd,char* buffer)
 {
 	char* p = buffer;
 	while (*p) {
-		uoutb(0xe9, *p++);
+		uoutb_0xe9( *p++);
 	}
 	return 0;
 }

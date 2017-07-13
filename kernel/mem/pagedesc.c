@@ -312,7 +312,11 @@ uint32_t init_global_page_list()
 	// table_len is len of BIOS memarea table
 	// p_entry is pointer to start of this table
 
+	//raw_printf(" before_get_mem_area_table_info ");
+
 	get_mem_area_table_info(&table_len, &p_entry);
+
+	//raw_printf( "table_len = %d ", table_len);
 
 	uint32_t max_address = 0;
 
@@ -374,6 +378,9 @@ uint32_t init_global_page_list()
 		{
 			for(j = page_start; j < page_end; ++j)
 			{
+
+				if (j >= num_pages_total)
+					break;
 
 #define KERNEL_32_START_PAGE (KERNEL_32_START >> PG_FRAME_BITS)
 

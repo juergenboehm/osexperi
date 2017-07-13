@@ -72,3 +72,16 @@ void print_gdt_entry(descriptor_t* p)
 
 }
 
+void memset16(void* p, uint8_t val, uint16_t size)
+{
+
+	int i = 0;
+	uint8_t* pp = (uint8_t*) p;
+	for(i = 0; i < size; ++i)
+	{
+		*pp = val;
+		++pp;
+	}
+}
+
+

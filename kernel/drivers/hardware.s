@@ -6,12 +6,9 @@ set_cr3:
 	pushl	%ebp
 	movl	%esp, %ebp
 #APP
-# 7 "drivers/hardware.c" 1
-	mov 8(%ebp), %eax 
-	 mov %eax, %cr3 
-	 .L99999: jmp 1f 
-	 1: 
-	 nop 
+# 13 "drivers/hardware.c" 1
+	movl 8(%ebp), %eax 
+	 movl %eax, %cr3 
 	
 # 0 "" 2
 #NO_APP

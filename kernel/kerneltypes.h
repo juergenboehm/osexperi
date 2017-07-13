@@ -26,4 +26,17 @@ typedef int bool;
 
 #define	NULL 0
 
+//#define SIMULATOR 1
+
+
+#ifdef SIMULATOR
+#define outb_0xe9(val) outb(0xe9, val)
+#define uoutb_0xe9(val) uoutb(0xe9, val)
+#endif
+
+#ifndef SIMULATOR
+#define outb_0xe9(val) do {} while (0)
+#define uoutb_0xe9(val) do {} while (0)
+#endif
+
 #endif

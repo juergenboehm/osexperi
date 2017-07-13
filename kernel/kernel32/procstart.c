@@ -2,6 +2,7 @@
 
 
 #include "mem/paging.h"
+#include "mem/pagedesc.h"
 #include "mem/gdt32.h"
 
 #include "drivers/hardware.h"
@@ -58,7 +59,8 @@ void insert_process(process_t * proc, list_head_t** pproc_list_head, uint32_t st
 		++i;
 		p = p->next;
 
-		if (i > 5) {
+		//TODO: remove this finally
+		if (i > 10) {
 			while (1) {}
 		}
 	} while (p != *pproc_list_head);
@@ -251,6 +253,10 @@ void init_process_1_xp(void* fun_addr)
 	for(i = 0, j = 0; i < 5; ++i, j += PAGE_SIZE) {
 		map_page((usercode_virtual + j),
 				(real_usercode_phys + j), new_page_dir, PG_BIT_P | PG_BIT_RW | PG_BIT_US);
+
+		void* p = __VADDR(real_usercode_phys + j);
+		page_desc_t* pdesc = BLK_PTR(ADDR_TO_PDESC_INDEX(p));
+		++pdesc->use_cnt;
 	}
 
 	DEBUGOUT(0, "pages mapped.\n");
@@ -315,8 +321,8 @@ void init_process_1_xp(void* fun_addr)
 	"movw " XSTR(OFFSET_DS) "(%%edx), %%ax \n\t" \
 	"movw %%ax, %%ds \n\t" \
 	\
-	"movb $'Y', %%al \n\t"  \
-	"outb %%al, $0xe9 \n\t"  \
+/*	"movb $'Y', %%al \n\t" */ \
+/*	"outb %%al, $0xe9 \n\t" */ \
 	\
 	"iretl" : );
 

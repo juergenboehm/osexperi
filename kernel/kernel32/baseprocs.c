@@ -60,7 +60,7 @@ void display_tss(tss_t* tss)
 
 void idle_forever()
 {
-	outb(0xe9, 'B');
+	outb_0xe9( 'B');
 
 	uint32_t i = 0;
 
@@ -68,7 +68,7 @@ void idle_forever()
 		printf("I am idle (0). %d\n", ++i);
 		if (!(i % (1 << 24)))
 		{
-			outb(0xe9, 'B');
+			outb_0xe9( 'B');
 		}
 
 		if (screen_current != screen_current_old) {
@@ -540,6 +540,33 @@ int execute_mem(int argc, char* argv[])
 	printf("free buddy = %d bytes : used buddy = %d bytes.\n",
 			free_bytes_buddy, used_buddy);
 
+	const int max_tally_use_cnt = 4;
+	int tally_use_cnt[max_tally_use_cnt];
+	int i;
+	memset(tally_use_cnt, 0, sizeof(tally_use_cnt));
+
+	int pdi;
+	for(pdi = 0; pdi < num_pages_total; ++pdi)
+	{
+		page_desc_t* pdesc = BLK_PTR(pdi);
+		uint32_t use_cnt = pdesc->use_cnt;
+		if (use_cnt < max_tally_use_cnt - 1)
+		{
+			++tally_use_cnt[use_cnt];
+		}
+		else
+		{
+			++tally_use_cnt[max_tally_use_cnt -1];
+		}
+	}
+
+	printf("use_cnt histo: ");
+	for(i = 0; i < max_tally_use_cnt; ++i)
+	{
+		printf("(%d : %d), ", i, tally_use_cnt[i]);
+	}
+	printf("\n");
+
 	return 0;
 }
 
@@ -607,7 +634,7 @@ void use_keyboard()
 
 void idle_watched()
 {
-	outb(0xe9, 'B');
+	outb_0xe9( 'B');
 
 	uint32_t i = 0;
 
@@ -620,7 +647,7 @@ void idle_watched()
 
 void idle_vn()
 {
-	outb(0xe9, 'B');
+	outb_0xe9( 'B');
 
 	uint32_t i = 0;
 
@@ -628,7 +655,7 @@ void idle_vn()
 		printf("I love vn. %d\n", ++i);
 		if (!(i % (1 << 24)))
 		{
-			outb(0xe9, 'V');
+			outb_0xe9( 'V');
 		}
 		++i;
 

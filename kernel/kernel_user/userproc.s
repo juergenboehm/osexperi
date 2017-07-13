@@ -108,6 +108,9 @@ uproc_1:
 	subl	$52, %esp
 	movl	$0, -20(%ebp)
 	movl	$2, -12(%ebp)
+	movl	$1610612736, %eax
+	movl	(%eax), %eax
+	movl	%eax, -32(%ebp)
 	movl	$my_handler, (%esp)
 	call	register_handler
 	call	uget_ds
@@ -125,14 +128,14 @@ uproc_1:
 	movl	$.LC3, (%esp)
 	call	uprintf
 	call	fork
-	movl	%eax, -32(%ebp)
-	movl	-32(%ebp), %eax
+	movl	%eax, -36(%ebp)
+	movl	-36(%ebp), %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC4, (%esp)
 	call	uprintf
 	movl	$.LC5, (%esp)
 	call	uprintf
-	cmpl	$0, -32(%ebp)
+	cmpl	$0, -36(%ebp)
 	jne	.L10
 	movl	$1, -24(%ebp)
 	jmp	.L11
@@ -154,7 +157,7 @@ uproc_1:
 	movl	$0, -28(%ebp)
 	jmp	.L13
 .L14:
-	movl	$0, -36(%ebp)
+	movl	$0, -40(%ebp)
 	incl	-28(%ebp)
 .L13:
 	cmpl	$167772159, -28(%ebp)

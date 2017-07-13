@@ -178,7 +178,7 @@ void release_pid(uint32_t pid)
 						/* "outb %%al, $0xe9 \n\t" */ \
 						\
 						"ret \n\t" \
-: )
+: : :  )
 
 
 // current is dead, do not save or use it
@@ -243,7 +243,7 @@ void release_pid(uint32_t pid)
 						/* "outb %%al, $0xe9 \n\t" */ \
 						\
 						"ret \n\t" \
-: )
+: : : )
 
 
 
@@ -708,7 +708,7 @@ void destroy_process(process_t* proc)
 		// timer hits then process is finished.
 		while (1)
 		{
-			outb(0xe9, 'D');
+			outb_0xe9( 'D');
 			WAIT(1 << 15);
 		}
 	}
@@ -808,7 +808,6 @@ void build_artificial_switch_save_block(
 	return;
 }
 
-
 int fork_process()
 {
 	uint32_t ret_eip;
@@ -839,8 +838,7 @@ int fork_process()
 
 	uint32_t eflags = irq_cli_save();
 
-	ret = copy_page_tables(proc, &new_page_dir_phys, PG_PTCM_COPY_FOR_COW);
-
+	ret = copy_page_tables(proc, &new_page_dir_phys, 0 & PG_PTCM_COPY_FOR_COW);
 
 	if (ret)
 	{
@@ -859,7 +857,8 @@ int fork_process()
 
 	ret_eip = *((uint32_t*)(old_bp + 4));
 
-	DEBUGOUT1(0, "fork_process renew: ret_eip = %08x, old_bp = %08x\n", ret_eip, old_bp);
+	DEBUGOUT1(0, "fork_process renew: ret_eip = %08x, old_bp = %08x\n"
+			"goal_sp = %08x\n", ret_eip, old_bp, goal_sp);
 
 
 	DEBUGOUT1(0, "proc_t cloned.\n");
@@ -874,7 +873,7 @@ int fork_process()
 
 	init_proc_basic(new_proc, child_pid, 0);
 
-	new_proc->proc_data.status = PROC_READY;
+	new_proc->proc_data.status = PROC_STOPPED;
 
 	init_proc_cr3(new_proc, new_page_dir_phys);
 

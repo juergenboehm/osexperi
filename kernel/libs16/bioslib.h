@@ -69,6 +69,22 @@ int __NOINLINE __volatile__ get_mem_map_step(uint16_t buf_seg, uint8_t* bufp, bo
 int __NOINLINE __volatile__ get_mem_map(uint16_t buf_seg, uint8_t* bufp, size_t* len_map);
 
 
+#if 1
+#define PUSH_THE_REGS   \
+		"pushl %%ebp \n\t" \
+		"pushal \n\t" \
+		"pushw %%ds \n\t pushw %%es \n\t pushw %%fs \n\t pushw %%gs \n\t"
+
+#define POP_THE_REGS  \
+		"popw %%gs \n\t popw %%fs \n\t popw %%es \n\t popw %%ds \n\t" \
+		"popal \n\t" \
+		"popl %%ebp \n\t"
+#endif
+
+#if 0
+#define PUSH_THE_REGS " "
+#define POP_THE_REGS " "
+#endif
 
 
 

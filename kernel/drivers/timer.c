@@ -19,7 +19,7 @@ void timer_irq_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 	// End of Interrupt (EOI) must be send at *end* of
 	// interrupt routine
 
-	//outb(0xe9, 'T');
+	//outb_0xe9( 'T');
 	outb(PIC1_COMMAND, PIC_EOI);
 	io_wait();
 

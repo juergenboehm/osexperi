@@ -47,16 +47,15 @@ loop:
 */
 
 	movl 	$(0xb8000), %edi
-	movb 	$70, %ds:(%edi)				// write a 'F'
+	movb 	$'Q', %ds:(%edi)				// write a 'Q'
 	inc 	%edi
 	movb 	$0x1e, %ds:(%edi)
 	inc 	%edi
 
-
-	call 	init_paging_system_provis
+	calll 	init_paging_system_provis
 
 	movl 	$(0xb8000), %edi
-	movb 	$71, %ds:(%edi)				// write a 'G'
+	movb 	$'R', %ds:(%edi)				// write a 'R'
 	inc 	%edi
 	movb 	$0x1e, %ds:(%edi)
 	inc 	%edi
@@ -89,13 +88,13 @@ flush:
 
 
 	movl 	$(0xb8000), %edi
-	movb 	$72, %ds:(%edi)				// write a 'H'
+	movb 	$'S', %ds:(%edi)				// write a 'S'
 	inc 	%edi
 	movb 	$0x1e, %ds:(%edi)
 	inc 	%edi
 
 
-	call 	kmain32
+	calll 	kmain32
 
 halt:
 	jmp halt

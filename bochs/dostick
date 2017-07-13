@@ -1,0 +1,8 @@
+
+
+dd if=./c.img of=/dev/sdb bs=512 count=400; sync
+
+echo -e "n\np\n1\n\n\na\n1\nw" | fdisk /dev/sdb
+
+
+

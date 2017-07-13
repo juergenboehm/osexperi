@@ -37,11 +37,27 @@ void uproc_1()
 	while (1)
 	{
 		if (!(i % (1 << 24))) {
-			uoutb(0xe9, 'W');
+			uoutb_0xe9( 'W');
 		}
 		++i;
 	}
 */
+
+// generate a mode 5 page fault with access to system area
+#if 0
+	typedef void (*pfun_t)();
+
+	pfun_t pfun = (pfun_t)(0xc0100000);
+
+	(*pfun)();
+#endif
+
+// prove that a read access in user area creates a new page via page-fault
+#if 1
+
+	uint32_t val = *((uint32_t*) 0x60000000);
+
+#endif
 
 	register_handler(my_handler);
 
@@ -110,7 +126,7 @@ void uproc_1()
 			}
 		}
 		i = i + 1;
-		//uoutb(0xe9,'A');
+		//uoutb_0xe9('A');
 		if (i % 100 == 0)
 		{
 			//WAIT(1 << 25);

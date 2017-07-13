@@ -124,6 +124,8 @@ void do_screen_reset()
 void kmain32()
 {
 
+	//raw_printf("kmain32 started ");
+
 	current = 0;
 
 	uint32_t i;
@@ -142,6 +144,7 @@ void kmain32()
 
 	outb_printf("kalloc_fixed_done.\n");
 
+	//raw_printf(" kalloc fixed done ");
 
 	// now the initialization of the memory system
 	// is done right at the beginning, because
@@ -153,9 +156,14 @@ void kmain32()
 
 	init_mem_system();
 	outb_printf("init_mem_system done.\n");
+
+	//raw_printf(" +++++++++++++ init_mem_system done ++++++++++++++ ");
+
+
 	init_malloc_system();
 	outb_printf("init_malloc_system done.\n");
 
+	//raw_printf(" +++++++++++ init_malloc_system done +++++++++++++ ");
 
 	init_base_files();
 
@@ -300,7 +308,7 @@ void kmain32()
 		printf("proc0: i = %d timer_special_counter = %d proc_switch_count = %d\n", i,
 				timer_special_counter, proc_switch_count);
 
-		outb(0xe9, 'B');
+		outb_0xe9( 'B');
 		//WAIT(1 << 23);
 	}
 */

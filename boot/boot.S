@@ -33,16 +33,22 @@
 
 _startmain:
 
+			jmp		$0x0, $startA
+
 startA:
 
 			cli
 
 			movw	$(BOOT_SEG), %ax
 			movw	%ax, %ds		// setting data segment to BOOT_SEG
+			movw	%ax, %ss
+			movw $0x7a00, %sp
+			
+			sti
+
 			movw	$(LOADER_SEG), %ax
 			movw	%ax, %es		// setting extra segment to LOADER_SEG, target of disk transfer
-						
-			sti
+
 
 // init main loop
 			movl	$START_SEC, %eax // set sector counter to 1
@@ -111,6 +117,7 @@ load_sec:
 // especially segment registers, especially %es
 
 			int $0x13
+			jc	load_sec
 			ret
 
 init_dapa:

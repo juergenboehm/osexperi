@@ -22,5 +22,7 @@ extern __NOINLINE void print_char(uint8_t ch);
 
 void print_gdt_entry(descriptor_t* p);
 
+void memset16(void* p, uint8_t val, uint16_t size);
+
 
 #endif

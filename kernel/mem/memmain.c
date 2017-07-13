@@ -56,8 +56,12 @@ uint32_t init_mem_system()
 	if (ok != 0)
 		goto error;
 
+	//raw_printf(" init_paging_system done ");
+
 	ok = init_page_desc_system();
 	ok = 0;
+
+	//raw_printf(" init_page_desc_system done ");
 
 	goto end;
 

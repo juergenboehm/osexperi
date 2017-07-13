@@ -14,7 +14,7 @@
 
 void syscall_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 {
-	outb(0xe9, 'S');
+	outb_0xe9( 'S');
 
 	volatile uint32_t eax = *GET_REG_32(esp, IRQ_REG_OFFSET_AX);
 	volatile uint32_t ebx = *GET_REG_32(esp, IRQ_REG_OFFSET_BX);
@@ -90,7 +90,7 @@ int sys_write(uint32_t fd, char* buf, size_t count)
 	file_t* p_file = current->proc_data.io_block->base_fd_arr[fd];
 
 /*
-	outb(0xe9, 'W');
+	outb_0xe9( 'W');
 
 	outb_printf("fd = %d\n buf = %s \n count = %d \n", fd, buf, count);
 	outb_printf("p_file = %08x fixed_file[] = %08x\n", (uint32_t) p_file, (uint32_t) &fixed_file_list[0] );
