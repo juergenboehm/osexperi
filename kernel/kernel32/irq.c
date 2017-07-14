@@ -108,7 +108,15 @@ void idt_set_err_trap(int irq_num, irq_fun_type_ptr irq_handler)
 
 void dummy_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 {
-
+	if (irq_num == 39)
+	{
+	  printf("Spurious interrupt: errcode = %d irq_num = %d.\n", errcode, irq_num);
+	}
+	else
+	{
+	  printf("Dummy interrupt: errcode = %d irq_num = %d.\n", errcode, irq_num);
+	  while (1) {};
+	}
 }
 
 void stack_fault_handler(uint32_t errcode, uint32_t irq_num, void* esp)
@@ -131,6 +139,14 @@ void gpf_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 	while (1) {}
 }
 
+void illegal_opcode_handler(uint32_t errcode, uint32_t irq_num, void* esp)
+{
+	printf("Illegal opcode: errcode = %d irq_num = %d.\n", errcode, irq_num);
+	outb_printf("Illegal opcode: errcode = %d irq_num = %d.\n", errcode, irq_num);
+	while (1) {}
+}
+
+
 void init_idt_table()
 {
 
@@ -140,6 +156,8 @@ void init_idt_table()
 	{
 		idt_set(irq_num, dummy_handler);
 	}
+
+	idt_set(6, illegal_opcode_handler);
 
 	for(irq_num = 8; irq_num < 16; ++irq_num)
 	{

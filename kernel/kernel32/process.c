@@ -555,12 +555,25 @@ void process_signals(uint32_t esp)
 
 void print_iret_blk(iret_blk_t* pir)
 {
+#if 0
 	outb_printf("pir = %08x\n", (uint32_t) pir);
 	outb_printf("pir->ss = %08x\n", (uint32_t) pir->ss);
 	outb_printf("pir->esp = %08x\n", (uint32_t) pir->esp);
 	outb_printf("pir->eflags = %08x\n", (uint32_t) pir->eflags);
 	outb_printf("pir->cs = %08x\n", (uint32_t) pir->cs);
 	outb_printf("pir->eip = %08x\n", (uint32_t) pir->eip);
+#endif
+
+#if 1
+
+	printf("pir = %08x\n", (uint32_t) pir);
+	printf("pir->ss = %08x\n", (uint32_t) pir->ss);
+	printf("pir->esp = %08x\n", (uint32_t) pir->esp);
+	printf("pir->eflags = %08x\n", (uint32_t) pir->eflags);
+	printf("pir->cs = %08x\n", (uint32_t) pir->cs);
+	printf("pir->eip = %08x\n", (uint32_t) pir->eip);
+
+#endif
 
 }
 
@@ -814,6 +827,8 @@ int fork_process()
 	uint32_t old_bp;
 	uint32_t goal_sp;
 
+	uint32_t eflags = irq_cli_save();
+
 
 	DEBUGOUT1(0, "fork_process start: current = %08x", (uint32_t) current);
 
@@ -831,14 +846,13 @@ int fork_process()
 
 	old_bp = 76;
 	goal_sp = old_bp - 8;
+
 	// we write the artificial schedule switch save block
 	// right after the parameter list of irq_dispatcher (see irq_stub.S)
 
 	// eip in the child gets set right after call irq_dispatch in irq_stub.S
 
-	uint32_t eflags = irq_cli_save();
-
-	ret = copy_page_tables(proc, &new_page_dir_phys, 0 & PG_PTCM_COPY_FOR_COW);
+	ret = copy_page_tables(proc, &new_page_dir_phys, PG_PTCM_COPY_FOR_COW);
 
 	if (ret)
 	{
@@ -857,7 +871,7 @@ int fork_process()
 
 	ret_eip = *((uint32_t*)(old_bp + 4));
 
-	DEBUGOUT1(0, "fork_process renew: ret_eip = %08x, old_bp = %08x\n"
+	DEBUGOUT(0, "fork_process renew: ret_eip = %08x, old_bp = %08x\n"
 			"goal_sp = %08x\n", ret_eip, old_bp, goal_sp);
 
 
@@ -912,7 +926,7 @@ int fork_process()
 
 	init_proc_eip(new_proc, ret_eip, 0);
 
-	DEBUGOUT1(0, "ret eip = %08x, old_bp = %08x\n", ret_eip, old_bp);
+	DEBUGOUT1(0, "ret eip = %08x, old_bp = %08x\n", new_proc->proc_data.tss.eip, old_bp);
 
 	process_node_t* pnd_new = get_process_node_t();
 

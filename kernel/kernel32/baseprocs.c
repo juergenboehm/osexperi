@@ -495,6 +495,83 @@ int execute_spd(int argc, char* argv[])
 	return -1;
 }
 
+
+int execute_spdx(int argc, char* argv[])
+{
+
+	if (argc < 2) {
+		printf("spdx: too few arguments.\n");
+		return -1;
+	}
+
+	int npid = atoi(argv[1]);
+
+
+	INIT_LISTVAR(p);
+	FORLIST(p, global_proc_list)
+	{
+		process_node_t *pnd = container_of(p, process_node_t, link);
+		process_data_t *pdata = &pnd->proc->proc_data;
+
+		if (pdata->pid == npid) {
+
+			int i;
+			uint32_t eflags = irq_cli_save();
+			uint32_t pdentry = 0;
+
+			uint32_t page_dir_phys_addr = pdata->tss.cr3;
+
+			uint32_t pdir_index;
+			uint32_t ptable_index;
+
+			page_table_entry_t* page_dir = (page_table_entry_t*)__VADDR(page_dir_phys_addr);
+
+			for(pdir_index = 0; pdir_index < PG_PAGE_DIR_USER_ENTRIES; ++pdir_index)
+			{
+
+				uint32_t pdir_entry_phys = PG_PTE_GET_FRAME_ADDRESS(page_dir[pdir_index]);
+
+				if (pdir_entry_phys)
+				{
+					page_table_entry_t* p_akt_pagetable = __VADDR(pdir_entry_phys);
+					uint32_t mode_bits_pdir = PG_PTE_GET_BITS(page_dir[pdir_index]);
+
+					for(ptable_index = 0; ptable_index < PG_PAGE_TABLE_ENTRIES; ++ptable_index)
+					{
+
+						uint32_t page_frame_phys = PG_PTE_GET_FRAME_ADDRESS(p_akt_pagetable[ptable_index]);
+
+						if (page_frame_phys)
+						{
+							uint32_t mode_bits_ptab = PG_PTE_GET_BITS(p_akt_pagetable[ptable_index]);
+
+							uint32_t current_vaddr =
+									(pdir_index << (PG_FRAME_BITS + PG_PAGE_TABLE_BITS)) + (ptable_index << PG_FRAME_BITS);
+
+
+							printf("d %08x : t %08x : f %08x : vaddr = %08x : mbd %02x : mbt: %02x\n",
+									page_dir_phys_addr, pdir_entry_phys, page_frame_phys, current_vaddr,
+									(uint8_t)mode_bits_pdir, (uint8_t) mode_bits_ptab);;
+						}
+					}
+				}
+			}
+
+			irq_restore(eflags);
+
+			return 0;
+		}
+
+		p = p->next;
+
+	}
+	END_FORLIST(p, global_proc_list);
+
+	printf("spdx: process not found.\n");
+
+	return -1;
+}
+
 int execute_mem(int argc, char* argv[])
 {
 	uint32_t total_free_bytes;
@@ -577,7 +654,9 @@ typedef struct exec_struct_s {
 } exec_struct_t;
 
 exec_struct_t my_commands[] = { {"calc", execute_calc},
-																	{"ps", execute_ps}, {"spd", execute_spd },
+																	{"ps", execute_ps},
+																	{"spd", execute_spd },
+																	{"spdx", execute_spdx },
 																	{"mem", execute_mem},
 																	{"sig", execute_sig},
 																	{"sst", execute_sst},

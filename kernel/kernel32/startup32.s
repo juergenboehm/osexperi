@@ -384,18 +384,22 @@ kmain32:
 	call	malloc
 	movl	%eax, idt_table
 	call	init_idt_table
-	call	init_pic
+	call	init_pic_alt
 	movl	$1, schedule_off
 	movl	$0, timer_special_counter
 	movl	$0, keyb_special_counter
 	movl	$128, (%esp)
 	call	malloc
 	movl	%eax, -44(%ebp)
+	movl	$6, 8(%esp)
+	movl	$0, 4(%esp)
+	movl	$idt_ptr, (%esp)
+	call	memset
 	movw	$2047, idt_ptr
 	movl	idt_table, %eax
 	movl	%eax, idt_ptr+2
 #APP
-# 218 "kernel32/startup32.c" 1
+# 220 "kernel32/startup32.c" 1
 	lidt idt_ptr
 # 0 "" 2
 #NO_APP

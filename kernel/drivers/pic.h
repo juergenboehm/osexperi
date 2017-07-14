@@ -41,6 +41,8 @@ void disable_irq(uint8_t irq_num);
 
 
 void init_pic();
+void init_pic_alt();
+
 
 
 

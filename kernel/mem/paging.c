@@ -179,6 +179,8 @@ int map_page1(uint32_t vaddr, uint32_t paddr,
 	PG_PTE_SET_FRAME_ADDRESS(*pte, paddr);
 	PG_PTE_SET_BITS(*pte, mode_bits_ptab);
 
+	set_cr3(get_cr3());
+
 	return 0;
 }
 
@@ -315,15 +317,20 @@ void page_fault_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 	asm __volatile__ ( "movl %%esp, %0" : "=g"(esp_val));
 	uint32_t lin_addr;
 	asm __volatile__ ( "movl %%cr2, %0" : "=r"(lin_addr));
-	//printf("page fault = %d %d 0x%08x esp = 0x%08x cs = %08x\n", errcode, irq_num, lin_addr, esp_val,
-	//		(uint32_t)get_cs());
-
+#if 0
+	printf("page fault = %d %d 0x%08x esp = 0x%08x cs = %08x\n", errcode, irq_num, lin_addr, esp_val,
+			(uint32_t)get_cs());
+#endif
 	iret_blk_t* pir = (iret_blk_t*)(PROC_STACK_BEG(current) - sizeof(iret_blk_t));
 
 	outb_printf("page fault = %d %08x esp = %08x cs = %08x ds = %08x\n", errcode, lin_addr, esp_val,
 			(uint32_t)get_cs(), (uint32_t)get_ds());
 
-	print_iret_blk(pir);
+	//print_iret_blk(pir);
+
+#if 0
+	WAIT((1 << 24));
+#endif
 
 	void* cur_page_dir_sys;
 	cur_page_dir_sys = __VADDR(get_cr3());
@@ -380,12 +387,18 @@ void page_fault_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 
 		outb_printf("p = %08x p_old = %08x\n", (uint32_t)p, (uint32_t)p_old);
 
-		page_desc_t* pdesc = BLK_PTR(ADDR_TO_PDESC_INDEX(p_old));
-		--pdesc->use_cnt;
-
 		memcpy(p, p_old, PAGE_SIZE);
 
 		outb_printf("memcpy done.\n");
+
+		page_desc_t* pdesc = BLK_PTR(ADDR_TO_PDESC_INDEX(p_old));
+		--pdesc->use_cnt;
+
+		if (!pdesc->use_cnt && !(pdesc->flags & PDESC_FLAG_NOMEM))
+		{
+			DEBUGOUT1(0, "freeing page_frame paddr_frame = %08x\n", (uint32_t) phys_addr_frame);
+			free(p_old);
+		}
 
 		map_page1(lin_addr, (uint32_t)__PHYS(p), cur_page_dir_sys, pte_bits, pde_bits);
 
@@ -399,6 +412,13 @@ void page_fault_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 	{
 		void *p = get_page_with_refcnt(0);
 		uint32_t paddr = (uint32_t)__PHYS(p);
+
+		if (!lin_addr)
+		{
+			printf("Access to address 0 forbidden:\n");
+			print_iret_blk(pir);
+			while (1) {};
+		}
 
 		if (p)
 		{
@@ -493,6 +513,11 @@ int copy_page_tables(process_t* proc, uint32_t *new_page_dir_phys, uint32_t mode
 			page_table_entry_t* p_akt_pagetable = __VADDR(pdir_entry_phys);
 			uint32_t mode_bits_pdir = PG_PTE_GET_BITS(page_dir[pdir_index]);
 
+			if (do_cow_prepare)
+			{
+				PG_PTE_SET_BITS(page_dir[pdir_index], mode_bits_pdir & ~PG_BIT_RW);
+			}
+
 			for(ptable_index = 0; ptable_index < PG_PAGE_TABLE_ENTRIES; ++ptable_index)
 			{
 
@@ -509,6 +534,10 @@ int copy_page_tables(process_t* proc, uint32_t *new_page_dir_phys, uint32_t mode
 
 					uint32_t mode_bits_ptab = PG_PTE_GET_BITS(p_akt_pagetable[ptable_index]);
 
+					if (do_cow_prepare)
+					{
+						PG_PTE_SET_BITS(p_akt_pagetable[ptable_index], mode_bits_ptab & ~ PG_BIT_RW);
+					}
 
 					uint32_t* p_copied_page = 0;
 					if (!do_cow_prepare)

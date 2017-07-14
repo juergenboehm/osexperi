@@ -466,9 +466,9 @@ void ide_irq_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 
 	// port A is command port. used to acknowledge interrupt.
 
-	outb(PIC1_COMMAND, PIC_EOI);
-	io_wait();
 	outb(PIC2_COMMAND, PIC_EOI);
+	io_wait();
+	outb(PIC1_COMMAND, PIC_EOI);
 	io_wait();
 
 

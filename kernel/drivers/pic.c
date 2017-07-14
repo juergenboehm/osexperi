@@ -66,6 +66,45 @@ void init_pic()
 
 }
 
+void init_pic_alt()
+{
+		outb(PIC1_COMMAND, PIC_INIT_CMD);  // starts the initialization sequence (in cascade mode)
+		io_wait();
+		outb(PIC2_COMMAND, PIC_INIT_CMD);
+		io_wait();
+		outb(PIC1_DATA, PIC1_IRQ_BASE);                 // ICW2: Master PIC vector offset
+		io_wait();
+		outb(PIC2_DATA, PIC2_IRQ_BASE);                 // ICW2: Slave PIC vector offset
+		io_wait();
+		outb(PIC1_DATA, 4);                       // ICW3: tell Master PIC that there is a slave PIC at IRQ2 (0000 0100)
+		io_wait();
+		outb(PIC2_DATA, 2);                       // ICW3: tell Slave PIC its cascade identity (0000 0010)
+		io_wait();
+
+		outb(PIC1_DATA, 0x01);
+		io_wait();
+		outb(PIC2_DATA, 0x01);
+		io_wait();
+
+		outb(PIC1_DATA, 0xff); // disable all interrupt lines
+		io_wait();
+
+		outb(PIC2_DATA, 0xff); // disable all interrupt lines
+		io_wait();
+
+		outb(PIC1_DATA, 0xff);   // initialize irq masks to all disable
+		outb(PIC2_DATA, 0xff);
+
+		enable_irq(PIC_TIMER_IRQ);
+		enable_irq(PIC_KEYB_IRQ);
+		enable_irq(PIC_PIC2_IRQ);
+
+		enable_irq(PIC_IDE_IRQ);
+
+
+}
+
+
 // port B, respectively port data is for setting and getting the mask
 
 void set_irq(uint8_t irq_num, uint32_t enable)

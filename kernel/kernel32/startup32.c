@@ -205,7 +205,7 @@ void kmain32()
 	idt_table = MALLOC_FIXED_TYPE(idt_entry, IDT_TABLE_SIZE, 1);
 
 	init_idt_table();
-	init_pic();
+	init_pic_alt();
 
 	schedule_off = 1;
 
@@ -214,6 +214,8 @@ void kmain32()
 
   uint8_t* test_dummy = MALLOC_FIXED_TYPE(uint8_t, 128, 4096);
 
+
+  memset((void*)&idt_ptr, 0, sizeof(lim_addr_ptr));
   SET_LIM_ADDR(idt_ptr, IDT_TABLE_SIZE * sizeof(idt_entry), idt_table);
   SET_LIDT(idt_ptr);
 

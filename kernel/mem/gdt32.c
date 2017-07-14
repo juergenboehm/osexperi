@@ -17,6 +17,8 @@ lim_addr_ptr gdt_ptr_32;
 int __NOINLINE volatile init_gdtptr_32 ()
 {
 
+	memset(gdt_ptr_32, 0, sizeof(lim_addr_ptr));
+
 	DBGOUT32("sizeof(GDT_ENTRY) = ", sizeof(descriptor_t));
 
 	uint32_t addr_gdtable_32 = (uint32_t) &gdt_table_32;
@@ -37,10 +39,12 @@ void init_gdt_table_32()
 
 	printf("init_gdt_table_32: start.\n");
 
-	for(i = 0; i < 4; ++i )
+	for(i = 0; i < GDT_TABLE_32_LEN; ++i )
 	{
 		DESCRIPTOR_SET_SEG_ZERO(gdt_table_32[i]);
 	}
+
+	memset(gdt_table_32, 0, sizeof(gdt_table_32));
 
 	DESCRIPTOR_SET_CODE_SEG(gdt_table_32[KERNEL_16_CS_GDT_INDEX], 0);
 	DESCRIPTOR_SET_DATA_SEG(gdt_table_32[KERNEL_16_DS_GDT_INDEX], 0);

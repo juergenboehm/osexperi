@@ -153,38 +153,31 @@ uproc_1:
 	cmpl	$9, -24(%ebp)
 	jle	.L12
 	movl	$998, testq
-.L10:
-	movl	$0, -28(%ebp)
 	jmp	.L13
-.L14:
-	movl	$0, -40(%ebp)
-	incl	-28(%ebp)
-.L13:
-	cmpl	$167772159, -28(%ebp)
-	jle	.L14
-	jmp	.L15
+.L10:
+	jmp	.L13
 .L21:
 	movl	$2, -16(%ebp)
-	jmp	.L16
-.L19:
+	jmp	.L14
+.L17:
 	movl	-12(%ebp), %eax
 	movl	$0, %edx
 	divl	-16(%ebp)
 	movl	%edx, %eax
 	testl	%eax, %eax
-	jne	.L17
+	jne	.L15
 	movl	$0, -16(%ebp)
-	jmp	.L18
-.L17:
+	jmp	.L16
+.L15:
 	incl	-16(%ebp)
-.L16:
+.L14:
 	movl	-16(%ebp), %eax
 	imull	-16(%ebp), %eax
 	cmpl	-12(%ebp), %eax
-	jbe	.L19
-.L18:
+	jbe	.L17
+.L16:
 	cmpl	$0, -16(%ebp)
-	je	.L20
+	je	.L18
 	incl	-20(%ebp)
 	movl	-12(%ebp), %eax
 	movl	%eax, 4(%esp)
@@ -193,12 +186,24 @@ uproc_1:
 	movl	-20(%ebp), %eax
 	andl	$3, %eax
 	testl	%eax, %eax
-	jne	.L20
+	jne	.L18
 	movl	$.LC8, (%esp)
 	call	uprintf
-.L20:
+.L18:
 	incl	-12(%ebp)
-.L15:
+	movl	-12(%ebp), %eax
+	andl	$7, %eax
+	testl	%eax, %eax
+	jne	.L13
+	movl	$0, -28(%ebp)
+	jmp	.L19
+.L20:
+	movl	$0, -40(%ebp)
+	incl	-28(%ebp)
+.L19:
+	cmpl	$2113929215, -28(%ebp)
+	jle	.L20
+.L13:
 	cmpl	$1073741823, -12(%ebp)
 	jbe	.L21
 .L22:
