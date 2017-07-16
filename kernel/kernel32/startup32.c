@@ -49,61 +49,6 @@ prd_entry_t* prd_table;
 extern void* uproc_1;
 
 
-void ide_test()
-{
-
-	ide_ctrl_t* ide_ctrl = ide_ctrl_PM;
-
-	ide_ctrl->buffer = ide_buffer;
-
-	uint32_t ok = ide_IDENTIFY_DEVICE(ide_ctrl, 0);
-
-	printf("ide test: IDENTIFY_DEVICE: ok = %08x\n", ok);
-	printf("ide test: BSY %01x DRDY %01x DF %01x DRQ %01x ERR %01x\n\n",
-							ide_ctrl->BSY, ide_ctrl->DRDY, ide_ctrl->DF, ide_ctrl->DRQ, ide_ctrl->ERR);
-
-
-	display_buffer(ide_buffer, 512);
-
-	ok = ide_SET_FEATURE(ide_ctrl, 0);
-
-	printf("ide test: SET_FEATURE: ok = %08x\n", ok);
-	printf("ide test: BSY %01x DRDY %01x DF %01x DRQ %01x ERR %01x\n\n",
-							ide_ctrl->BSY, ide_ctrl->DRDY, ide_ctrl->DF, ide_ctrl->DRQ, ide_ctrl->ERR);
-
-
-	ok = ide_IDENTIFY_DEVICE(ide_ctrl, 0);
-
-	printf("ide test: IDENTIFY_DEVICE: ok = %08x\n", ok);
-	printf("ide test: BSY %01x DRDY %01x DF %01x DRQ %01x ERR %01x\n\n",
-							ide_ctrl->BSY, ide_ctrl->DRDY, ide_ctrl->DF, ide_ctrl->DRQ, ide_ctrl->ERR);
-
-
-	display_buffer(ide_buffer, 512);
-
-
-	ok = ide_READ_DMA(ide_ctrl, prd_table, 1, 0, 0);
-
-	printf("ide test: ok = %08x\n", ok);
-	printf("ide test: BSY %01x DRDY %01x DF %01x DRQ %01x ERR %01x\n\n",
-							ide_ctrl->BSY, ide_ctrl->DRDY, ide_ctrl->DF, ide_ctrl->DRQ, ide_ctrl->ERR);
-
-
-	display_buffer(ide_buffer, 512);
-
-
-	ok = ide_READ_DMA(ide_ctrl, prd_table, 1, 1, 0);
-
-	printf("ide test: ok = %08x\n", ok);
-	printf("ide test: BSY %01x DRDY %01x DF %01x DRQ %01x ERR %01x\n\n",
-							ide_ctrl->BSY, ide_ctrl->DRDY, ide_ctrl->DF, ide_ctrl->DRQ, ide_ctrl->ERR);
-
-
-	display_buffer(ide_buffer, 512);
-
-
-}
-
 void keyb_controller_comreg()
 {
 	outb(0x64, 0x20);
@@ -221,6 +166,8 @@ void kmain32()
 
 	init_global_tss();
 
+	init_sync_system();
+
   sti();
 
 	i = 0;
@@ -237,7 +184,7 @@ void kmain32()
 	display_bios_mem_area_table();
 
 
-	waitkey();
+	//waitkey();
 
 	enumerate_pci_bus(pci_addr_ide_contr);
 
@@ -260,14 +207,8 @@ void kmain32()
 	prd_table = (prd_entry_t*)malloc(0x10000);
 	printf("\nkmain32: prd_table = %08x\n", (uint32_t) prd_table);
 
-	goto skip_ide_test;
-
-	ide_test();
 
 	uint32_t cnt = 0;
-
-
-	skip_ide_test:
 
   goto skip_pfh_test;
 
@@ -286,7 +227,7 @@ void kmain32()
 		printf("%d %x %c\n", i, *p, *p);
 	}
 
-	skip_pfh_test:
+	skip_pfh_test: {}
 
 	//do_list_tests();
 
@@ -294,26 +235,14 @@ void kmain32()
 	//use_keyboard();
 
 
-	for(i = 0; i < 5; ++i)
-		waitkey();
+//	for(i = 0; i < 2; ++i)
+//		waitkey();
 
 	void* uproc_1 = (void*) 0x1000;
 
 	//schedule_off = 0;
 
 	init_process_1_xp(uproc_1);
-
-/*
-	for(i = 0; 1 ; ++i)
-	{
-		printf("\nproc_0: only counting: cs = 0x%08x ds = 0x%08x esp = 0x%08x\n", get_cs(), get_ds(), get_esp());
-		printf("proc0: i = %d timer_special_counter = %d proc_switch_count = %d\n", i,
-				timer_special_counter, proc_switch_count);
-
-		outb_0xe9( 'B');
-		//WAIT(1 << 23);
-	}
-*/
 
 }
 

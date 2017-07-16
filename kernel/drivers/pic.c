@@ -128,3 +128,16 @@ void disable_irq(uint8_t irq_num)
   set_irq(irq_num, 0);
 }
 
+uint8_t pic_get_in_service(uint8_t is_master)
+{
+	uint8_t cmd_port = is_master ? PIC1_COMMAND : PIC2_COMMAND;
+	outb(cmd_port, 0x0b);
+	io_wait();
+
+	uint8_t in_service_mask = inb(cmd_port);
+	io_wait();
+
+	return in_service_mask;
+
+}
+

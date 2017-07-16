@@ -74,6 +74,13 @@ int fork()
 	return make_syscall1(SC_SYS_FORK, (uint32_t) 0);
 }
 
+int ugetc(uint32_t fd)
+{
+	uint32_t key = 0;
+	uint32_t ret = make_syscall3(SC_SYS_READ_NO, fd, (uint32_t)&key, sizeof(key));
+	return key;
+}
+
 static int kprint_str(uint32_t fd, char* str)
 {
 	int nlen = ustrlen(str);

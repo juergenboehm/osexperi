@@ -33,6 +33,7 @@
 
 #define PG_ATTR_MASK (~PG_FRAME_ADDRESS_MASK)
 
+#define PG_GET_VADDR(pdir, ptab) (((pdir) << (PG_FRAME_BITS + PG_PAGE_TABLE_BITS)) + ((ptab) << (PG_FRAME_BITS)))
 
 
 
@@ -74,8 +75,9 @@
 #define PG_PTCM_COPY_FOR_COW	1
 
 
+//some general defs
 
-
+#define INVLPG() set_cr3(get_cr3());
 
 
 

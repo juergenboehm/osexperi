@@ -50,9 +50,9 @@ int vga_write(file_t* fil, char* buf, size_t count, size_t* offset)
 	while ((*p) && (i < count))
 	{
 
-		uint32_t eflags = irq_cli_save();
+		IRQ_CLI_SAVE(eflags);
 		screen_print_char(minor, (uint8_t)(*p));
-		irq_restore(eflags);
+		IRQ_RESTORE(eflags);
 
 		fil->f_pos++;
 		++i;
@@ -254,7 +254,7 @@ void screen_print_char_visible(int screen, uint8_t ch)
 
 void screen_print_char(int screen, uint8_t ch)
 {
-	//uint32_t eflags = irq_cli_save();
+	//IRQ_CLI_SAVE(eflags);
 	switch (ch)
 	{
 		case '\r':
@@ -291,7 +291,7 @@ void screen_print_char(int screen, uint8_t ch)
 	{
 		update_cursor(screen);
 	}
-	//irq_restore(eflags);
+	//IRQ_RESTORE(eflags);
 }
 
 

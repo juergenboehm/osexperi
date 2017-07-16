@@ -3,8 +3,7 @@
 	.code16gcc	
 
 #NO_APP
-	.comm	ide_irq_sema,4,4
-	.comm	ide_res_sema,4,4
+	.comm	ide_result,4,4
 	.comm	ide_ctrl_PM,4,4
 	.comm	idt_table,4,4
 	.comm	idt_ptr,6,1
@@ -504,7 +503,7 @@ idt_set_err_trap:
 	.section	.rodata
 	.align 4
 .LC0:
-	.string	"Spurious interrupt: errcode = %d irq_num = %d.\n"
+	.string	"Spurious interrupt: errcode = %d irq_num = %d: ism = %02x.\n"
 	.align 4
 .LC1:
 	.string	"Dummy interrupt: errcode = %d irq_num = %d.\n"
@@ -514,9 +513,14 @@ idt_set_err_trap:
 dummy_handler:
 	pushl	%ebp
 	movl	%esp, %ebp
-	subl	$24, %esp
+	subl	$40, %esp
 	cmpl	$39, 12(%ebp)
 	jne	.L8
+	movl	$1, (%esp)
+	call	pic_get_in_service
+	movb	%al, -9(%ebp)
+	movzbl	-9(%ebp), %eax
+	movl	%eax, 12(%esp)
 	movl	12(%ebp), %eax
 	movl	%eax, 8(%esp)
 	movl	8(%ebp), %eax

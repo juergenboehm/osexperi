@@ -714,9 +714,6 @@ call_user_handler:
 	addl	$36, %eax
 	movl	%eax, -12(%ebp)
 	movl	-12(%ebp), %eax
-	movl	%eax, (%esp)
-	call	print_iret_blk
-	movl	-12(%ebp), %eax
 	movw	4(%eax), %ax
 	movzwl	%ax, %eax
 	andl	$3, %eax
@@ -1270,6 +1267,65 @@ build_artificial_switch_save_block:
 	leave
 	ret
 	.size	build_artificial_switch_save_block, .-build_artificial_switch_save_block
+	.globl	clone_wq
+	.type	clone_wq, @function
+clone_wq:
+	pushl	%ebp
+	movl	%esp, %ebp
+	subl	$24, %esp
+	movl	12(%ebp), %eax
+	movl	136(%eax), %eax
+	movl	%eax, -12(%ebp)
+	cmpl	$0, -12(%ebp)
+	je	.L88
+	call	get_process_node_t
+	movl	%eax, -16(%ebp)
+	movl	-16(%ebp), %eax
+	movl	8(%ebp), %edx
+	movl	%edx, 8(%eax)
+	movl	-16(%ebp), %eax
+	movl	%eax, -20(%ebp)
+	movl	-12(%ebp), %eax
+	movl	(%eax), %eax
+	testl	%eax, %eax
+	jne	.L90
+	movl	-12(%ebp), %eax
+	movl	-20(%ebp), %edx
+	movl	%edx, (%eax)
+	movl	-20(%ebp), %eax
+	movl	-20(%ebp), %edx
+	movl	%edx, (%eax)
+	movl	-20(%ebp), %eax
+	movl	-20(%ebp), %edx
+	movl	%edx, 4(%eax)
+	jmp	.L91
+.L90:
+	movl	-12(%ebp), %eax
+	movl	(%eax), %eax
+	movl	4(%eax), %eax
+	movl	%eax, -24(%ebp)
+	movl	-24(%ebp), %eax
+	movl	(%eax), %edx
+	movl	-20(%ebp), %eax
+	movl	%edx, (%eax)
+	movl	-20(%ebp), %eax
+	movl	-24(%ebp), %edx
+	movl	%edx, 4(%eax)
+	movl	-24(%ebp), %eax
+	movl	(%eax), %eax
+	movl	-20(%ebp), %edx
+	movl	%edx, 4(%eax)
+	movl	-24(%ebp), %eax
+	movl	-20(%ebp), %edx
+	movl	%edx, (%eax)
+.L91:
+	movl	8(%ebp), %eax
+	movl	-12(%ebp), %edx
+	movl	%edx, 136(%eax)
+.L88:
+	leave
+	ret
+	.size	clone_wq, .-clone_wq
 	.section	.rodata
 	.align 4
 .LC23:
@@ -1295,7 +1351,7 @@ fork_process:
 	subl	$120, %esp
 	call	irq_cli_save
 	movl	%eax, -16(%ebp)
-	movl	$833, 8(%esp)
+	movl	$845, 8(%esp)
 	movl	$.LC2, 4(%esp)
 	movl	$.LC3, (%esp)
 	call	outb_printf
@@ -1318,9 +1374,9 @@ fork_process:
 	call	copy_page_tables
 	movl	%eax, -20(%ebp)
 	cmpl	$0, -20(%ebp)
-	je	.L89
-	jmp	.L90
-.L89:
+	je	.L93
+	jmp	.L94
+.L93:
 	leal	-68(%ebp), %eax
 	movl	%eax, 4(%esp)
 	movl	-24(%ebp), %eax
@@ -1328,9 +1384,14 @@ fork_process:
 	call	clone_proc_t
 	movl	%eax, -20(%ebp)
 	cmpl	$0, -20(%ebp)
-	je	.L91
-	jmp	.L90
-.L91:
+	je	.L95
+	jmp	.L94
+.L95:
+	movl	-68(%ebp), %eax
+	movl	-24(%ebp), %edx
+	movl	%edx, 4(%esp)
+	movl	%eax, (%esp)
+	call	clone_wq
 	movl	-68(%ebp), %eax
 	addl	$8192, %eax
 	subl	-28(%ebp), %eax
@@ -1343,7 +1404,7 @@ fork_process:
 	addl	$4, %eax
 	movl	(%eax), %eax
 	movl	%eax, -36(%ebp)
-	movl	$875, 8(%esp)
+	movl	$890, 8(%esp)
 	movl	$.LC2, 4(%esp)
 	movl	$.LC3, (%esp)
 	call	printf
@@ -1355,7 +1416,7 @@ fork_process:
 	movl	%eax, 4(%esp)
 	movl	$.LC24, (%esp)
 	call	printf
-	movl	$878, 8(%esp)
+	movl	$893, 8(%esp)
 	movl	$.LC2, 4(%esp)
 	movl	$.LC3, (%esp)
 	call	outb_printf
@@ -1403,7 +1464,7 @@ fork_process:
 	movw	$40, 80(%eax)
 	movl	-68(%ebp), %eax
 	movl	$0, 60(%eax)
-	movl	$916, 8(%esp)
+	movl	$931, 8(%esp)
 	movl	$.LC2, 4(%esp)
 	movl	$.LC3, (%esp)
 	call	outb_printf
@@ -1429,7 +1490,7 @@ fork_process:
 	movl	%edx, 4(%esp)
 	movl	%eax, (%esp)
 	call	init_proc_eip
-	movl	$929, 8(%esp)
+	movl	$944, 8(%esp)
 	movl	$.LC2, 4(%esp)
 	movl	$.LC3, (%esp)
 	call	outb_printf
@@ -1449,7 +1510,7 @@ fork_process:
 	movl	%eax, -52(%ebp)
 	movl	global_proc_list, %eax
 	testl	%eax, %eax
-	jne	.L92
+	jne	.L96
 	movl	-52(%ebp), %eax
 	movl	%eax, global_proc_list
 	movl	-52(%ebp), %eax
@@ -1458,8 +1519,8 @@ fork_process:
 	movl	-52(%ebp), %eax
 	movl	-52(%ebp), %edx
 	movl	%edx, 4(%eax)
-	jmp	.L90
-.L92:
+	jmp	.L94
+.L96:
 	movl	global_proc_list, %eax
 	movl	%eax, -56(%ebp)
 	movl	global_proc_list, %eax
@@ -1479,8 +1540,8 @@ fork_process:
 	movl	%edx, (%eax)
 	movl	-52(%ebp), %eax
 	movl	%eax, global_proc_list
-.L90:
-	movl	$939, 8(%esp)
+.L94:
+	movl	$954, 8(%esp)
 	movl	$.LC2, 4(%esp)
 	movl	$.LC3, (%esp)
 	call	outb_printf

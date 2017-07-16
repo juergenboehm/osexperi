@@ -54,224 +54,12 @@ sti:
 	.code16gcc	
 
 #NO_APP
-	.comm	ide_irq_sema,4,4
-	.comm	ide_res_sema,4,4
+	.comm	ide_result,4,4
 	.comm	ide_ctrl_PM,4,4
 	.comm	malloc_sizes_log,60,32
 	.comm	malloc_heads,60,32
 	.comm	ide_buffer,4,4
 	.comm	prd_table,4,4
-	.section	.rodata
-	.align 4
-.LC0:
-	.string	"ide test: IDENTIFY_DEVICE: ok = %08x\n"
-	.align 4
-.LC1:
-	.string	"ide test: BSY %01x DRDY %01x DF %01x DRQ %01x ERR %01x\n\n"
-	.align 4
-.LC2:
-	.string	"ide test: SET_FEATURE: ok = %08x\n"
-.LC3:
-	.string	"ide test: ok = %08x\n"
-	.text
-	.globl	ide_test
-	.type	ide_test, @function
-ide_test:
-	pushl	%ebp
-	movl	%esp, %ebp
-	pushl	%esi
-	pushl	%ebx
-	subl	$48, %esp
-	movl	ide_ctrl_PM, %eax
-	movl	%eax, -12(%ebp)
-	movl	ide_buffer, %edx
-	movl	-12(%ebp), %eax
-	movl	%edx, 11(%eax)
-	movl	$0, 4(%esp)
-	movl	-12(%ebp), %eax
-	movl	%eax, (%esp)
-	call	ide_IDENTIFY_DEVICE
-	movl	%eax, -16(%ebp)
-	movl	-16(%ebp), %eax
-	movl	%eax, 4(%esp)
-	movl	$.LC0, (%esp)
-	call	printf
-	movl	-12(%ebp), %eax
-	movb	19(%eax), %al
-	movzbl	%al, %esi
-	movl	-12(%ebp), %eax
-	movb	18(%eax), %al
-	movzbl	%al, %ebx
-	movl	-12(%ebp), %eax
-	movb	17(%eax), %al
-	movzbl	%al, %ecx
-	movl	-12(%ebp), %eax
-	movb	16(%eax), %al
-	movzbl	%al, %edx
-	movl	-12(%ebp), %eax
-	movb	15(%eax), %al
-	movzbl	%al, %eax
-	movl	%esi, 20(%esp)
-	movl	%ebx, 16(%esp)
-	movl	%ecx, 12(%esp)
-	movl	%edx, 8(%esp)
-	movl	%eax, 4(%esp)
-	movl	$.LC1, (%esp)
-	call	printf
-	movl	ide_buffer, %eax
-	movl	$512, 4(%esp)
-	movl	%eax, (%esp)
-	call	display_buffer
-	movl	$0, 4(%esp)
-	movl	-12(%ebp), %eax
-	movl	%eax, (%esp)
-	call	ide_SET_FEATURE
-	movl	%eax, -16(%ebp)
-	movl	-16(%ebp), %eax
-	movl	%eax, 4(%esp)
-	movl	$.LC2, (%esp)
-	call	printf
-	movl	-12(%ebp), %eax
-	movb	19(%eax), %al
-	movzbl	%al, %esi
-	movl	-12(%ebp), %eax
-	movb	18(%eax), %al
-	movzbl	%al, %ebx
-	movl	-12(%ebp), %eax
-	movb	17(%eax), %al
-	movzbl	%al, %ecx
-	movl	-12(%ebp), %eax
-	movb	16(%eax), %al
-	movzbl	%al, %edx
-	movl	-12(%ebp), %eax
-	movb	15(%eax), %al
-	movzbl	%al, %eax
-	movl	%esi, 20(%esp)
-	movl	%ebx, 16(%esp)
-	movl	%ecx, 12(%esp)
-	movl	%edx, 8(%esp)
-	movl	%eax, 4(%esp)
-	movl	$.LC1, (%esp)
-	call	printf
-	movl	$0, 4(%esp)
-	movl	-12(%ebp), %eax
-	movl	%eax, (%esp)
-	call	ide_IDENTIFY_DEVICE
-	movl	%eax, -16(%ebp)
-	movl	-16(%ebp), %eax
-	movl	%eax, 4(%esp)
-	movl	$.LC0, (%esp)
-	call	printf
-	movl	-12(%ebp), %eax
-	movb	19(%eax), %al
-	movzbl	%al, %esi
-	movl	-12(%ebp), %eax
-	movb	18(%eax), %al
-	movzbl	%al, %ebx
-	movl	-12(%ebp), %eax
-	movb	17(%eax), %al
-	movzbl	%al, %ecx
-	movl	-12(%ebp), %eax
-	movb	16(%eax), %al
-	movzbl	%al, %edx
-	movl	-12(%ebp), %eax
-	movb	15(%eax), %al
-	movzbl	%al, %eax
-	movl	%esi, 20(%esp)
-	movl	%ebx, 16(%esp)
-	movl	%ecx, 12(%esp)
-	movl	%edx, 8(%esp)
-	movl	%eax, 4(%esp)
-	movl	$.LC1, (%esp)
-	call	printf
-	movl	ide_buffer, %eax
-	movl	$512, 4(%esp)
-	movl	%eax, (%esp)
-	call	display_buffer
-	movl	prd_table, %eax
-	movl	$0, 16(%esp)
-	movl	$0, 12(%esp)
-	movl	$1, 8(%esp)
-	movl	%eax, 4(%esp)
-	movl	-12(%ebp), %eax
-	movl	%eax, (%esp)
-	call	ide_READ_DMA
-	movl	%eax, -16(%ebp)
-	movl	-16(%ebp), %eax
-	movl	%eax, 4(%esp)
-	movl	$.LC3, (%esp)
-	call	printf
-	movl	-12(%ebp), %eax
-	movb	19(%eax), %al
-	movzbl	%al, %esi
-	movl	-12(%ebp), %eax
-	movb	18(%eax), %al
-	movzbl	%al, %ebx
-	movl	-12(%ebp), %eax
-	movb	17(%eax), %al
-	movzbl	%al, %ecx
-	movl	-12(%ebp), %eax
-	movb	16(%eax), %al
-	movzbl	%al, %edx
-	movl	-12(%ebp), %eax
-	movb	15(%eax), %al
-	movzbl	%al, %eax
-	movl	%esi, 20(%esp)
-	movl	%ebx, 16(%esp)
-	movl	%ecx, 12(%esp)
-	movl	%edx, 8(%esp)
-	movl	%eax, 4(%esp)
-	movl	$.LC1, (%esp)
-	call	printf
-	movl	ide_buffer, %eax
-	movl	$512, 4(%esp)
-	movl	%eax, (%esp)
-	call	display_buffer
-	movl	prd_table, %eax
-	movl	$0, 16(%esp)
-	movl	$1, 12(%esp)
-	movl	$1, 8(%esp)
-	movl	%eax, 4(%esp)
-	movl	-12(%ebp), %eax
-	movl	%eax, (%esp)
-	call	ide_READ_DMA
-	movl	%eax, -16(%ebp)
-	movl	-16(%ebp), %eax
-	movl	%eax, 4(%esp)
-	movl	$.LC3, (%esp)
-	call	printf
-	movl	-12(%ebp), %eax
-	movb	19(%eax), %al
-	movzbl	%al, %esi
-	movl	-12(%ebp), %eax
-	movb	18(%eax), %al
-	movzbl	%al, %ebx
-	movl	-12(%ebp), %eax
-	movb	17(%eax), %al
-	movzbl	%al, %ecx
-	movl	-12(%ebp), %eax
-	movb	16(%eax), %al
-	movzbl	%al, %edx
-	movl	-12(%ebp), %eax
-	movb	15(%eax), %al
-	movzbl	%al, %eax
-	movl	%esi, 20(%esp)
-	movl	%ebx, 16(%esp)
-	movl	%ecx, 12(%esp)
-	movl	%edx, 8(%esp)
-	movl	%eax, 4(%esp)
-	movl	$.LC1, (%esp)
-	call	printf
-	movl	ide_buffer, %eax
-	movl	$512, 4(%esp)
-	movl	%eax, (%esp)
-	call	display_buffer
-	addl	$48, %esp
-	popl	%ebx
-	popl	%esi
-	popl	%ebp
-	ret
-	.size	ide_test, .-ide_test
 	.globl	keyb_controller_comreg
 	.type	keyb_controller_comreg, @function
 keyb_controller_comreg:
@@ -295,31 +83,31 @@ keyb_controller_comreg:
 	ret
 	.size	keyb_controller_comreg, .-keyb_controller_comreg
 	.section	.rodata
-.LC4:
+.LC0:
 	.string	"kmain32 started.\n"
-.LC5:
+.LC1:
 	.string	"kalloc_fixed_done.\n"
-.LC6:
+.LC2:
 	.string	"init_mem_system done.\n"
-.LC7:
+.LC3:
 	.string	"init_malloc_system done.\n"
-.LC8:
+.LC4:
 	.string	"init_base_files done.\n"
-.LC9:
+.LC5:
 	.string	"/dev/vga0"
-.LC10:
+.LC6:
 	.string	"/dev/vga1"
-.LC11:
+.LC7:
 	.string	"/dev/vga2"
-.LC12:
+.LC8:
 	.string	"/dev/vga3"
-.LC13:
+.LC9:
 	.string	"Protected mode.\n"
-.LC14:
+.LC10:
 	.string	"Paging enabled.\n\n"
-.LC15:
+.LC11:
 	.string	"\nkmain32: ide_buffer = %08x\n"
-.LC16:
+.LC12:
 	.string	"\nkmain32: prd_table = %08x\n"
 	.text
 	.globl	kmain32
@@ -330,52 +118,52 @@ kmain32:
 	subl	$72, %esp
 	movl	$0, current
 	movl	$0, -12(%ebp)
-	jmp	.L8
-.L9:
+	jmp	.L7
+.L8:
 	movl	-12(%ebp), %eax
 	addl	$pidbuf, %eax
 	movb	$0, (%eax)
 	incl	-12(%ebp)
-.L8:
+.L7:
 	cmpl	$3, -12(%ebp)
-	jbe	.L9
+	jbe	.L8
 	movb	pidbuf, %al
 	orl	$1, %eax
 	movb	%al, pidbuf
-	movl	$.LC4, (%esp)
+	movl	$.LC0, (%esp)
 	call	outb_printf
 	call	init_kalloc_fixed
-	movl	$.LC5, (%esp)
+	movl	$.LC1, (%esp)
 	call	outb_printf
 	call	init_mem_system
-	movl	$.LC6, (%esp)
+	movl	$.LC2, (%esp)
 	call	outb_printf
 	call	init_malloc_system
-	movl	$.LC7, (%esp)
+	movl	$.LC3, (%esp)
 	call	outb_printf
 	call	init_base_files
-	movl	$.LC8, (%esp)
+	movl	$.LC4, (%esp)
 	call	outb_printf
 	movl	$1, 4(%esp)
-	movl	$.LC9, (%esp)
+	movl	$.LC5, (%esp)
 	call	do_open
 	movl	%eax, -16(%ebp)
 	movl	$1, 4(%esp)
-	movl	$.LC10, (%esp)
+	movl	$.LC6, (%esp)
 	call	do_open
 	movl	%eax, -20(%ebp)
 	movl	$1, 4(%esp)
-	movl	$.LC11, (%esp)
+	movl	$.LC7, (%esp)
 	call	do_open
 	movl	%eax, -24(%ebp)
 	movl	$1, 4(%esp)
-	movl	$.LC12, (%esp)
+	movl	$.LC8, (%esp)
 	call	do_open
 	movl	%eax, -28(%ebp)
 	call	test_ext2
-	movl	$.LC13, (%esp)
+	movl	$.LC9, (%esp)
 	call	printf
-	movl	$.LC14, (%esp)
+	movl	$.LC10, (%esp)
 	call	printf
 	call	init_gdt_table_32
 	movl	$-19092531, -40(%ebp)
@@ -399,11 +187,12 @@ kmain32:
 	movl	idt_table, %eax
 	movl	%eax, idt_ptr+2
 #APP
-# 220 "kernel32/startup32.c" 1
+# 165 "kernel32/startup32.c" 1
 	lidt idt_ptr
 # 0 "" 2
 #NO_APP
 	call	init_global_tss
+	call	init_sync_system
 	call	sti
 	movl	$0, -12(%ebp)
 	call	init_keyboard
@@ -411,7 +200,6 @@ kmain32:
 	movl	$0, keyb_sema
 	movl	$0, timer_sema
 	call	display_bios_mem_area_table
-	call	waitkey
 	movl	$pci_addr_ide_contr, (%esp)
 	call	enumerate_pci_bus
 	movl	$pci_addr_ide_contr, (%esp)
@@ -422,29 +210,20 @@ kmain32:
 	movl	%eax, ide_buffer
 	movl	ide_buffer, %eax
 	movl	%eax, 4(%esp)
-	movl	$.LC15, (%esp)
+	movl	$.LC11, (%esp)
 	call	printf
 	movl	$65536, (%esp)
 	call	malloc
 	movl	%eax, prd_table
 	movl	prd_table, %eax
 	movl	%eax, 4(%esp)
-	movl	$.LC16, (%esp)
+	movl	$.LC12, (%esp)
 	call	printf
+	movl	$0, -52(%ebp)
 	nop
-	nop
-.L10:
-.L11:
-	movl	$0, -12(%ebp)
-	jmp	.L12
-.L13:
-	call	waitkey
-	incl	-12(%ebp)
-.L12:
-	cmpl	$4, -12(%ebp)
-	jbe	.L13
-	movl	$4096, -52(%ebp)
-	movl	-52(%ebp), %eax
+.L9:
+	movl	$4096, -56(%ebp)
+	movl	-56(%ebp), %eax
 	movl	%eax, (%esp)
 	call	init_process_1_xp
 	leave

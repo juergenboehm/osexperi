@@ -4,14 +4,16 @@
 #include "kerneltypes.h"
 #include "libs/structs.h"
 
+#include "vga.h"
+
 // data fields
 
 #define KEYBUF_SIZE 32
 
 extern uint32_t keyb_special_counter;
-extern uint32_t keyb_buf[KEYBUF_SIZE];
+extern uint32_t keyb_buf[NUM_SCREENS][KEYBUF_SIZE];
 
-extern queue_contr_t keyb_queue;
+extern queue_contr_t keyb_queue[NUM_SCREENS];
 
 
 volatile extern uint32_t keyb_sema;

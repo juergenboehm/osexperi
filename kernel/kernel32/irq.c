@@ -110,7 +110,8 @@ void dummy_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 {
 	if (irq_num == 39)
 	{
-	  printf("Spurious interrupt: errcode = %d irq_num = %d.\n", errcode, irq_num);
+		uint8_t ism = pic_get_in_service(1);
+	  printf("Spurious interrupt: errcode = %d irq_num = %d: ism = %02x.\n", errcode, irq_num, ism);
 	}
 	else
 	{

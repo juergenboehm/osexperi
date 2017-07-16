@@ -51,6 +51,14 @@ process_node_t* get_process_node_t()
 	return p_new_node;
 }
 
+wq_t* get_wq_t()
+{
+	wq_t* p_new_wq_t = (wq_t*) malloc(sizeof(wq_t));
+	memset(p_new_wq_t, 0, sizeof(wq_t));
+	return p_new_wq_t;
+}
+
+
 
 void free_process_node_t(process_node_t* pnd)
 {
@@ -66,6 +74,12 @@ void free_proc_io_block_t(proc_io_block_t* pio_blk)
 {
 	free(pio_blk);
 }
+
+void free_wq_t(wq_t* p_wqt)
+{
+	free(p_wqt);
+}
+
 
 
 

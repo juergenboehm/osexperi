@@ -2,6 +2,7 @@
 #define __drivers_keyb_decode_h
 
 #include "kerneltypes.h"
+#include "fs/vfs.h"
 
 // break make tables
 
@@ -222,8 +223,10 @@
 
 
 uint32_t init_keytables();
-uint32_t read_key_with_modifiers();
+uint32_t read_key_with_modifiers(int keyb_num);
 
+
+int keyb_read(file_t* fil, char* buf, size_t count, size_t* offset);
 
 
 #endif

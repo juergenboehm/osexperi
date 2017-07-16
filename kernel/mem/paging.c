@@ -179,7 +179,7 @@ int map_page1(uint32_t vaddr, uint32_t paddr,
 	PG_PTE_SET_FRAME_ADDRESS(*pte, paddr);
 	PG_PTE_SET_BITS(*pte, mode_bits_ptab);
 
-	set_cr3(get_cr3());
+	INVLPG();
 
 	return 0;
 }
@@ -363,7 +363,7 @@ void page_fault_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 
 		void *p = get_page_with_refcnt(0);
 
-		uint32_t lin_addr1 = (PG_PAGE_DIR_INDEX(lin_addr) << 22) + (PG_PAGE_TABLE_INDEX(lin_addr) << 12);
+		uint32_t lin_addr1 = PG_GET_VADDR(PG_PAGE_DIR_INDEX(lin_addr), PG_PAGE_TABLE_INDEX(lin_addr));
 
 		outb_printf("normalized lin_addr = %08x\n", lin_addr1);
 
@@ -547,8 +547,7 @@ int copy_page_tables(process_t* proc, uint32_t *new_page_dir_phys, uint32_t mode
 						memcpy(p_copied_page, page_frame, PAGE_SIZE);
 					}
 
-					uint32_t current_vaddr =
-							(pdir_index << (PG_FRAME_BITS + PG_PAGE_TABLE_BITS)) + (ptable_index << PG_FRAME_BITS);
+					uint32_t current_vaddr = PG_GET_VADDR(pdir_index, ptable_index);
 
 					if (do_cow_prepare)
 					{

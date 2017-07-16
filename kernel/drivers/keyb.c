@@ -4,45 +4,51 @@
 #include "drivers/vga.h"
 #include "drivers/keyb.h"
 
-
+#include "kernel32/mutex.h"
 
 
 uint32_t keyb_special_counter;
-uint32_t keyb_buf[KEYBUF_SIZE];
+uint32_t keyb_buf[NUM_SCREENS][KEYBUF_SIZE];
 
 volatile uint32_t keyb_sema;
 
 
-queue_contr_t keyb_queue;
+queue_contr_t keyb_queue[NUM_SCREENS];
 
 uint32_t init_keyboard()
 {
-	reset_queue(&keyb_queue, KEYBUF_SIZE, sizeof(uint32_t), (void*)keyb_buf);
+	int i;
+	for(i = 0; i < NUM_SCREENS; ++i)
+	{
+		reset_queue(&keyb_queue[i], KEYBUF_SIZE, sizeof(uint32_t), (void*)(&keyb_buf[i]));
+	}
 	return 0;
 }
 
 uint32_t reset_keyboard()
 {
-	uint32_t eflags = irq_cli_save();
+	IRQ_CLI_SAVE(eflags);
 	init_keyboard();
-	irq_restore(eflags);
+	IRQ_RESTORE(eflags);
+
+	return 0;
 }
 
 
-uint32_t read_keyb_byte()
+uint32_t read_keyb_byte(int keyb)
 {
 	uint32_t key = 0;
-	if (key_avail())
-	{
-	  get_queue(&keyb_queue, &key);
-	}
+	sema_down(&key_read_sema[keyb]);
+
+	get_queue(&keyb_queue[keyb], &key);
 
 	return key;
 }
 
-inline uint32_t key_avail()
+inline uint32_t key_avail(int keyb)
 {
-	return !is_empty_queue(&keyb_queue);
+	return sema_get(&key_read_sema[keyb]) > 0;
+//	return !is_empty_queue(&keyb_queue[keyb]);
 }
 
 #define MK_F1	0x3b
@@ -70,10 +76,11 @@ void keyb_irq_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 
 		outb_0xe9( (uint8_t)( keyb_scan_code & 0x000000ff));
 
-		keyb_sema = 1;
-		if (! is_full_queue(&keyb_queue))
+		sema_up(&key_read_sema[screen_current]);
+
+		if (! is_full_queue(&keyb_queue[screen_current]))
 		{
-			put_queue(&keyb_queue, &keyb_scan_code);
+			put_queue(&keyb_queue[screen_current], &keyb_scan_code);
 		}
 	}
 	// PIC port A is command port. used to acknowledge interrupt.

@@ -6,6 +6,8 @@
 #include "mem/pagingdefs.h"
 #include "mem/vmem_area.h"
 
+#include "kernel32/mutex.h"
+
 #include "fs/vfs.h"
 
 #include "libs/lists.h"
@@ -145,9 +147,13 @@ typedef struct __PACKED process_data_s {
 	uint32_t handler_arg;
 	uint32_t signal_pending;
 
+	// wait queues, mutexes, semaphores
+
+	wq_t*	in_wq;
+
 } process_data_t;
 
-typedef union {
+typedef union process_u {
 	char dummy[PROCESS_BLOCKSIZE];
 	process_data_t proc_data;
 } process_t;

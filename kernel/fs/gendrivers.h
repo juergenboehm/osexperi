@@ -13,7 +13,7 @@
 
 
 #define DEV_VGA_INDEX		1
-#define DEV_KEYB_INDEX	0
+#define DEV_KBD_INDEX	0
 #define DEV_IDE_INDEX		2
 #define DEV_TTY_INDEX		3
 
@@ -27,6 +27,8 @@ typedef struct device_driver_s {
 	uint32_t dd_rdev;
 
 	file_ops_t* dd_fops;
+
+	uint32_t dd_blksize; // if it is a blockdriver
 
 } device_driver_t;
 

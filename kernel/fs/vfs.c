@@ -33,7 +33,20 @@ int ddriv_llseek(file_t* fil, size_t offset, size_t origin)
 
 int ddriv_read(file_t* fil, char* buf, size_t count, size_t* offset)
 {
-	return -1;
+	int ret = -1;
+
+	uint32_t dev_major = GET_MAJOR_DEVICE_NUMBER(fil->f_dentry->d_inode->i_device);
+	device_driver_t* pdd = &dev_drv_table[dev_major];
+
+	//outb_printf("ddriv_write reached: dev_major = %d ", dev_major);
+
+	file_ops_t* pfops = pdd->dd_fops;
+
+	if (pfops)
+	{
+		ret = pdd->dd_fops->read(fil, buf, count, offset);
+	}
+	return ret;
 }
 
 int ddriv_write(file_t* fil, char* buf, size_t count, size_t* offset)
@@ -157,8 +170,10 @@ void init_base_files()
 	int i;
 
 	int dev_vga_code[4] = { DEV_VGA0, DEV_VGA1, DEV_VGA2, DEV_VGA3 };
+	int dev_kbd_code[4] = { DEV_KBD0, DEV_KBD1, DEV_KBD2, DEV_KBD3 };
 
-	for(i = 0; i < 4; ++i) {
+	for(i = 0; i < 4; ++i)
+	{
 
 		// make inode for /dev/vga<i>
 
@@ -179,6 +194,31 @@ void init_base_files()
 		dev_vga_file->f_pos = 0;
 		dev_vga_file->f_dentry = dev_vga_dentry;
 		dev_vga_file->f_fops = dev_vga_dentry->d_inode->i_fops;
+
+	}
+
+	for(i = 0; i < 4; ++i)
+	{
+		// make inode for /dev/vga<i>
+
+		inode_t * dev_keyb_inode;
+
+		dev_keyb_inode = &fixed_inode_list[dev_kbd_code[i]];
+
+		dev_keyb_inode->i_device = MAKE_DEVICE_NUMBER(DEV_KBD_INDEX, i);
+		dev_keyb_inode->i_fops = &device_driver_file_ops;
+		dev_keyb_inode->i_ino = i;
+
+		dentry_t* dev_keyb_dentry = &fixed_dentry_list[dev_kbd_code[i]];
+
+		dev_keyb_dentry->d_inode = dev_keyb_inode;
+
+		file_t* dev_keyb_file = &fixed_file_list[dev_kbd_code[i]];
+
+		dev_keyb_file->f_pos = 0;
+		dev_keyb_file->f_dentry = dev_keyb_dentry;
+		dev_keyb_file->f_fops = dev_keyb_dentry->d_inode->i_fops;
+
 
 	}
 

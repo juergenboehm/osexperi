@@ -27,6 +27,7 @@ void init_proc_basic(process_t* proc, uint32_t pid, uint32_t ticks)
 {
 	proc->proc_data.pid = pid;
 	proc->proc_data.ticks = ticks;
+	proc->proc_data.in_wq = 0;
 }
 
 void init_proc_handler(process_t* proc)

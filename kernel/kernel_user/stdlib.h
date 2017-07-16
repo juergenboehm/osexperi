@@ -58,6 +58,10 @@ uint32_t FILE;
 int uprintf(char* format, ... );
 int uoutb_printf(char* format, ... );
 
+// read from keyboard
+
+int ugetc(uint32_t fd);
+
 
 // some machine-level functions
 

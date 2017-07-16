@@ -102,7 +102,7 @@ void* malloc(uint32_t size)
 {
 	// To protect the many memory related datastructures
 	// that are acted upon by the now called code.
-	uint32_t eflags = irq_cli_save();
+	IRQ_CLI_SAVE(eflags);
 
 	DEBUGOUT1(0, "enter malloc(%d)\n", size);
 
@@ -119,12 +119,12 @@ void* malloc(uint32_t size)
 	void *p_ret = get_malloc_node(log_size);
 	DEBUGOUT1(0, "leave malloc p_ret = %08x\n", (uint32_t) p_ret);
 
-#if 1
+#if 0
 	if (p_ret)
 		memset(p_ret, 0, size);
 #endif
 
-	irq_restore(eflags);
+	IRQ_RESTORE(eflags);
 
 	ASSERT(p_ret != 0);
 
@@ -136,7 +136,7 @@ void free(void * p)
 
 	// To protect the many memory related datastructures
 	// that are acted upon by the now called code.
-	uint32_t eflags = irq_cli_save();
+	IRQ_CLI_SAVE(eflags);
 
 	uint32_t q_pd = ADDR_TO_PDESC_INDEX(p);
 	page_desc_t *pdesc = BLK_PTR(q_pd);
@@ -156,7 +156,7 @@ void free(void * p)
 		((malloc_node_t*)p)->next = pp;
 	}
 
-	irq_restore(eflags);
+	IRQ_RESTORE(eflags);
 }
 
 #define LEN_TEST_QUEUE 64

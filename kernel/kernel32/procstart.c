@@ -166,7 +166,7 @@ void init_process_1_xp(void* fun_addr)
 	// /dev/vga1
 	prepare_process(idle_forever, npid0, NULL, &fixed_file_list[DEV_VGA1]);
 	// /dev/vga2
-	prepare_process(idle_vn, npid1, NULL, &fixed_file_list[DEV_VGA2]);
+	prepare_process(idle_vn, npid1, &fixed_file_list[DEV_KBD2], &fixed_file_list[DEV_VGA2]);
 	// /dev/vga0
 	prepare_process(idle_watched, npid2, NULL, &fixed_file_list[DEV_VGA0]);
 
@@ -206,7 +206,7 @@ void init_process_1_xp(void* fun_addr)
 	memset(&current->proc_data.tss, 0, sizeof(tss_t));
 
 	// /dev/vga3
-	attach_io_block(current, NULL, &fixed_file_list[DEV_VGA3]);
+	attach_io_block(current, &fixed_file_list[DEV_KBD3], &fixed_file_list[DEV_VGA3]);
 
 	uint32_t npid3 = get_new_pid();
 
@@ -237,7 +237,7 @@ void init_process_1_xp(void* fun_addr)
 	init_proc_eip(current, (uint32_t) fun_addr, 0);
 
 
-	uint32_t eflags = irq_cli_save();
+	IRQ_CLI_SAVE(eflags);
 	init_proc_eflags(current, eflags | (1 << 9));
 
 	printf("current->eflags = %08x\n", current->proc_data.tss.eflags);

@@ -4,7 +4,7 @@
 
 void my_handler(uint32_t arg)
 {
-	uoutb_printf("\nmy handler_called: arg = %d\n", arg);
+	uprintf("\nmy handler_called: arg = %d\n", arg);
 }
 
 int fak(int n)
@@ -88,6 +88,25 @@ void uproc_1()
 #endif
 
 		testq = 998;
+		uint32_t key = 0;
+
+		while (1)
+		{
+			key = 0;
+			while (!((key >> 16) & 0xff))
+			{
+				key = ugetc(0);
+			}
+			uint8_t ascii_code = (key >> 16) & 0xff;
+			if (ascii_code == '\r')
+			{
+				uprintf("\r\n");
+			}
+			else
+			{
+				uprintf("%c", ascii_code);
+			}
+		}
 
 	}
 

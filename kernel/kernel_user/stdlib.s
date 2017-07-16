@@ -132,6 +132,25 @@ fork:
 	leave
 	ret
 	.size	fork, .-fork
+	.globl	ugetc
+	.type	ugetc, @function
+ugetc:
+	pushl	%ebp
+	movl	%esp, %ebp
+	subl	$32, %esp
+	movl	$0, -8(%ebp)
+	leal	-8(%ebp), %eax
+	movl	$4, 12(%esp)
+	movl	%eax, 8(%esp)
+	movl	8(%ebp), %eax
+	movl	%eax, 4(%esp)
+	movl	$1, (%esp)
+	call	make_syscall3
+	movl	%eax, -4(%ebp)
+	movl	-8(%ebp), %eax
+	leave
+	ret
+	.size	ugetc, .-ugetc
 	.type	kprint_str, @function
 kprint_str:
 	pushl	%ebp
@@ -160,11 +179,11 @@ uoutb_kprint_str:
 	movl	12(%ebp), %eax
 	movl	%eax, -4(%ebp)
 	nop
-.L18:
+.L20:
 	movl	-4(%ebp), %eax
 	movb	(%eax), %al
 	testb	%al, %al
-	jne	.L18
+	jne	.L20
 	movl	$0, %eax
 	leave
 	ret
@@ -201,14 +220,14 @@ kprint_nibble:
 	movb	%al, -28(%ebp)
 	andb	$15, -28(%ebp)
 	cmpb	$9, -28(%ebp)
-	ja	.L22
+	ja	.L24
 	movb	-28(%ebp), %al
 	addl	$48, %eax
-	jmp	.L23
-.L22:
+	jmp	.L25
+.L24:
 	movb	-28(%ebp), %al
 	addl	$87, %eax
-.L23:
+.L25:
 	movb	%al, -9(%ebp)
 	movzbl	-9(%ebp), %eax
 	movl	%eax, (%esp)
@@ -337,13 +356,13 @@ parse_chars_universal:
 	movl	$0, -4(%ebp)
 	movl	$0, -8(%ebp)
 	movl	$1, -12(%ebp)
-	jmp	.L31
-.L36:
+	jmp	.L33
+.L38:
 	movl	$0, -12(%ebp)
 	movl	$0, -16(%ebp)
 	movl	$0, -16(%ebp)
-	jmp	.L32
-.L34:
+	jmp	.L34
+.L36:
 	movl	8(%ebp), %eax
 	movb	(%eax), %dl
 	movl	-16(%ebp), %ecx
@@ -351,7 +370,7 @@ parse_chars_universal:
 	addl	%ecx, %eax
 	movb	(%eax), %al
 	cmpb	%al, %dl
-	jne	.L33
+	jne	.L35
 	movl	-16(%ebp), %eax
 	movl	$1, %edx
 	movb	%al, %cl
@@ -361,24 +380,24 @@ parse_chars_universal:
 	movl	$1, -12(%ebp)
 	incl	8(%ebp)
 	incl	-8(%ebp)
-	jmp	.L31
-.L33:
+	jmp	.L33
+.L35:
 	incl	-16(%ebp)
-.L32:
+.L34:
 	movl	-16(%ebp), %eax
 	cmpl	16(%ebp), %eax
-	jl	.L34
-.L31:
+	jl	.L36
+.L33:
 	movl	8(%ebp), %eax
 	movb	(%eax), %al
 	testb	%al, %al
-	je	.L35
+	je	.L37
 	cmpl	$0, -12(%ebp)
-	je	.L35
+	je	.L37
 	movl	-8(%ebp), %eax
 	cmpl	20(%ebp), %eax
-	jb	.L36
-.L35:
+	jb	.L38
+.L37:
 	movl	24(%ebp), %eax
 	movl	-4(%ebp), %edx
 	movl	%edx, (%eax)
@@ -395,8 +414,8 @@ parse_strings_universal:
 	movl	$0, (%eax)
 	movl	$0, -4(%ebp)
 	movl	$0, -4(%ebp)
-	jmp	.L39
-.L45:
+	jmp	.L41
+.L47:
 	movl	8(%ebp), %eax
 	movl	%eax, -8(%ebp)
 	movl	-4(%ebp), %eax
@@ -405,44 +424,44 @@ parse_strings_universal:
 	addl	%edx, %eax
 	movl	(%eax), %eax
 	movl	%eax, -12(%ebp)
-	jmp	.L40
-.L42:
+	jmp	.L42
+.L44:
 	incl	-8(%ebp)
 	incl	-12(%ebp)
-.L40:
+.L42:
 	movl	-8(%ebp), %eax
 	movb	(%eax), %al
 	testb	%al, %al
-	je	.L41
+	je	.L43
 	movl	-12(%ebp), %eax
 	movb	(%eax), %al
 	testb	%al, %al
-	je	.L41
+	je	.L43
 	movl	-8(%ebp), %eax
 	movb	(%eax), %dl
 	movl	-12(%ebp), %eax
 	movb	(%eax), %al
 	cmpb	%al, %dl
-	je	.L42
-.L41:
+	je	.L44
+.L43:
 	movl	-12(%ebp), %eax
 	movb	(%eax), %al
 	testb	%al, %al
-	jne	.L43
+	jne	.L45
 	movl	-4(%ebp), %eax
 	leal	1(%eax), %edx
 	movl	20(%ebp), %eax
 	movl	%edx, (%eax)
 	movl	-8(%ebp), %eax
-	jmp	.L44
-.L43:
+	jmp	.L46
+.L45:
 	incl	-4(%ebp)
-.L39:
+.L41:
 	movl	16(%ebp), %eax
 	cmpl	-4(%ebp), %eax
-	ja	.L45
+	ja	.L47
 	movl	8(%ebp), %eax
-.L44:
+.L46:
 	leave
 	ret
 	.size	parse_strings_universal, .-parse_strings_universal
@@ -452,8 +471,8 @@ parse_num_universal:
 	movl	%esp, %ebp
 	subl	$20, %esp
 	movl	$0, -4(%ebp)
-	jmp	.L47
-.L49:
+	jmp	.L49
+.L51:
 	movl	-4(%ebp), %edx
 	movl	%edx, %eax
 	sall	$2, %eax
@@ -467,19 +486,19 @@ parse_num_universal:
 	subl	$48, %eax
 	movl	%eax, -4(%ebp)
 	incl	8(%ebp)
-.L47:
+.L49:
 	movl	8(%ebp), %eax
 	movb	(%eax), %al
 	testb	%al, %al
-	je	.L48
+	je	.L50
 	movl	8(%ebp), %eax
 	movb	(%eax), %al
 	movsbl	%al, %eax
 	movl	%eax, (%esp)
 	call	is_digit
 	testl	%eax, %eax
-	jne	.L49
-.L48:
+	jne	.L51
+.L50:
 	movl	12(%ebp), %eax
 	movl	-4(%ebp), %edx
 	movl	%edx, (%eax)
@@ -510,11 +529,11 @@ parse_format_command:
 	movl	8(%ebp), %eax
 	movb	(%eax), %al
 	testb	%al, %al
-	je	.L52
+	je	.L54
 	movl	8(%ebp), %eax
 	movb	(%eax), %al
 	cmpb	$46, %al
-	jne	.L52
+	jne	.L54
 	incl	8(%ebp)
 	movl	20(%ebp), %eax
 	movl	%eax, 4(%esp)
@@ -522,11 +541,11 @@ parse_format_command:
 	movl	%eax, (%esp)
 	call	parse_num_universal
 	movl	%eax, 8(%ebp)
-	jmp	.L53
-.L52:
+	jmp	.L55
+.L54:
 	movl	20(%ebp), %eax
 	movl	$0, (%eax)
-.L53:
+.L55:
 	movl	24(%ebp), %eax
 	movl	%eax, 12(%esp)
 	movl	$8, 8(%esp)
@@ -564,8 +583,8 @@ __udivdi3:
 	movl	$0, -8(%ebp)
 	movl	$0, -4(%ebp)
 	movw	$0, -10(%ebp)
-	jmp	.L56
-.L57:
+	jmp	.L58
+.L59:
 	movl	-32(%ebp), %eax
 	movl	-28(%ebp), %edx
 	addl	%eax, %eax
@@ -575,16 +594,16 @@ __udivdi3:
 	movw	-10(%ebp), %ax
 	incl	%eax
 	movw	%ax, -10(%ebp)
-.L56:
+.L58:
 	movl	-24(%ebp), %eax
 	movl	-20(%ebp), %edx
 	cmpl	-28(%ebp), %edx
-	ja	.L57
+	ja	.L59
 	cmpl	-28(%ebp), %edx
-	jb	.L67
+	jb	.L69
 	cmpl	-32(%ebp), %eax
-	jae	.L57
-.L67:
+	jae	.L59
+.L69:
 	movl	-32(%ebp), %eax
 	movl	-28(%ebp), %edx
 	shrdl	$1, %edx, %eax
@@ -594,8 +613,8 @@ __udivdi3:
 	movw	-10(%ebp), %ax
 	decl	%eax
 	movw	%ax, -10(%ebp)
-	jmp	.L59
-.L64:
+	jmp	.L61
+.L66:
 	movl	-32(%ebp), %eax
 	movl	-28(%ebp), %edx
 	subl	%eax, -24(%ebp)
@@ -606,14 +625,14 @@ __udivdi3:
 	shldl	%eax, %edx
 	sall	%cl, %eax
 	testb	$32, %cl
-	je	.L68
+	je	.L70
 	movl	%eax, %edx
 	xorl	%eax, %eax
-.L68:
+.L70:
 	orl	%eax, -8(%ebp)
 	orl	%edx, -4(%ebp)
-	jmp	.L60
-.L61:
+	jmp	.L62
+.L63:
 	movl	-32(%ebp), %eax
 	movl	-28(%ebp), %edx
 	shrdl	$1, %edx, %eax
@@ -623,29 +642,29 @@ __udivdi3:
 	movw	-10(%ebp), %ax
 	decl	%eax
 	movw	%ax, -10(%ebp)
-.L60:
+.L62:
 	cmpw	$0, -10(%ebp)
-	jle	.L59
+	jle	.L61
 	movl	-24(%ebp), %eax
 	movl	-20(%ebp), %edx
-	cmpl	-28(%ebp), %edx
-	jb	.L61
-	cmpl	-28(%ebp), %edx
-	ja	.L59
-	cmpl	-32(%ebp), %eax
-	jb	.L61
-.L59:
-	cmpw	$0, -10(%ebp)
-	js	.L63
-	movl	-24(%ebp), %eax
-	movl	-20(%ebp), %edx
-	cmpl	-28(%ebp), %edx
-	ja	.L64
 	cmpl	-28(%ebp), %edx
 	jb	.L63
+	cmpl	-28(%ebp), %edx
+	ja	.L61
 	cmpl	-32(%ebp), %eax
-	jae	.L64
-.L63:
+	jb	.L63
+.L61:
+	cmpw	$0, -10(%ebp)
+	js	.L65
+	movl	-24(%ebp), %eax
+	movl	-20(%ebp), %edx
+	cmpl	-28(%ebp), %edx
+	ja	.L66
+	cmpl	-28(%ebp), %edx
+	jb	.L65
+	cmpl	-32(%ebp), %eax
+	jae	.L66
+.L65:
 	movl	-8(%ebp), %eax
 	movl	-4(%ebp), %edx
 	leave
@@ -738,20 +757,20 @@ int_to_str:
 	movl	32(%ebp), %eax
 	andl	$16, %eax
 	testl	%eax, %eax
-	je	.L72
+	je	.L74
 	movb	$48, %al
-	jmp	.L73
-.L72:
+	jmp	.L75
+.L74:
 	movb	$32, %al
-.L73:
+.L75:
 	movb	%al, -101(%ebp)
 	movl	32(%ebp), %eax
 	andl	$8, %eax
 	movl	%eax, -108(%ebp)
 	cmpl	$0, 28(%ebp)
-	jne	.L74
+	jne	.L76
 	cmpl	$0, -76(%ebp)
-	jns	.L75
+	jns	.L77
 	movl	$-1, -28(%ebp)
 	movl	-80(%ebp), %eax
 	movl	-76(%ebp), %edx
@@ -760,34 +779,34 @@ int_to_str:
 	negl	%edx
 	movl	%eax, -24(%ebp)
 	movl	%edx, -20(%ebp)
-	jmp	.L78
-.L75:
+	jmp	.L80
+.L77:
 	movl	-80(%ebp), %eax
 	movl	-76(%ebp), %edx
 	orl	%edx, %eax
 	testl	%eax, %eax
-	jne	.L77
+	jne	.L79
 	movl	$0, -28(%ebp)
 	movl	$0, -24(%ebp)
 	movl	$0, -20(%ebp)
-	jmp	.L78
-.L77:
+	jmp	.L80
+.L79:
 	movl	$1, -28(%ebp)
 	movl	-80(%ebp), %eax
 	movl	-76(%ebp), %edx
 	movl	%eax, -24(%ebp)
 	movl	%edx, -20(%ebp)
-	jmp	.L79
-.L74:
+	jmp	.L81
+.L76:
 	movl	-80(%ebp), %eax
 	movl	-76(%ebp), %edx
 	movl	%eax, -24(%ebp)
 	movl	%edx, -20(%ebp)
 	movl	$1, -28(%ebp)
-	jmp	.L79
-.L78:
-	jmp	.L79
-.L82:
+	jmp	.L81
+.L80:
+	jmp	.L81
+.L84:
 	movl	24(%ebp), %eax
 	movl	$0, %edx
 	movl	%eax, 8(%esp)
@@ -814,75 +833,75 @@ int_to_str:
 	movl	%edx, -12(%ebp)
 	movl	-112(%ebp), %edx
 	cmpl	-64(%ebp), %edx
-	jae	.L80
+	jae	.L82
 	movl	-112(%ebp), %edx
 	movl	-68(%ebp), %ecx
 	addl	%ecx, %edx
 	movb	(%edx), %dl
-	jmp	.L81
-.L80:
+	jmp	.L83
+.L82:
 	movb	$63, %dl
-.L81:
+.L83:
 	movb	%dl, (%eax)
-.L79:
+.L81:
 	movl	-24(%ebp), %eax
 	movl	-20(%ebp), %edx
 	orl	%edx, %eax
 	testl	%eax, %eax
-	jne	.L82
+	jne	.L84
 	movl	-12(%ebp), %edx
 	leal	-191(%ebp), %eax
 	subl	%eax, %edx
 	movl	%edx, %eax
 	movl	%eax, -32(%ebp)
 	cmpl	$0, -32(%ebp)
-	jne	.L83
+	jne	.L85
 	movl	-12(%ebp), %eax
 	leal	1(%eax), %edx
 	movl	%edx, -12(%ebp)
 	movb	$48, (%eax)
 	incl	-32(%ebp)
-.L83:
+.L85:
 	movl	-12(%ebp), %eax
 	movb	$0, (%eax)
 	movl	$0, -36(%ebp)
 	cmpl	$0, -28(%ebp)
-	js	.L84
+	js	.L86
 	cmpl	$0, -92(%ebp)
-	jne	.L85
-.L84:
-	cmpl	$0, -28(%ebp)
-	js	.L85
-	cmpl	$0, -100(%ebp)
-	je	.L86
-.L85:
-	movl	$1, %eax
-	jmp	.L87
+	jne	.L87
 .L86:
-	movl	$0, %eax
+	cmpl	$0, -28(%ebp)
+	js	.L87
+	cmpl	$0, -100(%ebp)
+	je	.L88
 .L87:
+	movl	$1, %eax
+	jmp	.L89
+.L88:
+	movl	$0, %eax
+.L89:
 	movl	%eax, -116(%ebp)
 	movl	-116(%ebp), %eax
 	movl	-32(%ebp), %edx
 	addl	%edx, %eax
 	movl	%eax, -120(%ebp)
 	cmpl	$0, 40(%ebp)
-	jle	.L88
+	jle	.L90
 	movl	40(%ebp), %eax
 	movl	-120(%ebp), %edx
 	cmpl	%edx, %eax
-	jbe	.L89
+	jbe	.L91
 	movl	%edx, %eax
-.L89:
+.L91:
 	movl	%eax, -36(%ebp)
-	jmp	.L90
-.L88:
+	jmp	.L92
+.L90:
 	movl	-120(%ebp), %eax
 	movl	%eax, -36(%ebp)
-.L90:
+.L92:
 	movl	$0, -40(%ebp)
 	cmpl	$0, 36(%ebp)
-	jle	.L91
+	jle	.L93
 	movl	36(%ebp), %eax
 	cmpl	-36(%ebp), %eax
 	setb	%al
@@ -890,22 +909,22 @@ int_to_str:
 	movl	%eax, -40(%ebp)
 	movl	36(%ebp), %eax
 	movl	%eax, -36(%ebp)
-.L91:
+.L93:
 	cmpl	$0, -40(%ebp)
-	je	.L92
+	je	.L94
 	movl	$0, -44(%ebp)
 	movl	$0, -44(%ebp)
-	jmp	.L93
-.L94:
+	jmp	.L95
+.L96:
 	movl	-16(%ebp), %eax
 	leal	1(%eax), %edx
 	movl	%edx, -16(%ebp)
 	movb	$35, (%eax)
 	incl	-44(%ebp)
-.L93:
+.L95:
 	movl	36(%ebp), %eax
 	cmpl	-44(%ebp), %eax
-	ja	.L94
+	ja	.L96
 	movl	-16(%ebp), %edx
 	movl	8(%ebp), %eax
 	subl	%eax, %edx
@@ -915,8 +934,8 @@ int_to_str:
 	movl	-16(%ebp), %edx
 	movl	%edx, (%eax)
 	movl	-84(%ebp), %eax
-	jmp	.L135
-.L92:
+	jmp	.L137
+.L94:
 	movl	-120(%ebp), %eax
 	movl	-36(%ebp), %edx
 	subl	%eax, %edx
@@ -924,7 +943,7 @@ int_to_str:
 	movl	%eax, -124(%ebp)
 	movl	-36(%ebp), %eax
 	cmpl	-120(%ebp), %eax
-	jae	.L96
+	jae	.L98
 	movl	$.LC10, 4(%esp)
 	movl	$1, (%esp)
 	call	kprint_str
@@ -940,46 +959,46 @@ int_to_str:
 	movl	$.LC0, 4(%esp)
 	movl	$1, (%esp)
 	call	kprint_str
-.L97:
-	jmp	.L97
-.L96:
+.L99:
+	jmp	.L99
+.L98:
 	cmpl	$0, -96(%ebp)
-	je	.L98
-	cmpl	$0, -28(%ebp)
-	js	.L99
-	cmpl	$0, -92(%ebp)
 	je	.L100
 	cmpl	$0, -28(%ebp)
-	jns	.L101
-.L100:
-	cmpl	$0, -100(%ebp)
+	js	.L101
+	cmpl	$0, -92(%ebp)
 	je	.L102
-	movb	$32, %al
-	jmp	.L103
+	cmpl	$0, -28(%ebp)
+	jns	.L103
 .L102:
-	movb	$35, %al
-.L103:
-	jmp	.L104
-.L101:
-	movb	$43, %al
-.L104:
+	cmpl	$0, -100(%ebp)
+	je	.L104
+	movb	$32, %al
 	jmp	.L105
-.L99:
-	movb	$45, %al
+.L104:
+	movb	$35, %al
 .L105:
+	jmp	.L106
+.L103:
+	movb	$43, %al
+.L106:
+	jmp	.L107
+.L101:
+	movb	$45, %al
+.L107:
 	movb	%al, -125(%ebp)
 	cmpb	$35, -125(%ebp)
-	je	.L106
+	je	.L108
 	movl	-16(%ebp), %eax
 	leal	1(%eax), %edx
 	movl	%edx, -16(%ebp)
 	movb	-125(%ebp), %dl
 	movb	%dl, (%eax)
-.L106:
-	movl	$0, -48(%ebp)
-	movl	$0, -48(%ebp)
-	jmp	.L107
 .L108:
+	movl	$0, -48(%ebp)
+	movl	$0, -48(%ebp)
+	jmp	.L109
+.L110:
 	movl	-16(%ebp), %eax
 	leal	1(%eax), %edx
 	movl	%edx, -16(%ebp)
@@ -993,120 +1012,120 @@ int_to_str:
 	movb	(%edx), %dl
 	movb	%dl, (%eax)
 	incl	-48(%ebp)
-.L107:
+.L109:
 	movl	-48(%ebp), %eax
 	cmpl	-32(%ebp), %eax
-	jb	.L108
+	jb	.L110
 	movl	$0, -48(%ebp)
-	jmp	.L109
-.L110:
+	jmp	.L111
+.L112:
 	movl	-16(%ebp), %eax
 	leal	1(%eax), %edx
 	movl	%edx, -16(%ebp)
 	movb	$32, (%eax)
 	incl	-48(%ebp)
-.L109:
+.L111:
 	movl	-48(%ebp), %eax
 	cmpl	-124(%ebp), %eax
-	jb	.L110
-	jmp	.L111
-.L98:
+	jb	.L112
+	jmp	.L113
+.L100:
 	cmpb	$48, -101(%ebp)
-	jne	.L112
+	jne	.L114
 	cmpl	$0, -28(%ebp)
-	js	.L113
+	js	.L115
 	cmpl	$0, -92(%ebp)
-	je	.L114
-	cmpl	$0, -28(%ebp)
-	jns	.L115
-.L114:
-	cmpl	$0, -100(%ebp)
 	je	.L116
-	movb	$32, %al
-	jmp	.L117
+	cmpl	$0, -28(%ebp)
+	jns	.L117
 .L116:
-	movb	$35, %al
-.L117:
-	jmp	.L118
-.L115:
-	movb	$43, %al
-.L118:
+	cmpl	$0, -100(%ebp)
+	je	.L118
+	movb	$32, %al
 	jmp	.L119
-.L113:
-	movb	$45, %al
+.L118:
+	movb	$35, %al
 .L119:
+	jmp	.L120
+.L117:
+	movb	$43, %al
+.L120:
+	jmp	.L121
+.L115:
+	movb	$45, %al
+.L121:
 	movb	%al, -126(%ebp)
 	cmpb	$35, -126(%ebp)
-	je	.L120
+	je	.L122
 	movl	-16(%ebp), %eax
 	leal	1(%eax), %edx
 	movl	%edx, -16(%ebp)
 	movb	-126(%ebp), %dl
 	movb	%dl, (%eax)
-.L120:
-	movl	$0, -52(%ebp)
-	movl	$0, -52(%ebp)
-	jmp	.L121
 .L122:
+	movl	$0, -52(%ebp)
+	movl	$0, -52(%ebp)
+	jmp	.L123
+.L124:
 	movl	-16(%ebp), %eax
 	leal	1(%eax), %edx
 	movl	%edx, -16(%ebp)
 	movb	$48, (%eax)
 	incl	-52(%ebp)
-.L121:
+.L123:
 	movl	-52(%ebp), %eax
 	cmpl	-124(%ebp), %eax
-	jb	.L122
-	jmp	.L123
-.L112:
+	jb	.L124
+	jmp	.L125
+.L114:
 	movl	$0, -56(%ebp)
 	movl	$0, -56(%ebp)
-	jmp	.L124
-.L125:
+	jmp	.L126
+.L127:
 	movl	-16(%ebp), %eax
 	leal	1(%eax), %edx
 	movl	%edx, -16(%ebp)
 	movb	$32, (%eax)
 	incl	-56(%ebp)
-.L124:
+.L126:
 	movl	-56(%ebp), %eax
 	cmpl	-124(%ebp), %eax
-	jb	.L125
+	jb	.L127
 	cmpl	$0, -28(%ebp)
-	js	.L126
+	js	.L128
 	cmpl	$0, -92(%ebp)
-	je	.L127
-	cmpl	$0, -28(%ebp)
-	jns	.L128
-.L127:
-	cmpl	$0, -100(%ebp)
 	je	.L129
-	movb	$32, %al
-	jmp	.L130
+	cmpl	$0, -28(%ebp)
+	jns	.L130
 .L129:
-	movb	$35, %al
-.L130:
-	jmp	.L131
-.L128:
-	movb	$43, %al
-.L131:
+	cmpl	$0, -100(%ebp)
+	je	.L131
+	movb	$32, %al
 	jmp	.L132
-.L126:
-	movb	$45, %al
+.L131:
+	movb	$35, %al
 .L132:
+	jmp	.L133
+.L130:
+	movb	$43, %al
+.L133:
+	jmp	.L134
+.L128:
+	movb	$45, %al
+.L134:
 	movb	%al, -127(%ebp)
 	cmpb	$35, -127(%ebp)
-	je	.L123
+	je	.L125
 	movl	-16(%ebp), %eax
 	leal	1(%eax), %edx
 	movl	%edx, -16(%ebp)
 	movb	-127(%ebp), %dl
 	movb	%dl, (%eax)
-.L123:
+.L125:
 	movl	$0, -60(%ebp)
 	movl	$0, -60(%ebp)
-	jmp	.L133
-.L134:
+	jmp	.L135
+.L136:
 	movl	-16(%ebp), %eax
 	leal	1(%eax), %edx
 	movl	%edx, -16(%ebp)
@@ -1120,11 +1139,11 @@ int_to_str:
 	movb	(%edx), %dl
 	movb	%dl, (%eax)
 	incl	-60(%ebp)
-.L133:
+.L135:
 	movl	-60(%ebp), %eax
 	cmpl	-32(%ebp), %eax
-	jb	.L134
-.L111:
+	jb	.L136
+.L113:
 	movl	-16(%ebp), %edx
 	movl	8(%ebp), %eax
 	subl	%eax, %edx
@@ -1134,7 +1153,7 @@ int_to_str:
 	movl	-16(%ebp), %edx
 	movl	%edx, (%eax)
 	movl	-84(%ebp), %eax
-.L135:
+.L137:
 	leave
 	ret
 	.size	int_to_str, .-int_to_str
@@ -1152,12 +1171,12 @@ vprintf:
 	movl	%eax, -76(%ebp)
 	movl	12(%ebp), %eax
 	movl	%eax, -32(%ebp)
-	jmp	.L137
-.L150:
+	jmp	.L139
+.L152:
 	movl	-28(%ebp), %eax
 	movb	(%eax), %al
 	cmpb	$37, %al
-	jne	.L138
+	jne	.L140
 	incl	-28(%ebp)
 	leal	-88(%ebp), %eax
 	movl	%eax, 20(%esp)
@@ -1176,7 +1195,7 @@ vprintf:
 	movl	-88(%ebp), %eax
 	andl	$1, %eax
 	testl	%eax, %eax
-	je	.L139
+	je	.L141
 	movl	20(%ebp), %eax
 	leal	4(%eax), %edx
 	movl	%edx, 20(%ebp)
@@ -1211,19 +1230,19 @@ vprintf:
 	movl	%eax, -56(%ebp)
 	movl	-56(%ebp), %eax
 	subl	%eax, -32(%ebp)
-	jmp	.L140
-.L139:
+	jmp	.L142
+.L141:
 	movl	-88(%ebp), %eax
 	andl	$2, %eax
 	testl	%eax, %eax
-	je	.L141
+	je	.L143
 	movl	20(%ebp), %eax
 	leal	4(%eax), %edx
 	movl	%edx, 20(%ebp)
 	movl	(%eax), %eax
 	movl	%eax, -36(%ebp)
-	jmp	.L142
-.L144:
+	jmp	.L144
+.L146:
 	movl	-76(%ebp), %eax
 	leal	1(%eax), %edx
 	movl	%edx, -76(%ebp)
@@ -1233,20 +1252,20 @@ vprintf:
 	movb	(%edx), %dl
 	movb	%dl, (%eax)
 	decl	-32(%ebp)
-.L142:
+.L144:
 	movl	-36(%ebp), %eax
 	movb	(%eax), %al
 	testb	%al, %al
-	je	.L143
+	je	.L145
 	cmpl	$0, -32(%ebp)
-	jne	.L144
+	jne	.L146
+.L145:
+	jmp	.L142
 .L143:
-	jmp	.L140
-.L141:
 	movl	-88(%ebp), %eax
 	andl	$8, %eax
 	testl	%eax, %eax
-	je	.L145
+	je	.L147
 	movl	20(%ebp), %eax
 	leal	4(%eax), %edx
 	movl	%edx, 20(%ebp)
@@ -1281,17 +1300,17 @@ vprintf:
 	movl	%eax, -64(%ebp)
 	movl	-64(%ebp), %eax
 	subl	%eax, -32(%ebp)
-	jmp	.L140
-.L145:
+	jmp	.L142
+.L147:
 	movl	-88(%ebp), %eax
 	andl	$32, %eax
 	testl	%eax, %eax
-	je	.L146
+	je	.L148
 	movl	$0, -48(%ebp)
 	movl	$0, -44(%ebp)
 	movl	-84(%ebp), %eax
 	cmpl	$4, %eax
-	jne	.L147
+	jne	.L149
 	movl	20(%ebp), %eax
 	leal	8(%eax), %edx
 	movl	%edx, 20(%ebp)
@@ -1299,15 +1318,15 @@ vprintf:
 	movl	(%eax), %eax
 	movl	%eax, -48(%ebp)
 	movl	%edx, -44(%ebp)
-	jmp	.L148
-.L147:
+	jmp	.L150
+.L149:
 	movl	20(%ebp), %eax
 	leal	4(%eax), %edx
 	movl	%edx, 20(%ebp)
 	movl	(%eax), %eax
 	movl	%eax, -48(%ebp)
 	movl	$0, -44(%ebp)
-.L148:
+.L150:
 	movl	-84(%ebp), %esi
 	movl	-96(%ebp), %eax
 	movl	%eax, %ebx
@@ -1334,12 +1353,12 @@ vprintf:
 	movl	%eax, -68(%ebp)
 	movl	-68(%ebp), %eax
 	subl	%eax, -32(%ebp)
-	jmp	.L140
-.L146:
+	jmp	.L142
+.L148:
 	movl	-88(%ebp), %eax
 	andl	$4, %eax
 	testl	%eax, %eax
-	je	.L140
+	je	.L142
 	movl	20(%ebp), %eax
 	leal	4(%eax), %edx
 	movl	%edx, 20(%ebp)
@@ -1352,10 +1371,10 @@ vprintf:
 	incl	%eax
 	movl	%eax, -76(%ebp)
 	decl	-32(%ebp)
-	jmp	.L137
+	jmp	.L139
+.L142:
+	jmp	.L139
 .L140:
-	jmp	.L137
-.L138:
 	movl	-76(%ebp), %eax
 	movl	-28(%ebp), %edx
 	movb	(%edx), %dl
@@ -1365,14 +1384,14 @@ vprintf:
 	incl	%eax
 	movl	%eax, -76(%ebp)
 	incl	-28(%ebp)
-.L137:
+.L139:
 	movl	-28(%ebp), %eax
 	movb	(%eax), %al
 	testb	%al, %al
-	je	.L149
+	je	.L151
 	cmpl	$0, -32(%ebp)
-	jne	.L150
-.L149:
+	jne	.L152
+.L151:
 	movl	-76(%ebp), %eax
 	movb	$0, (%eax)
 	addl	$156, %esp
@@ -1443,16 +1462,16 @@ ustrlen:
 	movl	$0, -4(%ebp)
 	movl	8(%ebp), %eax
 	movl	%eax, -8(%ebp)
-	jmp	.L156
-.L157:
+	jmp	.L158
+.L159:
 	incl	-4(%ebp)
-.L156:
+.L158:
 	movl	-8(%ebp), %eax
 	leal	1(%eax), %edx
 	movl	%edx, -8(%ebp)
 	movb	(%eax), %al
 	testb	%al, %al
-	jne	.L157
+	jne	.L159
 	movl	-4(%ebp), %eax
 	leave
 	ret

@@ -122,14 +122,14 @@ lmain:
 	movl	-36(%ebp), %edx
 	addl	%edx, %eax
 	movl	%eax, -44(%ebp)
-	movl	$186, -48(%ebp)
+	movl	$203, -48(%ebp)
 	movl	$.LC3, (%esp)
 	call	print_str
 	movl	$.LC4, (%esp)
 	call	print_str
 	movl	$.LC8, (%esp)
 	call	print_str
-	movl	$95232, (%esp)
+	movl	$103936, (%esp)
 	call	print_U32
 	call	print_newline
 	movl	$1, -52(%ebp)
@@ -309,7 +309,7 @@ lmain:
 	call	print_str
 	movl	$.LC8, (%esp)
 	call	print_str
-	movl	$95232, (%esp)
+	movl	$103936, (%esp)
 	call	print_U32
 	call	print_newline
 	movl	$.LC17, (%esp)

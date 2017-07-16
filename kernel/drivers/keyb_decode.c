@@ -1,8 +1,9 @@
 
-#include "keyb_decode.h"
-#include "keyb.h"
+#include "drivers/vga.h"
+#include "drivers/keyb_decode.h"
+#include "drivers/keyb.h"
+#include "kernel32/mutex.h"
 
-volatile uint8_t modifier_state;
 
 uint8_t mod_state_table_make[KC_TABLESIZE];
 uint8_t mod_state_table_break[KC_TABLESIZE];
@@ -31,39 +32,60 @@ int process_key_line_2(uint8_t keycode, uint8_t make_code_1, uint8_t make_code_2
 												uint8_t break_code_1, uint8_t break_code_2 );
 uint32_t init_keytables_codes();
 
-static uint32_t akt_state = 0;
+static uint32_t akt_state[NUM_SCREENS] = {0, 0, 0, 0};
+volatile uint8_t modifier_state[NUM_SCREENS];
 
 // external linkage
 
-uint32_t read_key_with_modifiers()
+
+int keyb_read(file_t* fil, char* buf, size_t count, size_t* offset)
+{
+	int keyb_num = GET_MINOR_DEVICE_NUMBER(fil->f_dentry->d_inode->i_device);
+
+	mtx_lock(&key_wait_mutex[keyb_num]);
+
+	uint32_t val = 0;
+
+	while (!val)
+	{
+		val = read_key_with_modifiers(keyb_num);
+	}
+
+	mtx_unlock(&key_wait_mutex[keyb_num]);
+
+	*(uint32_t*) buf = val;
+
+	return 4;
+}
+
+#define REL_KB(var) var[keyb_num]
+
+uint32_t read_key_with_modifiers(int keyb_num)
 {
 	uint32_t key_ret = 0;
 
-	if (!key_avail())
-		return key_ret;
+	uint32_t keyb_byte = read_keyb_byte(keyb_num);
 
-	uint32_t keyb_byte = read_keyb_byte();
-
-	if (akt_state == 0)
+	if (REL_KB(akt_state) == 0)
 	{
 		if (mkc_table_1[keyb_byte] == 0xe0)
 		{
-			akt_state = 1;
+			REL_KB(akt_state) = 1;
 			return key_ret;
 		}
 		if (mkc_table_1[keyb_byte] != 0xff)
 		{
-			modifier_state |= (mod_state_table_make[mkc_table_1[keyb_byte]] & (uint8_t)0xff);
-			key_ret =  mkc_table_1[keyb_byte] | (modifier_state << 8);
-			akt_state = 0;
+			REL_KB(modifier_state) |= (mod_state_table_make[mkc_table_1[keyb_byte]] & (uint8_t)0xff);
+			key_ret =  mkc_table_1[keyb_byte] | (REL_KB(modifier_state) << 8);
+			REL_KB(akt_state) = 0;
 		}
 		else if (brkc_table_1[keyb_byte] != 0xff)
 		{
-			modifier_state &= ((~mod_state_table_break[brkc_table_1[keyb_byte]]) & (uint8_t)0xff);
-			akt_state = 0;
+			REL_KB(modifier_state) &= ((~mod_state_table_break[brkc_table_1[keyb_byte]]) & (uint8_t)0xff);
+			REL_KB(akt_state) = 0;
 		}
 	}
-	else if (akt_state == 1)
+	else if (REL_KB(akt_state) == 1)
 	{
 		if (mkc_table_2[keyb_byte] != 0xff)
 		{
@@ -71,31 +93,31 @@ uint32_t read_key_with_modifiers()
 			if (mkc_table_2[keyb_byte] == VK_Right_Alt)
 			{
 				//printf(">> got VK_right alt <<");
-				modifier_state |= MODIF_ALTGR;
+				REL_KB(modifier_state) |= MODIF_ALTGR;
 			}
-			key_ret = mkc_table_2[keyb_byte] | (modifier_state << 8);
-			akt_state = 0;
+			key_ret = mkc_table_2[keyb_byte] | (REL_KB(modifier_state) << 8);
+			REL_KB(akt_state) = 0;
 		}
 		else if (brkc_table_2[keyb_byte] != 0xff)
 		{
 			if (brkc_table_2[keyb_byte] == VK_Right_Alt)
 			{
-				modifier_state &= ~MODIF_ALTGR;
+				REL_KB(modifier_state) &= ~MODIF_ALTGR;
 			}
-			akt_state = 0;
+			REL_KB(akt_state) = 0;
 		}
 	}
 	else
 	{
-		akt_state = 0;
-		modifier_state = 0;
-		printf("keyb_decode: invalid state\n");
+		REL_KB(akt_state) = 0;
+		REL_KB(modifier_state) = 0;
+		outb_printf("++++++ keyb_decode: invalid state\n");
 	}
 
   uint8_t vk_key = key_ret & 0xff;
   uint8_t ascii_val = 0;
 
-  if (modifier_state & MODIF_CTRLL)
+  if (REL_KB(modifier_state) & MODIF_CTRLL)
   {
   	uint32_t ascii_std = ascii_normal[vk_key];
   	//printf(" modifier state ctrl: ascii_std = %d \n", ascii_std);
@@ -106,20 +128,24 @@ uint32_t read_key_with_modifiers()
   }
   else
   {
-    ascii_val = modifier_state == 0 ? ascii_normal[vk_key] :
-    		modifier_state & MODIF_ALTGR ? ascii_altgr[vk_key] :
-    		modifier_state & (MODIF_SHIFTL | MODIF_SHIFTR) ? ascii_shift[vk_key]: 0;
+    ascii_val = REL_KB(modifier_state) == 0 ? ascii_normal[vk_key] :
+    		REL_KB(modifier_state) & MODIF_ALTGR ? ascii_altgr[vk_key] :
+    		REL_KB(modifier_state) & (MODIF_SHIFTL | MODIF_SHIFTR) ? ascii_shift[vk_key]: 0;
   }
 
   key_ret |= (ascii_val << 16);
-  //printf("<%08x>", key_ret);
+  //outb_printf("read_key_with_modifiers (key_num: %d) key_ret: <%08x>", keyb_num, key_ret);
 	return key_ret;
 }
 
 uint32_t init_keytables()
 {
-	modifier_state = 0;
-	int i = 0;
+	int i;
+	for(i = 0; i < NUM_SCREENS; ++i)
+	{
+		modifier_state[i] = 0;
+	}
+
 	for(i = 0; i < KC_TABLESIZE; ++i)
 	{
 

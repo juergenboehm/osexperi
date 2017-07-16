@@ -79,6 +79,8 @@ int sscanf(char* s, char* format, ... );
 
 // the putc, getc functions
 
+int getc(uint32_t fd);
+
 int fgetc(FILE fd);
 
 int fputc(int c, FILE fd);

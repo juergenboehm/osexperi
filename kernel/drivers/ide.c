@@ -4,6 +4,8 @@
 #include "libs/kerneldefs.h"
 #include "libs32/klib.h"
 
+#include "kernel32/mutex.h"
+
 #include "drivers/hardware.h"
 #include "drivers/pic.h"
 #include "drivers/pci.h"
@@ -111,8 +113,8 @@ uint32_t ide_init(pci_access_data_t* pci_dev)
 																		pci_dev->function_number, pci_dev->register_number >> 2) & 0xffff);
 	bmibase &= 0xfffc; // lowest two bits zeroed out
 
-	ide_irq_sema = 0;
-	ide_res_sema = 0;
+	mtx_init(&ide_op_mutex, 0, 0);
+	sema_init(&ide_irq_sema, 1, 0, 0);
 
 
 	uint16_t pcicmd_val = (uint16_t)(pci_read_word(pci_dev->bus_number, pci_dev->device_number,
@@ -141,6 +143,9 @@ uint32_t ide_init(pci_access_data_t* pci_dev)
 
 uint32_t ide_SET_FEATURE(ide_ctrl_t* ide_ctrl, uint8_t drv_num)
 {
+
+	mtx_lock(&ide_op_mutex);
+
 	uint32_t ok = ide_check_status_ok(ide_ctrl, drv_num);
 
 	if (ok == IDE_ERROR_NOT_READY)
@@ -172,6 +177,8 @@ uint32_t ide_SET_FEATURE(ide_ctrl_t* ide_ctrl, uint8_t drv_num)
 	uint8_t drv_status = inb(IDE_PRIM_COMMAND_BLOCK + IDE_STATUS_REG);
 	ide_set_status(ide_ctrl, drv_status);
 
+	mtx_unlock(&ide_op_mutex);
+
 	return drv_status;
 }
 
@@ -179,6 +186,9 @@ uint32_t ide_SET_FEATURE(ide_ctrl_t* ide_ctrl, uint8_t drv_num)
 
 uint32_t ide_IDENTIFY_DEVICE(ide_ctrl_t* ide_ctrl, uint8_t drv_num)
 {
+
+	mtx_lock(&ide_op_mutex);
+
 	uint8_t* buf = ide_ctrl->buffer;
 
 	uint32_t ok = ide_check_status_ok(ide_ctrl, drv_num);
@@ -198,16 +208,18 @@ uint32_t ide_IDENTIFY_DEVICE(ide_ctrl_t* ide_ctrl, uint8_t drv_num)
 
 
 	printf("ide_IDENTIFY_DEVICE: end:\n" );
-	printf("ide_IDENTIFY_DEVICE: ide_irq_sema = %08x\n", ide_irq_sema);
 
+	sema_down(&ide_irq_sema);
+/*
 	while(!ide_irq_sema)
 	{
 	}
 	ide_irq_sema = 0;
+*/
 
 	// in the irq routine the non-busmaster/pio path must be activated.
 
-	if (!(ide_res_sema & 0xff)) // means ok
+	if (!(ide_result & 0xff)) // means ok
 	{
 		int i = 0;
 
@@ -223,7 +235,9 @@ uint32_t ide_IDENTIFY_DEVICE(ide_ctrl_t* ide_ctrl, uint8_t drv_num)
 
 	printf("ide_IDENTIFY_DEVICE: dma_mode_byte = %08x\n", (uint16_t)*((uint16_t *)(buf+176)));
 
-	return ide_res_sema;
+	mtx_unlock(&ide_op_mutex);
+
+	return ide_result;
 }
 
 
@@ -326,6 +340,8 @@ uint32_t ide_READ_DMA(ide_ctrl_t* ide_ctrl, prd_entry_t* prd_table,
 											uint16_t sector_count, uint32_t lba, uint8_t drv_num)
 {
 
+	mtx_lock(&ide_op_mutex);
+
 	uint32_t size = sector_count * 512;
 
 	prd_table[0].base_address = (uint32_t)__PHYS(ide_ctrl->buffer);
@@ -350,19 +366,27 @@ uint32_t ide_READ_DMA(ide_ctrl_t* ide_ctrl, prd_entry_t* prd_table,
 
 	printf("ide_READ_DMA: wait for ide_irq_sema\n" );
 
+	sema_down(&ide_irq_sema);
+
+	/*
 	while(! ide_irq_sema)
 	{
 	}
 	ide_irq_sema = 0;
+*/
 
-	ide_set_status(ide_ctrl, (uint8_t)(ide_res_sema & 0xff));
+	ide_set_status(ide_ctrl, (uint8_t)(ide_result & 0xff));
 
-	return ide_res_sema;
+	mtx_unlock(&ide_op_mutex);
+
+	return ide_result;
 }
 
 uint32_t ide_WRITE_DMA(ide_ctrl_t* ide_ctrl, prd_entry_t* prd_table,
 										uint16_t sector_count, uint32_t lba, uint8_t drv_num)
 {
+
+	mtx_lock(&ide_op_mutex);
 
 	uint32_t size = sector_count * 512;
 
@@ -384,21 +408,27 @@ uint32_t ide_WRITE_DMA(ide_ctrl_t* ide_ctrl, prd_entry_t* prd_table,
 
 	ide_busmaster_engage();
 
+	sema_down(&ide_irq_sema);
+
+/*
 	while(! ide_irq_sema)
 	{
 	}
 	ide_irq_sema = 0;
+*/
 
-	ide_set_status(ide_ctrl, (uint8_t)(ide_res_sema & 0xff));
+	ide_set_status(ide_ctrl, (uint8_t)(ide_result & 0xff));
 
-	return ide_res_sema;
+	mtx_unlock(&ide_op_mutex);
+
+	return ide_result;
 }
 
 
 void ide_irq_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 {
 
-	printf("\nide irq caught.\n");
+	//printf("\nide irq caught.\n");
 
 	//uint8_t* vga_addr = (uint8_t*)(uint32_t)VGA_ADDR;
 
@@ -406,7 +436,7 @@ void ide_irq_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 
 	uint8_t val_stat = inb(IDE_BM_STATUS);
 
-	printf("val_com = %02x, val_stat = %02x\n", val_com, val_stat);
+	//printf("val_com = %02x, val_stat = %02x\n", val_com, val_stat);
 
 
 	if (val_com & 0x01)
@@ -414,7 +444,7 @@ void ide_irq_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 
 		// bus master has been active
 
-		printf("bus master has been active: valcom = %02x.\n", val_com);
+		//printf("bus master has been active: valcom = %02x.\n", val_com);
 
 		outb(IDE_BM_COMMAND, 0x00); // stop Bus Master
 
@@ -424,9 +454,11 @@ void ide_irq_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 
 		stat_dsk = inb(IDE_PRIM_COMMAND_BLOCK + IDE_STATUS_REG);
 
-		ide_res_sema = (val << 8) | stat_dsk;
+		ide_result = (val << 8) | stat_dsk;
 
-		ide_irq_sema = 1;
+		sema_up(&ide_irq_sema);
+
+//		ide_irq_sema = 1;
 
 	}
 	else
@@ -438,7 +470,7 @@ void ide_irq_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 
 		uint8_t stat_dsk;
 
-		printf("non busmaster path\n");
+		//printf("non busmaster path\n");
 
 		do
 		{
@@ -454,13 +486,17 @@ void ide_irq_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 
 		if (!bsy && drq)
 		{
-			ide_res_sema = stat_dsk << 8;
-			ide_irq_sema = 1;
+			ide_result = stat_dsk << 8;
+			sema_up(&ide_irq_sema);
+
+//			ide_irq_sema = 1;
 		}
 		else
 		{
-			ide_res_sema = IDE_STATE_NO_DATA;
-			ide_irq_sema = 1;
+			ide_result = IDE_STATE_NO_DATA;
+			sema_up(&ide_irq_sema);
+
+//		ide_irq_sema = 1;
 		}
 	}
 
@@ -472,5 +508,70 @@ void ide_irq_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 	io_wait();
 
 
+}
+
+
+
+
+
+
+
+
+
+//
+// a simple read and
+
+
+void ide_test(uint32_t opcode, uint32_t blk_num)
+{
+
+	ide_ctrl_t* ide_ctrl = ide_ctrl_PM;
+
+	ide_ctrl->buffer = ide_buffer;
+
+	uint32_t ok;
+
+	switch (opcode)
+	{
+
+		case 0:
+
+			ok = ide_IDENTIFY_DEVICE(ide_ctrl, 0);
+
+			printf("ide test: IDENTIFY_DEVICE: ok = %08x\n", ok);
+			printf("ide test: BSY %01x DRDY %01x DF %01x DRQ %01x ERR %01x\n\n",
+									ide_ctrl->BSY, ide_ctrl->DRDY, ide_ctrl->DF, ide_ctrl->DRQ, ide_ctrl->ERR);
+
+
+			display_buffer(ide_buffer, 512);
+
+		break;
+
+		case 1:
+
+			ok = ide_SET_FEATURE(ide_ctrl, 0);
+
+			printf("ide test: SET_FEATURE: ok = %08x\n", ok);
+			printf("ide test: BSY %01x DRDY %01x DF %01x DRQ %01x ERR %01x\n\n",
+									ide_ctrl->BSY, ide_ctrl->DRDY, ide_ctrl->DF, ide_ctrl->DRQ, ide_ctrl->ERR);
+
+		break;
+
+		case 3:
+
+			ok = ide_READ_DMA(ide_ctrl, prd_table, 1, blk_num, 0);
+
+			printf("ide test: ok = %08x\n", ok);
+			printf("ide test: BSY %01x DRDY %01x DF %01x DRQ %01x ERR %01x\n\n",
+									ide_ctrl->BSY, ide_ctrl->DRDY, ide_ctrl->DF, ide_ctrl->DRQ, ide_ctrl->ERR);
+
+
+			display_buffer(ide_buffer, 512);
+
+		break;
+
+		default:
+			break;
+	}
 }
 

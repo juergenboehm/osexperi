@@ -42,6 +42,6 @@ void display_buffer(uint8_t* buf, uint16_t size)
 		}
 		printf("\n");
 
-		waitkey();
+		getc(0);
 	}
 }

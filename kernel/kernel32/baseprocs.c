@@ -10,6 +10,7 @@
 #include "drivers/keyb_decode.h"
 #include "drivers/timer.h"
 #include "drivers/vga.h"
+#include "drivers/ide.h"
 
 #include "libs32/kalloc.h"
 #include "libs32/klib.h"
@@ -20,6 +21,7 @@
 
 #include "fs/gendrivers.h"
 
+#include "kernel32/mutex.h"
 #include "kernel32/process.h"
 #include "kernel32/procstart.h"
 
@@ -94,13 +96,9 @@ int readline_echo(char* buffer, int *cnt)
 
 	while (1)
 	{
-		if (key_avail())
+		if (1)
 		{
-			uint32_t keyb_full_code = 0;
-			do
-			{
-				keyb_full_code = read_key_with_modifiers();
-			} while (keyb_full_code == 0);
+			uint32_t keyb_full_code = getc(0);
 
 			//uint32_t keyb_full_code = read_keyb_byte();
 			//printf("%08d + %08d + %08x\n", timer_special_counter, keyb_special_counter, keyb_full_code);
@@ -267,10 +265,11 @@ int execute_calc(int argc, char* argv[])
 
 void print_proc_info_line(process_t* proc)
 {
-	printf("pid = %d ticks = %d status = %s",
+	printf("pid = %d ticks = %d status = %s, waitq = %08x",
 			proc->proc_data.pid,
 			proc->proc_data.ticks,
-			proc_state_list[proc->proc_data.status]);
+			proc_state_list[proc->proc_data.status],
+			proc->proc_data.in_wq);
 }
 
 
@@ -305,7 +304,7 @@ int execute_sig(int argc, char* argv[])
 	int i;
 	for(i = 0; i < ntimes; ++i)
 	{
-		uint32_t eflags = irq_cli_save();
+		IRQ_CLI_SAVE(eflags);
 
 		INIT_LISTVAR(p);
 
@@ -330,7 +329,7 @@ int execute_sig(int argc, char* argv[])
 		}
 		END_FORLIST(p, global_proc_list);
 
-		irq_restore(eflags);
+		IRQ_RESTORE(eflags);
 		WAIT(delay);
 	}
 
@@ -394,7 +393,7 @@ int execute_sst(int argc, char* argv[])
 		return -1;
 	}
 
-	uint32_t eflags = irq_cli_save();
+	IRQ_CLI_SAVE(eflags);
 
 	INIT_LISTVAR(p);
 	FORLIST(p, global_proc_list)
@@ -412,7 +411,7 @@ int execute_sst(int argc, char* argv[])
 	}
 	END_FORLIST(p, global_proc_list)
 
-	unlock: irq_restore(eflags);
+	unlock: IRQ_RESTORE(eflags);
 
 }
 
@@ -516,7 +515,7 @@ int execute_spdx(int argc, char* argv[])
 		if (pdata->pid == npid) {
 
 			int i;
-			uint32_t eflags = irq_cli_save();
+			IRQ_CLI_SAVE(eflags);
 			uint32_t pdentry = 0;
 
 			uint32_t page_dir_phys_addr = pdata->tss.cr3;
@@ -557,7 +556,7 @@ int execute_spdx(int argc, char* argv[])
 				}
 			}
 
-			irq_restore(eflags);
+			IRQ_RESTORE(eflags);
 
 			return 0;
 		}
@@ -647,6 +646,82 @@ int execute_mem(int argc, char* argv[])
 	return 0;
 }
 
+int execute_mtx(int argc, char* argv[])
+{
+	if (argc < 3)
+	{
+		printf("mtx: usage: mtx <mutex num> l|u.\n");
+		return -1;
+	}
+	int mtx_index = atoi(argv[1]);
+	int do_lock = !strcmp(argv[2], "l") ? 1 : !strcmp(argv[2], "u") ? 0 : -1;
+	if (do_lock == -1)
+	{
+		printf("mtx: second parameter must be l|u.\n");
+		return -1;
+	}
+	if (do_lock)
+	{
+		mtx_lock(&init_mutex_table[mtx_index]);
+	}
+	else
+	{
+		mtx_unlock(&init_mutex_table[mtx_index]);
+	}
+	return 0;
+
+}
+
+int execute_sem(int argc, char* argv[])
+{
+	if (argc < 4)
+	{
+		printf("sem: usage: sem <sema_index> u|d num");
+	}
+
+	uint32_t sema_idx = atoi(argv[1]);
+	int do_up = !strcmp(argv[2], "u") ?  1: !strcmp(argv[2], "d") ? 0 : -1;
+	uint32_t num = atoi(argv[3]);
+	if (do_up == -1)
+	{
+		printf("sem: second parameter must be u|d.\n");
+	}
+	while (num--)
+	{
+		if (do_up)
+		{
+			sema_up(&init_sema_table[sema_idx]);
+		}
+		else
+		{
+			sema_down(&init_sema_table[sema_idx]);
+		}
+	}
+}
+
+int execute_ide(int argc, char* argv[])
+{
+	if (argc < 3)
+	{
+		printf("ide: usage: ide rd|id|sf <blk_num>\n");
+		return -1;
+	}
+
+	uint32_t blk_num = atoi(argv[2]);
+
+	uint32_t opcode = !strcmp(argv[1], "id") ? 0 :
+						!strcmp(argv[1], "sf") ? 1 : !strcmp(argv[1], "rd") ? 3 : -1;
+
+	if (opcode == -1)
+	{
+		printf("ide: illegal op: must be rd|id|sf");
+		return -1;
+	}
+
+	ide_test(opcode, blk_num);
+	return 0;
+}
+
 
 typedef struct exec_struct_s {
 	char* command_name;
@@ -660,7 +735,10 @@ exec_struct_t my_commands[] = { {"calc", execute_calc},
 																	{"mem", execute_mem},
 																	{"sig", execute_sig},
 																	{"sst", execute_sst},
-																	{"kill", execute_kill}};
+																	{"kill", execute_kill},
+																	{"mtx", execute_mtx},
+																	{"sem", execute_sem},
+																	{"ide", execute_ide}};
 
 
 void dispatch_op(exec_struct_t *commands, int ncommands, int argc, char* argv[])
@@ -716,10 +794,17 @@ void idle_watched()
 	outb_0xe9( 'B');
 
 	uint32_t i = 0;
+	uint32_t semaval = 0;
 
 	while (1) {
-		printf("I am watched (2). %d\n", ++i);
+
+		semaval = sema_down(&init_sema_table[0]);
+
+		printf("I am watched (2). %d semaval = %d\n", i, semaval);
+
+		mtx_lock(&init_mutex_table[0]);
 		++i;
+		mtx_unlock(&init_mutex_table[0]);
 	}
 }
 

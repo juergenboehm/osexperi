@@ -471,7 +471,7 @@ void schedule()
 	if (schedule_off)
 		return;
 
-	uint32_t eflags = irq_cli_save();
+	IRQ_CLI_SAVE(eflags);
 
 	//printf("esp = %08x\ncs = %08x\nds = %08x\n", get_esp(), get_cs(), get_ds());
 
@@ -530,7 +530,7 @@ void schedule()
 	}
 
 
-	irq_restore(eflags);
+	IRQ_RESTORE(eflags);
 }
 
 
@@ -585,7 +585,7 @@ void call_user_handler(uint32_t esp, uint32_t handler, uint32_t arg)
 	outb_printf("call_user_handler: esp = %08x\n", esp);
 
 	iret_blk_t* pir = (iret_blk_t*) (esp + 36);
-	print_iret_blk(pir);
+	//print_iret_blk(pir);
 
 	bool in_kernel_code = !(pir->cs & 0x03); // DPL is zero
 
@@ -696,7 +696,7 @@ void destroy_process(process_t* proc)
 
 	outb_printf("destroy_process: current = %08x proc = %08x\n", (uint32_t)current, (uint32_t)proc);
 
-	uint32_t eflags = irq_cli_save();
+	IRQ_CLI_SAVE(eflags);
 
 	proc->proc_data.status = PROC_EXIT;
 
@@ -711,7 +711,7 @@ void destroy_process(process_t* proc)
 
 	release_pid(pid);
 
-	irq_restore(eflags);
+	IRQ_RESTORE(eflags);
 
 	if (current == proc)
 	{
@@ -821,13 +821,25 @@ void build_artificial_switch_save_block(
 	return;
 }
 
+void clone_wq(process_t* new_proc, process_t* proc)
+{
+	wq_t *proc_wq = proc->proc_data.in_wq;
+	if (proc_wq)
+	{
+		process_node_t* pnd = get_process_node_t();
+		pnd->proc = new_proc;
+		append_list(&proc_wq->head, &pnd->link);
+		new_proc->proc_data.in_wq = proc_wq;
+	}
+}
+
 int fork_process()
 {
 	uint32_t ret_eip;
 	uint32_t old_bp;
 	uint32_t goal_sp;
 
-	uint32_t eflags = irq_cli_save();
+	IRQ_CLI_SAVE(eflags);
 
 
 	DEBUGOUT1(0, "fork_process start: current = %08x", (uint32_t) current);
@@ -865,6 +877,9 @@ int fork_process()
 	{
 		goto ende;
 	}
+
+	clone_wq(new_proc, proc);
+
 
 	old_bp = ((uint32_t) PROC_STACK_BEG(new_proc)) - old_bp;
 	goal_sp = ((uint32_t) PROC_STACK_BEG(new_proc)) - goal_sp;
@@ -938,7 +953,7 @@ int fork_process()
 
 	DEBUGOUT1(0, "leaving fork parent.\n");
 
-	irq_restore(eflags);
+	IRQ_RESTORE(eflags);
 
 	return child_pid;
 }

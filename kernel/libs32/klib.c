@@ -6,6 +6,7 @@
 #include "mem/pagedesc.h"
 
 #include "kernel32/process.h"
+#include "kernel32/mutex.h"
 
 #include "libs32/klib.h"
 
@@ -30,9 +31,9 @@ void raw_print_char(char *p)
 
 void kprint_char(uint8_t ch)
 {
-	uint32_t eflags = irq_cli_save();
+	IRQ_CLI_SAVE(eflags);
 	screen_print_char(0, ch);
-	irq_restore(eflags);
+	IRQ_RESTORE(eflags);
 }
 
 int kprint_nibble(uint8_t nibble)
@@ -833,16 +834,40 @@ int atoi(char* str)
 	return eps * val;
 }
 
+//getc
+
+int getc(uint32_t fd)
+{
+	file_t* p_infile = current->proc_data.io_block->base_fd_arr[fd];
+	uint32_t retval = 0;
+	uint32_t keyb_num = GET_MINOR_DEVICE_NUMBER(p_infile->f_dentry->d_inode->i_device);
+
+	outb_printf("getc: keyb = %d \n", keyb_num);
+
+	int res = p_infile->f_fops->read(p_infile, (char*)&retval, sizeof(retval), 0);
+	return (int) retval;
+
+}
+
 
 
 // some lowlevel io functions
 
 void waitkey()
 {
-	while(!keyb_sema)
+
+	mtx_lock(&key_wait_mutex[screen_current]);
+
+	do {} while (!key_avail(screen_current));
+
+	uint32_t keyb_full_code = 0;
+	do
 	{
+		keyb_full_code = read_key_with_modifiers(screen_current);
 	}
-	keyb_sema = 0;
+	while (keyb_full_code == 0);
+
+	mtx_unlock(&key_wait_mutex[screen_current]);
 }
 
 // memcpy

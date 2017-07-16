@@ -39,6 +39,8 @@ void set_irq(uint8_t irq_num, uint32_t enable);
 void enable_irq(uint8_t irq_num);
 void disable_irq(uint8_t irq_num);
 
+uint8_t pic_get_in_service(uint8_t is_master);
+
 
 void init_pic();
 void init_pic_alt();

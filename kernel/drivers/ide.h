@@ -36,9 +36,8 @@
 #define		IDE_CMD_WRITE_DMA					0xca
 #define		IDE_CMD_IDENTIFY_DEVICE		0xec
 
-volatile uint32_t ide_irq_sema;
-volatile uint32_t ide_res_sema;
-
+//volatile uint32_t ide_irq_sema;
+volatile uint32_t ide_result;
 
 typedef struct __PACKED s_ide_ctrlice {
 
@@ -80,6 +79,13 @@ typedef struct __PACKED s_prd_entry {
 
 ide_ctrl_t* ide_ctrl_PM;
 
+// for ide drive access
+
+extern uint8_t* ide_buffer;
+
+extern prd_entry_t* prd_table;
+
+
 
 uint32_t ide_init();
 
@@ -109,6 +115,9 @@ uint32_t ide_WRITE_DMA(ide_ctrl_t* ide_ctrl, prd_entry_t* prd_table,
 
 void ide_irq_handler(uint32_t errcode, uint32_t irq_num, void* esp);
 
+
+// as simple read test
+void ide_test(uint32_t opcode, uint32_t blk_num);
 
 
 

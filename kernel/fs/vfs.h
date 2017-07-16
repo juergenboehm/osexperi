@@ -135,7 +135,8 @@ typedef struct dirent_s {
 
 } dirent_t;
 
-typedef int (*filldir_t)(void* dirent, const char* fname, int fname_len, loff_t pos, uint32_t inode , uint32_t file_type);
+typedef int (*filldir_t)(void* dirent,
+		const char* fname, int fname_len, loff_t pos, uint32_t inode , uint32_t file_type);
 
 typedef struct file_ops_s {
 
@@ -146,6 +147,24 @@ typedef struct file_ops_s {
 	int (*open)(inode_t* inode, file_t* fil);
 	int (*release)(inode_t* inode, file_t* fil);
 	int (*readdir)(file_t* file, void* dirent, filldir_t filldir);
+
+	//device driver operations for blockdrivers (dd_blksize > 0)
+	//readblk, writeblk communicate with the hardware
+	//in implementations of concrete drivers
+	//read and write are programmed generically to use
+	//readpage, writepage
+	// fil is here for example
+	// a file pointing to a dentry pointing to the inode /dev/sda<x>
+	// or /dev/sda
+	int (*readblk)(file_t* fil, uint32_t blk_index, char **buf);
+	int (*writeblk)(file_t* fil, uint32_t blk_index, char *buf);
+	//readpage and writepage use readblk and writeblk,
+	//readpage and writepage are part of the
+	//global buffer system
+	int (*readpage)(file_t* fil, uint32_t page_index, char **buf);
+	int (*writepage)(file_t* fil, uint32_t page_index, char *buf);
+
+
 
 } file_ops_t;
 
@@ -169,7 +188,10 @@ file_ops_t* create_file_ops(int type, file_ops_t* buf);
 #define DEV_VGA2	22
 #define DEV_VGA3	23
 
-#define DEV_KBD		12
+#define DEV_KBD0		12
+#define DEV_KBD1		13
+#define DEV_KBD2		14
+#define DEV_KBD3		15
 
 #define DEV_TTY0	4
 #define DEV_TTY1	5

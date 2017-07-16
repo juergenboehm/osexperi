@@ -1,6 +1,7 @@
 
 #include "libs32/klib.h"
 #include "drivers/vga.h"
+#include "drivers/keyb_decode.h"
 #include "fs/vfs.h"
 #include "fs/gendrivers.h"
 
@@ -31,7 +32,7 @@ void init_file_ops_line(file_ops_t *pddops,
 void init_file_ops()
 {
 	init_file_ops_line(&vga_driver_ops, NULL, NULL, &vga_write, NULL, &vga_open, NULL, NULL);
-	init_file_ops_line(&keyb_driver_ops, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+	init_file_ops_line(&keyb_driver_ops, NULL, &keyb_read, NULL, NULL, NULL, NULL, NULL);
 	init_file_ops_line(&ide_driver_ops, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 	init_file_ops_line(&tty_driver_ops, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
@@ -51,7 +52,7 @@ void init_device_table()
 
 	init_device(&dev_drv_table[DEV_VGA_INDEX], MAKE_DEVICE_NUMBER(DEV_VGA_INDEX,0), 0, &vga_driver_ops);
 
-	init_device(&dev_drv_table[DEV_KEYB_INDEX], MAKE_DEVICE_NUMBER(DEV_KEYB_INDEX,0), 0, &keyb_driver_ops);
+	init_device(&dev_drv_table[DEV_KBD_INDEX], MAKE_DEVICE_NUMBER(DEV_KBD_INDEX,0), 0, &keyb_driver_ops);
 	init_device(&dev_drv_table[DEV_IDE_INDEX], MAKE_DEVICE_NUMBER(DEV_IDE_INDEX,0), 0, &ide_driver_ops);
 	init_device(&dev_drv_table[DEV_TTY_INDEX], MAKE_DEVICE_NUMBER(DEV_TTY_INDEX,0), 0, &tty_driver_ops);
 

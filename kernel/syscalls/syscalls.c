@@ -14,7 +14,7 @@
 
 void syscall_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 {
-	outb_0xe9( 'S');
+	//outb_0xe9( 'S');
 
 	volatile uint32_t eax = *GET_REG_32(esp, IRQ_REG_OFFSET_AX);
 	volatile uint32_t ebx = *GET_REG_32(esp, IRQ_REG_OFFSET_BX);

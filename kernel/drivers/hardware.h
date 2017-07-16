@@ -164,7 +164,8 @@ static inline uint16_t get_ss()
 	 { asm __volatile__ ( "lidt "#idt_ptr : : : "memory" ); }
 
 
-
+#define IRQ_CLI_SAVE(var) uint32_t var = irq_cli_save()
+#define IRQ_RESTORE(var) irq_restore(var)
 
 
 #endif
