@@ -33,6 +33,94 @@ static uint16_t bmibase = 0;
 static uint8_t dma_mode_byte = 0;
 static uint8_t current_is_write = 0;
 
+#define BBUF_INVALID_INDEX  (1 << 31)
+
+static char* block_buffered = 0;
+static uint32_t blk_index_buffered = 0;
+
+
+
+int readblk_ide(file_t* fil, uint32_t blk_index, char **buf)
+{
+	if (!buf)
+	{
+		return -1;
+	}
+
+	// crude one block buffering
+	if (blk_index_buffered == blk_index)
+	{
+		//outb_printf("from buffer %d ", blk_index);
+		memcpy(*buf, block_buffered, IDE_BLKSIZE);
+		return IDE_BLKSIZE;
+	}
+
+	int minor = GET_MINOR_DEVICE_NUMBER(fil->f_dentry->d_inode->i_device);
+
+	uint32_t dev_specific_offset = (minor == 0) ? 0:  DEV_IDE1_BLK_OFFSET;
+
+	blk_index += dev_specific_offset;
+
+	// outb_printf("readblk_ide: blk_index = %d :dev_specific_offset = %d\n", blk_index, dev_specific_offset);
+
+	mtx_lock(&ide_op_mutex);
+
+	ide_ctrl_t* ide_ctrl = ide_ctrl_PM;
+
+	memset(ide_ctrl, 0, sizeof(ide_ctrl_t));
+
+	ide_ctrl->buffer = ide_buffer;
+
+	uint32_t ok = ide_READ_DMA(ide_ctrl, prd_table, 1, blk_index, DEV_IDE_DEV_CODE);
+
+	memcpy(*buf, ide_buffer, IDE_BLKSIZE);
+
+	blk_index_buffered = blk_index;
+	memcpy(block_buffered, *buf, IDE_BLKSIZE);
+
+	mtx_unlock(&ide_op_mutex);
+
+	return IDE_BLKSIZE;
+}
+
+int writeblk_ide(file_t* fil, uint32_t blk_index, char *buf)
+{
+
+	int minor = GET_MINOR_DEVICE_NUMBER(fil->f_dentry->d_inode->i_device);
+
+	// crude one block buffering
+	if (blk_index == blk_index_buffered)
+	{
+		blk_index_buffered = BBUF_INVALID_INDEX;
+	}
+
+	uint32_t dev_specific_offset = (minor == 0) ? 0:  DEV_IDE1_BLK_OFFSET;
+
+	blk_index += dev_specific_offset;
+
+	mtx_lock(&ide_op_mutex);
+
+	ide_ctrl_t* ide_ctrl = ide_ctrl_PM;
+
+	memset(ide_ctrl, 0, sizeof(ide_ctrl_t));
+
+	ide_ctrl->buffer = ide_buffer;
+
+	memcpy(ide_buffer, buf, IDE_BLKSIZE);
+
+	//outb_printf("writeblk_ide: write at blk = %d\n", blk_index);
+
+	uint32_t ok = ide_WRITE_DMA(ide_ctrl, prd_table, 1, blk_index, DEV_IDE_DEV_CODE);
+
+	blk_index_buffered = blk_index;
+	memcpy(block_buffered, buf, IDE_BLKSIZE);
+
+	mtx_unlock(&ide_op_mutex);
+
+	return IDE_BLKSIZE;
+}
+
+
 
 uint32_t ide_PACKET()
 {
@@ -114,7 +202,7 @@ uint32_t ide_init(pci_access_data_t* pci_dev)
 	bmibase &= 0xfffc; // lowest two bits zeroed out
 
 	mtx_init(&ide_op_mutex, 0, 0);
-	sema_init(&ide_irq_sema, 1, 0, 0);
+	sema_init(&ide_irq_sema, 0, 0, 0);
 
 
 	uint16_t pcicmd_val = (uint16_t)(pci_read_word(pci_dev->bus_number, pci_dev->device_number,
@@ -136,6 +224,9 @@ uint32_t ide_init(pci_access_data_t* pci_dev)
 	outb(IDE_BM_STATUS, 0x00);
 
 	//ide_PACKET();
+
+	block_buffered = (char*) malloc(IDE_BLKSIZE);
+	blk_index_buffered = BBUF_INVALID_INDEX;
 
 	return 1;
 
@@ -225,7 +316,7 @@ uint32_t ide_IDENTIFY_DEVICE(ide_ctrl_t* ide_ctrl, uint8_t drv_num)
 
 		uint16_t pioIn = IDE_PRIM_COMMAND_BLOCK + IDE_DATA_REG;
 
-		for(i = 0; i < 512; i+=2)
+		for(i = 0; i < IDE_BLKSIZE; i+=2)
 		{
 			*(uint16_t*)(buf+i) = inw(pioIn);
 		}
@@ -267,7 +358,7 @@ uint32_t ide_submit_cmd(ide_ctrl_t* ide_ctrl, uint8_t sel_mask)
 {
 	uint16_t obas = IDE_PRIM_COMMAND_BLOCK;
 
-	printf("ide_submit_cmd: start:");
+	//printf("ide_submit_cmd: start:");
 
 	if (sel_mask & 0x02)
 		outb(obas + IDE_FEATURES_REG, ide_ctrl->features);
@@ -284,7 +375,7 @@ uint32_t ide_submit_cmd(ide_ctrl_t* ide_ctrl, uint8_t sel_mask)
 	if (sel_mask & 0x80)
 		outb(obas + IDE_COMMAND_REG, ide_ctrl->command );
 
-	printf("ide_submit_cmd: end:\n" );
+	//printf("ide_submit_cmd: end:\n" );
 
 	return 0;
 
@@ -340,9 +431,7 @@ uint32_t ide_READ_DMA(ide_ctrl_t* ide_ctrl, prd_entry_t* prd_table,
 											uint16_t sector_count, uint32_t lba, uint8_t drv_num)
 {
 
-	mtx_lock(&ide_op_mutex);
-
-	uint32_t size = sector_count * 512;
+	uint32_t size = sector_count * IDE_BLKSIZE;
 
 	prd_table[0].base_address = (uint32_t)__PHYS(ide_ctrl->buffer);
 	prd_table[0].byte_count = size;
@@ -350,7 +439,7 @@ uint32_t ide_READ_DMA(ide_ctrl_t* ide_ctrl, prd_entry_t* prd_table,
 
 	ide_busmaster_prepare(prd_table, 0x00);
 
-	printf("ide_READ_DMA: bmibase = %04x\n", bmibase );
+	//printf("ide_READ_DMA: bmibase = %04x\n", bmibase );
 
 	uint32_t ok = ide_prepare_rw(ide_ctrl, sector_count, lba, drv_num);
 
@@ -364,7 +453,7 @@ uint32_t ide_READ_DMA(ide_ctrl_t* ide_ctrl, prd_entry_t* prd_table,
 
 	ide_busmaster_engage();
 
-	printf("ide_READ_DMA: wait for ide_irq_sema\n" );
+	//printf("ide_READ_DMA: wait for ide_irq_sema\n" );
 
 	sema_down(&ide_irq_sema);
 
@@ -377,8 +466,6 @@ uint32_t ide_READ_DMA(ide_ctrl_t* ide_ctrl, prd_entry_t* prd_table,
 
 	ide_set_status(ide_ctrl, (uint8_t)(ide_result & 0xff));
 
-	mtx_unlock(&ide_op_mutex);
-
 	return ide_result;
 }
 
@@ -386,9 +473,7 @@ uint32_t ide_WRITE_DMA(ide_ctrl_t* ide_ctrl, prd_entry_t* prd_table,
 										uint16_t sector_count, uint32_t lba, uint8_t drv_num)
 {
 
-	mtx_lock(&ide_op_mutex);
-
-	uint32_t size = sector_count * 512;
+	uint32_t size = sector_count * IDE_BLKSIZE;
 
 	prd_table[0].base_address = (uint32_t)__PHYS(ide_ctrl->buffer);
 	prd_table[0].byte_count = size;
@@ -418,8 +503,6 @@ uint32_t ide_WRITE_DMA(ide_ctrl_t* ide_ctrl, prd_entry_t* prd_table,
 */
 
 	ide_set_status(ide_ctrl, (uint8_t)(ide_result & 0xff));
-
-	mtx_unlock(&ide_op_mutex);
 
 	return ide_result;
 }
@@ -543,7 +626,7 @@ void ide_test(uint32_t opcode, uint32_t blk_num)
 									ide_ctrl->BSY, ide_ctrl->DRDY, ide_ctrl->DF, ide_ctrl->DRQ, ide_ctrl->ERR);
 
 
-			display_buffer(ide_buffer, 512);
+			display_buffer(ide_buffer, IDE_BLKSIZE);
 
 		break;
 
@@ -566,7 +649,7 @@ void ide_test(uint32_t opcode, uint32_t blk_num)
 									ide_ctrl->BSY, ide_ctrl->DRDY, ide_ctrl->DF, ide_ctrl->DRQ, ide_ctrl->ERR);
 
 
-			display_buffer(ide_buffer, 512);
+			display_buffer(ide_buffer, IDE_BLKSIZE);
 
 		break;
 

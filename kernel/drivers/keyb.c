@@ -10,8 +10,6 @@
 uint32_t keyb_special_counter;
 uint32_t keyb_buf[NUM_SCREENS][KEYBUF_SIZE];
 
-volatile uint32_t keyb_sema;
-
 
 queue_contr_t keyb_queue[NUM_SCREENS];
 
@@ -48,7 +46,20 @@ uint32_t read_keyb_byte(int keyb)
 inline uint32_t key_avail(int keyb)
 {
 	return sema_get(&key_read_sema[keyb]) > 0;
-//	return !is_empty_queue(&keyb_queue[keyb]);
+}
+
+inline uint32_t key_avail_raw(int keyb)
+{
+	return !is_empty_queue(&keyb_queue[keyb]);
+}
+
+uint32_t read_keyb_byte_raw(int keyb)
+{
+	uint32_t key = 0;
+	get_queue(&keyb_queue[keyb], &key);
+
+	return key;
+
 }
 
 #define MK_F1	0x3b

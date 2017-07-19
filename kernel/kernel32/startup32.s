@@ -117,6 +117,7 @@ kmain32:
 	movl	%esp, %ebp
 	subl	$72, %esp
 	movl	$0, current
+	movl	$0, screen_current
 	movl	$0, -12(%ebp)
 	jmp	.L7
 .L8:
@@ -160,7 +161,6 @@ kmain32:
 	movl	$.LC8, (%esp)
 	call	do_open
 	movl	%eax, -28(%ebp)
-	call	test_ext2
 	movl	$.LC9, (%esp)
 	call	printf
 	movl	$.LC10, (%esp)
@@ -187,19 +187,20 @@ kmain32:
 	movl	idt_table, %eax
 	movl	%eax, idt_ptr+2
 #APP
-# 165 "kernel32/startup32.c" 1
+# 163 "kernel32/startup32.c" 1
 	lidt idt_ptr
 # 0 "" 2
 #NO_APP
 	call	init_global_tss
 	call	init_sync_system
+	call	init_objects
 	call	sti
 	movl	$0, -12(%ebp)
 	call	init_keyboard
 	call	init_keytables
-	movl	$0, keyb_sema
 	movl	$0, timer_sema
 	call	display_bios_mem_area_table
+	call	waitkey
 	movl	$pci_addr_ide_contr, (%esp)
 	call	enumerate_pci_bus
 	movl	$pci_addr_ide_contr, (%esp)
@@ -222,6 +223,14 @@ kmain32:
 	movl	$0, -52(%ebp)
 	nop
 .L9:
+	movl	$0, -12(%ebp)
+	jmp	.L10
+.L11:
+	call	waitkey
+	incl	-12(%ebp)
+.L10:
+	cmpl	$1, -12(%ebp)
+	jbe	.L11
 	movl	$4096, -56(%ebp)
 	movl	-56(%ebp), %eax
 	movl	%eax, (%esp)

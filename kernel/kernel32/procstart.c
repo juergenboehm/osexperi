@@ -166,7 +166,7 @@ void init_process_1_xp(void* fun_addr)
 	// /dev/vga1
 	prepare_process(idle_forever, npid0, NULL, &fixed_file_list[DEV_VGA1]);
 	// /dev/vga2
-	prepare_process(idle_vn, npid1, &fixed_file_list[DEV_KBD2], &fixed_file_list[DEV_VGA2]);
+	prepare_process(kernel_shell_proc, npid1, &fixed_file_list[DEV_KBD2], &fixed_file_list[DEV_VGA2]);
 	// /dev/vga0
 	prepare_process(idle_watched, npid2, NULL, &fixed_file_list[DEV_VGA0]);
 

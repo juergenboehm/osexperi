@@ -65,6 +65,8 @@ void uproc_1()
 	uprintf("                                                       \n");
 	uprintf("                                                       \n");
 
+	while (1) {};
+
 	uprintf("proc1: forking");
 	uint32_t ret = fork();
 	uprintf("after fork: ret = %d\n", ret);

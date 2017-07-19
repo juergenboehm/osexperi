@@ -86,22 +86,6 @@ testq:
 	.align 4
 .LC2:
 	.string	"                                                       \n"
-.LC3:
-	.string	"proc1: forking"
-.LC4:
-	.string	"after fork: ret = %d\n"
-.LC5:
-	.string	"proc1: fork done."
-.LC6:
-	.string	"fak(%d) = %d\n"
-.LC7:
-	.string	"\r\n"
-.LC8:
-	.string	"%c"
-.LC9:
-	.string	" %d "
-.LC10:
-	.string	"\n"
 	.text
 	.globl	uproc_1
 	.type	uproc_1, @function
@@ -109,12 +93,12 @@ uproc_1:
 	pushl	%ebp
 	movl	%esp, %ebp
 	pushl	%ebx
-	subl	$68, %esp
-	movl	$0, -20(%ebp)
-	movl	$2, -12(%ebp)
+	subl	$36, %esp
+	movl	$0, -12(%ebp)
+	movl	$2, -16(%ebp)
 	movl	$1610612736, %eax
 	movl	(%eax), %eax
-	movl	%eax, -36(%ebp)
+	movl	%eax, -20(%ebp)
 	movl	$my_handler, (%esp)
 	call	register_handler
 	call	uget_ds
@@ -129,143 +113,35 @@ uproc_1:
 	call	uprintf
 	movl	$.LC2, (%esp)
 	call	uprintf
-	movl	$.LC3, (%esp)
-	call	uprintf
-	call	fork
-	movl	%eax, -40(%ebp)
-	movl	-40(%ebp), %eax
-	movl	%eax, 4(%esp)
-	movl	$.LC4, (%esp)
-	call	uprintf
-	movl	$.LC5, (%esp)
-	call	uprintf
-	cmpl	$0, -40(%ebp)
-	jne	.L10
-	movl	$1, -24(%ebp)
-	jmp	.L11
-.L12:
-	movl	-24(%ebp), %eax
-	movl	%eax, (%esp)
-	call	fak
-	movl	%eax, 8(%esp)
-	movl	-24(%ebp), %eax
-	movl	%eax, 4(%esp)
-	movl	$.LC6, (%esp)
-	call	uprintf
-	incl	-24(%ebp)
-.L11:
-	cmpl	$9, -24(%ebp)
-	jle	.L12
-	movl	$998, testq
-	movl	$0, -28(%ebp)
-.L17:
-	movl	$0, -28(%ebp)
-	jmp	.L13
-.L14:
-	movl	$0, (%esp)
-	call	ugetc
-	movl	%eax, -28(%ebp)
-.L13:
-	movl	-28(%ebp), %eax
-	shrl	$16, %eax
-	movzbl	%al, %eax
-	testl	%eax, %eax
-	je	.L14
-	movl	-28(%ebp), %eax
-	shrl	$16, %eax
-	movb	%al, -41(%ebp)
-	cmpb	$13, -41(%ebp)
-	jne	.L15
-	movl	$.LC7, (%esp)
-	call	uprintf
-	jmp	.L17
-.L15:
-	movzbl	-41(%ebp), %eax
-	movl	%eax, 4(%esp)
-	movl	$.LC8, (%esp)
-	call	uprintf
-	jmp	.L17
 .L10:
-	jmp	.L18
-.L26:
-	movl	$2, -16(%ebp)
-	jmp	.L19
-.L22:
-	movl	-12(%ebp), %eax
-	movl	$0, %edx
-	divl	-16(%ebp)
-	movl	%edx, %eax
-	testl	%eax, %eax
-	jne	.L20
-	movl	$0, -16(%ebp)
-	jmp	.L21
-.L20:
-	incl	-16(%ebp)
-.L19:
-	movl	-16(%ebp), %eax
-	imull	-16(%ebp), %eax
-	cmpl	-12(%ebp), %eax
-	jbe	.L22
-.L21:
-	cmpl	$0, -16(%ebp)
-	je	.L23
-	incl	-20(%ebp)
-	movl	-12(%ebp), %eax
-	movl	%eax, 4(%esp)
-	movl	$.LC9, (%esp)
-	call	uprintf
-	movl	-20(%ebp), %eax
-	andl	$3, %eax
-	testl	%eax, %eax
-	jne	.L23
-	movl	$.LC10, (%esp)
-	call	uprintf
-.L23:
-	incl	-12(%ebp)
-	movl	-12(%ebp), %eax
-	andl	$7, %eax
-	testl	%eax, %eax
-	jne	.L18
-	movl	$0, -32(%ebp)
-	jmp	.L24
-.L25:
-	movl	$0, -48(%ebp)
-	incl	-32(%ebp)
-.L24:
-	cmpl	$2113929215, -32(%ebp)
-	jle	.L25
-.L18:
-	cmpl	$1073741823, -12(%ebp)
-	jbe	.L26
-.L27:
-	jmp	.L27
+	jmp	.L10
 	.size	uproc_1, .-uproc_1
 	.section	.rodata
-.LC11:
+.LC3:
 	.string	"esp = 0x%08x\n"
-.LC12:
+.LC4:
 	.string	"ss = 0x%08x\n"
-.LC13:
+.LC5:
 	.string	"esp0 = 0x%08x\n"
-.LC14:
+.LC6:
 	.string	"ss0 = 0x%08x\n"
-.LC15:
+.LC7:
 	.string	"ebp = 0x%08x\n"
-.LC16:
+.LC8:
 	.string	"ebx = 0x%08x\n"
-.LC17:
+.LC9:
 	.string	"eax = 0x%08x\n"
-.LC18:
+.LC10:
 	.string	"ecx = 0x%08x\n"
-.LC19:
+.LC11:
 	.string	"edx = 0x%08x\n"
-.LC20:
+.LC12:
 	.string	"esi = 0x%08x\n"
-.LC21:
+.LC13:
 	.string	"edi = 0x%08x\n"
-.LC22:
+.LC14:
 	.string	"ds = 0x%08x\n"
-.LC23:
+.LC15:
 	.string	"es = 0x%08x\n"
 	.text
 	.globl	udisplay_tss
@@ -277,71 +153,71 @@ udisplay_tss:
 	movl	8(%ebp), %eax
 	movl	56(%eax), %eax
 	movl	%eax, 4(%esp)
-	movl	$.LC11, (%esp)
+	movl	$.LC3, (%esp)
 	call	uprintf
 	movl	8(%ebp), %eax
 	movw	80(%eax), %ax
 	movzwl	%ax, %eax
 	movl	%eax, 4(%esp)
-	movl	$.LC12, (%esp)
+	movl	$.LC4, (%esp)
 	call	uprintf
 	movl	8(%ebp), %eax
 	movl	4(%eax), %eax
 	movl	%eax, 4(%esp)
-	movl	$.LC13, (%esp)
+	movl	$.LC5, (%esp)
 	call	uprintf
 	movl	8(%ebp), %eax
 	movw	8(%eax), %ax
 	movzwl	%ax, %eax
 	movl	%eax, 4(%esp)
-	movl	$.LC14, (%esp)
+	movl	$.LC6, (%esp)
 	call	uprintf
 	movl	8(%ebp), %eax
 	movl	60(%eax), %eax
 	movl	%eax, 4(%esp)
-	movl	$.LC15, (%esp)
+	movl	$.LC7, (%esp)
 	call	uprintf
 	movl	8(%ebp), %eax
 	movl	52(%eax), %eax
 	movl	%eax, 4(%esp)
-	movl	$.LC16, (%esp)
+	movl	$.LC8, (%esp)
 	call	uprintf
 	movl	8(%ebp), %eax
 	movl	52(%eax), %eax
 	movl	%eax, 4(%esp)
-	movl	$.LC17, (%esp)
+	movl	$.LC9, (%esp)
 	call	uprintf
 	movl	8(%ebp), %eax
 	movl	52(%eax), %eax
 	movl	%eax, 4(%esp)
-	movl	$.LC18, (%esp)
+	movl	$.LC10, (%esp)
 	call	uprintf
 	movl	8(%ebp), %eax
 	movl	52(%eax), %eax
 	movl	%eax, 4(%esp)
-	movl	$.LC19, (%esp)
+	movl	$.LC11, (%esp)
 	call	uprintf
 	movl	8(%ebp), %eax
 	movl	64(%eax), %eax
 	movl	%eax, 4(%esp)
-	movl	$.LC20, (%esp)
+	movl	$.LC12, (%esp)
 	call	uprintf
 	movl	8(%ebp), %eax
 	movl	68(%eax), %eax
 	movl	%eax, 4(%esp)
-	movl	$.LC21, (%esp)
+	movl	$.LC13, (%esp)
 	call	uprintf
 	movl	8(%ebp), %eax
 	movw	84(%eax), %ax
 	movzwl	%ax, %eax
 	movl	%eax, 4(%esp)
-	movl	$.LC22, (%esp)
+	movl	$.LC14, (%esp)
 	call	uprintf
 	movl	8(%ebp), %eax
 	movw	72(%eax), %ax
 	movzwl	%ax, %eax
 	movl	%eax, 4(%esp)
-	movl	$.LC23, (%esp)
+	movl	$.LC15, (%esp)
 	call	uprintf
 	leave
 	ret

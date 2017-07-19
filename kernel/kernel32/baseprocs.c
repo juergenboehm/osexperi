@@ -19,6 +19,7 @@
 #include "libs/utils.h"
 #include "libs/lists.h"
 
+#include "fs/ext2.h"
 #include "fs/gendrivers.h"
 
 #include "kernel32/mutex.h"
@@ -159,44 +160,6 @@ int readline_echo(char* buffer, int *cnt)
 
 }
 
-void parse_buf(char* buf, int len, int* argc, char* argv[])
-{
-	char* p = buf;
-	int argc_local = 0;
-
-	*argc = argc_local;
-
-
-	while (p - buf < len)
-	{
-		if (argc_local && *p)
-		{
-			*p = 0;
-			++p;
-		}
-		while (*p == ' ')
-		{
-			++p;
-		}
-
-		if (*p)
-		{
-			argv[argc_local] = p;
-			++argc_local;
-			while (*p != ' ')
-				++p;
-		}
-		else
-		{
-			break;
-		}
-	}
-
-	*argc = argc_local;
-
-	//printf("parse_buf: argc = %d\n", *argc);
-
-}
 
 int execute_calc(int argc, char* argv[])
 {
@@ -701,25 +664,150 @@ int execute_sem(int argc, char* argv[])
 
 int execute_ide(int argc, char* argv[])
 {
-	if (argc < 3)
+	if (argc < 2)
 	{
-		printf("ide: usage: ide rd|id|sf <blk_num>\n");
+		printf("ide: usage: ide rd|wr|id|sf|tst [<blk_num>] [<dev_num>]\n");
 		return -1;
 	}
 
-	uint32_t blk_num = atoi(argv[2]);
+#define OPC_ID 0
+#define OPC_SF 1
+#define OPC_RD 2
+#define OPC_TST 3
+#define OPC_WR 4
+#define OPC_ERR -1
 
-	uint32_t opcode = !strcmp(argv[1], "id") ? 0 :
-						!strcmp(argv[1], "sf") ? 1 : !strcmp(argv[1], "rd") ? 3 : -1;
+	uint32_t opcode = !strcmp(argv[1], "id") ? OPC_ID :
+						!strcmp(argv[1], "sf") ? OPC_SF : !strcmp(argv[1], "rd") ? OPC_RD :
+								!strcmp(argv[1], "tst") ? OPC_TST:
+								!strcmp(argv[1], "wr") ? OPC_WR: OPC_ERR;
 
-	if (opcode == -1)
+	if (opcode == OPC_ERR)
 	{
-		printf("ide: illegal op: must be rd|id|sf");
+		printf("ide: illegal op: must be rd|id|sf|ext2");
 		return -1;
 	}
 
-	ide_test(opcode, blk_num);
+	uint32_t dev_num = 0;
+	uint32_t blk_num = 0;
+
+	if (argc > 3)
+	{
+		dev_num = atoi(argv[3]);
+	}
+	if (argc > 2)
+	{
+		blk_num = atoi(argv[2]);
+	}
+
+	if (dev_num != 0 && dev_num != 1)
+	{
+		printf("ide: illegal dev_num: must be 0 or 1.\n");
+		return -1;
+	}
+
+	printf("ide: blk_num = %d : dev_num = %d\n", blk_num, dev_num);
+
+	switch (opcode)
+	{
+	case OPC_RD:
+
+		// do read through file /dev/ide<x>
+
+		outb_printf("opcode = 3.\n");
+
+		memset(ide_buffer, 0, 512);
+
+		file_t* devide = &fixed_file_list[DEV_IDE + dev_num];
+
+		devide->f_fops->readblk(devide, blk_num, (char**)&ide_buffer);
+
+		display_buffer(ide_buffer, 512);
+		break;
+
+	case OPC_WR:
+	{
+		// do read through file /dev/ide<x>
+
+		outb_printf("opcode = 5. Doing write. blk_num = 1024\n");
+
+		file_t* devide = &fixed_file_list[DEV_IDE];
+
+		int i;
+
+		if (dev_num == 1)
+		{
+			for(i = 0; i < 512; ++i)
+			{
+				ide_buffer[i] = i % 256;
+			}
+		}
+		else if (dev_num == 0)
+		{
+			memset(ide_buffer, 0, 512);
+		}
+
+		devide->f_fops->writeblk(devide, blk_num, (char*)ide_buffer);
+
+		display_buffer(ide_buffer, 512);
+	}
+	break;
+
+	case OPC_TST:
+	{
+		// do read through file /dev/ide<x>
+		file_t* devide1 = &fixed_file_list[DEV_IDE];
+		test_ide_rw_blk(devide1);
+	}
+	break;
+
+	case OPC_ID:
+	{
+		ide_test(0, blk_num);
+	}
+	break;
+	case OPC_SF:
+	{
+		ide_test(1, blk_num);
+	}
+	break;
+	default:
+		break;
+	}
+
 	return 0;
+}
+
+int execute_cat(int argc, char* argv[])
+{
+
+	if (argc < 2)
+	{
+		printf("cat: usage: cat <path>\n");
+		return -1;
+
+	}
+
+	file_t *dev_file = &fixed_file_list[DEV_IDE + 1];
+
+	inode_ext2_t res_inode;
+
+	char* demo_path = argv[1];
+	int nlen = strlen(demo_path);
+
+	//outb_printf("nlen = %d : demo_path = %s", nlen, demo_path);
+	char* copy_path = (char*) malloc(nlen + 1);
+	memcpy(copy_path, demo_path, nlen + 1);
+	copy_path[nlen] = 0;
+
+	parse_path_ext2(dev_file, copy_path, &res_inode);
+
+	printf("content of %s\n", demo_path);
+
+	display_inode_ext2(dev_file, &res_inode);
+
+	free(copy_path);
+
 }
 
 
@@ -738,7 +826,8 @@ exec_struct_t my_commands[] = { {"calc", execute_calc},
 																	{"kill", execute_kill},
 																	{"mtx", execute_mtx},
 																	{"sem", execute_sem},
-																	{"ide", execute_ide}};
+																	{"ide", execute_ide},
+																	{"cat", execute_cat}};
 
 
 void dispatch_op(exec_struct_t *commands, int ncommands, int argc, char* argv[])
@@ -773,7 +862,7 @@ void use_keyboard()
 		int ret = readline_echo(buf, &len);
 		printf("\n");
 
-		parse_buf(buf, len, &argc, argv);
+		parse_buf(buf, len, " ", &argc, argv);
 
 		for(i = 0; i < argc; ++i)
 		{
@@ -809,22 +898,19 @@ void idle_watched()
 }
 
 
-void idle_vn()
+void kernel_shell_proc()
 {
-	outb_0xe9( 'B');
 
 	uint32_t i = 0;
 
-	while (1) {
-		printf("I love vn. %d\n", ++i);
-		if (!(i % (1 << 24)))
-		{
-			outb_0xe9( 'V');
-		}
-		++i;
+	printf("init ext2 system: \n");
 
-		if (i == 10) {
-			use_keyboard();
-		}
-	}
+	file_t* dev_ide1 = &fixed_file_list[DEV_IDE + 1];
+
+	init_ext2_system(dev_ide1);
+
+	printf("ext2 system initialized.\n");
+
+	use_keyboard();
+
 }

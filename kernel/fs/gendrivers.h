@@ -11,6 +11,8 @@
 #define GET_MINOR_DEVICE_NUMBER(x) ((x) & ((1 << 16)-1))
 #define GET_MAJOR_DEVICE_NUMBER(x) ((x) >> 16)
 
+#define IS_BLK_DEVICE(x) ((x)->dd_blksize > 0)
+
 
 #define DEV_VGA_INDEX		1
 #define DEV_KBD_INDEX	0

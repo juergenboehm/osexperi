@@ -4,6 +4,25 @@
 
 #NO_APP
 	.text
+	.type	outb, @function
+outb:
+	pushl	%ebp
+	movl	%esp, %ebp
+	subl	$8, %esp
+	movl	8(%ebp), %eax
+	movl	12(%ebp), %edx
+	movw	%ax, -4(%ebp)
+	movb	%dl, -8(%ebp)
+	movl	-4(%ebp), %edx
+	movb	-8(%ebp), %al
+#APP
+# 25 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
+	outb %al, %dx
+# 0 "" 2
+#NO_APP
+	leave
+	ret
+	.size	outb, .-outb
 	.type	sti, @function
 sti:
 	pushl	%ebp
@@ -58,13 +77,13 @@ irq_restore:
 	movl	8(%ebp), %eax
 	andl	$512, %eax
 	testl	%eax, %eax
-	je	.L6
+	je	.L7
 #APP
 # 94 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
 	sti
 # 0 "" 2
 #NO_APP
-.L6:
+.L7:
 	popl	%ebp
 	ret
 	.size	irq_restore, .-irq_restore
@@ -192,21 +211,21 @@ get_new_pid:
 	pushl	%ebx
 	subl	$32, %esp
 	movl	$0, -12(%ebp)
-	jmp	.L21
-.L24:
+	jmp	.L22
+.L25:
 	movl	pid_index, %eax
 	incl	%eax
 	movl	%eax, pid_index
 	incl	-12(%ebp)
 	movl	pid_index, %eax
 	cmpl	$32, %eax
-	jne	.L22
+	jne	.L23
 	movl	$1, pid_index
-.L22:
+.L23:
 	cmpl	$31, -12(%ebp)
-	jle	.L21
-	jmp	.L23
-.L21:
+	jle	.L22
+	jmp	.L24
+.L22:
 	movl	pid_index, %eax
 	shrl	$3, %eax
 	movb	pidbuf(%eax), %dl
@@ -218,15 +237,15 @@ get_new_pid:
 	movl	%ebx, %eax
 	andl	%edx, %eax
 	testb	%al, %al
-	jne	.L24
-.L23:
+	jne	.L25
+.L24:
 	cmpl	$31, -12(%ebp)
-	jle	.L25
+	jle	.L26
 	movl	$.LC0, (%esp)
 	call	printf
+.L27:
+	jmp	.L27
 .L26:
-	jmp	.L26
-.L25:
 	movl	pid_index, %eax
 	shrl	$3, %eax
 	movl	%eax, %edx
@@ -531,20 +550,20 @@ schedule:
 	subl	$40, %esp
 	movl	schedule_off, %eax
 	testl	%eax, %eax
-	je	.L34
-	jmp	.L33
-.L34:
+	je	.L35
+	jmp	.L34
+.L35:
 	call	irq_cli_save
 	movl	%eax, -12(%ebp)
 	movl	current, %eax
 	testl	%eax, %eax
-	jne	.L36
+	jne	.L37
 	movl	$.LC7, (%esp)
 	call	outb_printf
 	movl	global_proc_list, %eax
 	movl	%eax, current_node
-	jmp	.L37
-.L36:
+	jmp	.L38
+.L37:
 	movl	current_node, %eax
 	movl	8(%eax), %eax
 	movl	%eax, current
@@ -552,7 +571,7 @@ schedule:
 	movl	116(%eax), %edx
 	incl	%edx
 	movl	%edx, 116(%eax)
-.L37:
+.L38:
 	movl	current_node, %eax
 	movl	(%eax), %eax
 	movl	8(%eax), %eax
@@ -564,20 +583,20 @@ schedule:
 	movl	120(%eax), %eax
 	movl	%eax, -16(%ebp)
 	cmpl	$0, -16(%ebp)
-	je	.L38
+	je	.L39
 	cmpl	$2, -16(%ebp)
-	jne	.L37
-.L38:
+	jne	.L38
+.L39:
 	movl	current, %eax
 	testl	%eax, %eax
-	je	.L39
+	je	.L40
 	movl	current, %eax
 	movl	120(%eax), %eax
 	cmpl	$2, %eax
-	jne	.L39
+	jne	.L40
 	movl	current, %eax
 	movl	$0, 120(%eax)
-.L39:
+.L40:
 	movl	next, %eax
 	movl	$2, 120(%eax)
 	movl	proc_switch_count, %eax
@@ -585,16 +604,16 @@ schedule:
 	movl	%eax, proc_switch_count
 	movl	current, %eax
 	testl	%eax, %eax
-	je	.L40
+	je	.L41
 	call	schedule_1
-	jmp	.L41
-.L40:
-	call	schedule_2
+	jmp	.L42
 .L41:
+	call	schedule_2
+.L42:
 	movl	-12(%ebp), %eax
 	movl	%eax, (%esp)
 	call	irq_restore
-.L33:
+.L34:
 	leave
 	ret
 	.size	schedule, .-schedule
@@ -606,24 +625,24 @@ process_signals:
 	subl	$24, %esp
 	movl	current, %eax
 	testl	%eax, %eax
-	je	.L42
+	je	.L43
 	movl	current, %eax
 	movl	132(%eax), %eax
 	testl	%eax, %eax
-	je	.L42
+	je	.L43
 	movl	current, %eax
 	movl	128(%eax), %eax
 	cmpl	$999, %eax
-	jne	.L44
+	jne	.L45
 	movl	current, %eax
 	movl	%eax, (%esp)
 	call	exit_process
-	jmp	.L42
-.L44:
+	jmp	.L43
+.L45:
 	movl	current, %eax
 	movl	124(%eax), %eax
 	testl	%eax, %eax
-	je	.L42
+	je	.L43
 	movl	current, %eax
 	movl	128(%eax), %edx
 	movl	current, %eax
@@ -633,7 +652,7 @@ process_signals:
 	movl	8(%ebp), %eax
 	movl	%eax, (%esp)
 	call	call_user_handler
-.L42:
+.L43:
 	leave
 	ret
 	.size	process_signals, .-process_signals
@@ -722,9 +741,9 @@ call_user_handler:
 	movzbl	%al, %eax
 	movl	%eax, -16(%ebp)
 	cmpl	$0, -16(%ebp)
-	je	.L47
-	jmp	.L46
-.L47:
+	je	.L48
+	jmp	.L47
+.L48:
 	movl	current, %eax
 	movl	$0, 132(%eax)
 	movl	-12(%ebp), %eax
@@ -745,7 +764,7 @@ call_user_handler:
 	movl	-12(%ebp), %eax
 	movl	12(%ebp), %edx
 	movl	%edx, (%eax)
-.L46:
+.L47:
 	leave
 	ret
 	.size	call_user_handler, .-call_user_handler
@@ -782,7 +801,7 @@ free_page_directory:
 	call	outb_printf
 	movl	current, %eax
 	cmpl	%eax, 8(%ebp)
-	jne	.L51
+	jne	.L52
 	movl	global_page_dir_sys, %eax
 	addl	$1073741824, %eax
 	movl	%eax, (%esp)
@@ -790,12 +809,12 @@ free_page_directory:
 	movl	12(%ebp), %eax
 	movl	%eax, (%esp)
 	call	free
-	jmp	.L50
-.L51:
+	jmp	.L51
+.L52:
 	movl	12(%ebp), %eax
 	movl	%eax, (%esp)
 	call	free
-.L50:
+.L51:
 	leave
 	ret
 	.size	free_page_directory, .-free_page_directory
@@ -810,8 +829,8 @@ free_user_memory:
 	subl	$1073741824, %eax
 	movl	%eax, -16(%ebp)
 	movl	$0, -12(%ebp)
-	jmp	.L54
-.L55:
+	jmp	.L55
+.L56:
 	movl	-12(%ebp), %eax
 	leal	0(,%eax,4), %edx
 	movl	-16(%ebp), %eax
@@ -819,9 +838,9 @@ free_user_memory:
 	movl	%eax, (%esp)
 	call	free_page_table
 	incl	-12(%ebp)
-.L54:
+.L55:
 	cmpl	$767, -12(%ebp)
-	jle	.L55
+	jle	.L56
 	movl	-16(%ebp), %eax
 	movl	%eax, 4(%esp)
 	movl	8(%ebp), %eax
@@ -859,14 +878,14 @@ take_out_of_global_proc_list:
 	movl	global_proc_list, %eax
 	movl	%eax, -12(%ebp)
 	cmpl	$0, -12(%ebp)
-	je	.L58
-.L64:
+	je	.L59
+.L65:
 	movl	-12(%ebp), %eax
 	movl	%eax, -20(%ebp)
 	movl	-20(%ebp), %eax
 	movl	8(%eax), %eax
 	cmpl	8(%ebp), %eax
-	jne	.L59
+	jne	.L60
 	movl	$659, 8(%esp)
 	movl	$.LC2, 4(%esp)
 	movl	$.LC3, (%esp)
@@ -885,13 +904,13 @@ take_out_of_global_proc_list:
 	movl	%eax, -32(%ebp)
 	movl	-24(%ebp), %eax
 	cmpl	-28(%ebp), %eax
-	jne	.L60
+	jne	.L61
 	movl	-28(%ebp), %eax
 	cmpl	-32(%ebp), %eax
-	jne	.L61
+	jne	.L62
 	movl	$0, global_proc_list
-	jmp	.L63
-.L61:
+	jmp	.L64
+.L62:
 	movl	-28(%ebp), %eax
 	movl	(%eax), %edx
 	movl	-32(%ebp), %eax
@@ -903,8 +922,8 @@ take_out_of_global_proc_list:
 	movl	-28(%ebp), %eax
 	movl	(%eax), %eax
 	movl	%eax, global_proc_list
-	jmp	.L63
-.L60:
+	jmp	.L64
+.L61:
 	movl	-24(%ebp), %eax
 	movl	4(%eax), %eax
 	movl	-24(%ebp), %edx
@@ -915,25 +934,25 @@ take_out_of_global_proc_list:
 	movl	-24(%ebp), %edx
 	movl	4(%edx), %edx
 	movl	%edx, 4(%eax)
-.L63:
+.L64:
 	movl	-20(%ebp), %eax
 	movl	%eax, (%esp)
 	call	free_process_node_t
-	jmp	.L58
-.L59:
+	jmp	.L59
+.L60:
 	movl	-12(%ebp), %eax
 	movl	(%eax), %eax
 	movl	%eax, -12(%ebp)
 	movl	global_proc_list, %eax
 	cmpl	%eax, -12(%ebp)
-	jne	.L64
-.L58:
+	jne	.L65
+.L59:
 	movl	$0, -16(%ebp)
 	movl	global_proc_list, %eax
 	movl	%eax, -12(%ebp)
 	cmpl	$0, -12(%ebp)
-	je	.L57
-.L66:
+	je	.L58
+.L67:
 	movl	-12(%ebp), %eax
 	movl	%eax, -36(%ebp)
 	movl	$677, 8(%esp)
@@ -951,11 +970,11 @@ take_out_of_global_proc_list:
 	movl	%eax, -12(%ebp)
 	incl	-16(%ebp)
 	cmpl	$7, -16(%ebp)
-	jle	.L66
+	jle	.L67
 	movl	global_proc_list, %eax
 	cmpl	%eax, -12(%ebp)
-	jne	.L66
-.L57:
+	jne	.L67
+.L58:
 	leave
 	ret
 	.size	take_out_of_global_proc_list, .-take_out_of_global_proc_list
@@ -974,7 +993,7 @@ free_process_block:
 	movl	%eax, -16(%ebp)
 	movl	global_free_proc_list, %eax
 	testl	%eax, %eax
-	jne	.L68
+	jne	.L69
 	movl	-16(%ebp), %eax
 	movl	%eax, global_free_proc_list
 	movl	-16(%ebp), %eax
@@ -983,8 +1002,8 @@ free_process_block:
 	movl	-16(%ebp), %eax
 	movl	-16(%ebp), %edx
 	movl	%edx, 4(%eax)
-	jmp	.L67
-.L68:
+	jmp	.L68
+.L69:
 	movl	global_free_proc_list, %eax
 	movl	%eax, -20(%ebp)
 	movl	global_free_proc_list, %eax
@@ -1004,7 +1023,7 @@ free_process_block:
 	movl	%edx, (%eax)
 	movl	-16(%ebp), %eax
 	movl	%eax, global_free_proc_list
-.L67:
+.L68:
 	leave
 	ret
 	.size	free_process_block, .-free_process_block
@@ -1058,20 +1077,23 @@ destroy_process:
 	call	irq_restore
 	movl	current, %eax
 	cmpl	8(%ebp), %eax
-	jne	.L70
+	jne	.L71
 	movl	$0, current
 	call	sti
-.L74:
+.L75:
+	movl	$68, 4(%esp)
+	movl	$233, (%esp)
+	call	outb
 	movl	$0, -12(%ebp)
-	jmp	.L72
-.L73:
+	jmp	.L73
+.L74:
 	movl	$0, -24(%ebp)
 	incl	-12(%ebp)
-.L72:
+.L73:
 	cmpl	$32767, -12(%ebp)
-	jle	.L73
-	jmp	.L74
-.L70:
+	jle	.L74
+	jmp	.L75
+.L71:
 	leave
 	ret
 	.size	destroy_process, .-destroy_process
@@ -1099,13 +1121,13 @@ clone_file_t:
 	movl	$.LC20, (%esp)
 	call	outb_printf
 	cmpl	$0, 8(%ebp)
-	jne	.L76
+	jne	.L77
 	movl	12(%ebp), %eax
 	movl	8(%ebp), %edx
 	movl	%edx, (%eax)
 	movl	$0, %eax
-	jmp	.L77
-.L76:
+	jmp	.L78
+.L77:
 	call	get_file_t
 	movl	%eax, -12(%ebp)
 	movl	$28, 8(%esp)
@@ -1136,7 +1158,7 @@ clone_file_t:
 	movl	$.LC22, (%esp)
 	call	outb_printf
 	movl	$0, %eax
-.L77:
+.L78:
 	leave
 	ret
 	.size	clone_file_t, .-clone_file_t
@@ -1149,10 +1171,10 @@ clone_proc_t:
 	call	get_process_t
 	movl	%eax, -12(%ebp)
 	cmpl	$0, -12(%ebp)
-	jne	.L79
+	jne	.L80
 	movl	$-1, %eax
-	jmp	.L80
-.L79:
+	jmp	.L81
+.L80:
 	movl	$8192, 8(%esp)
 	movl	8(%ebp), %eax
 	movl	%eax, 4(%esp)
@@ -1163,7 +1185,7 @@ clone_proc_t:
 	movl	-12(%ebp), %edx
 	movl	%edx, (%eax)
 	movl	$0, %eax
-.L80:
+.L81:
 	leave
 	ret
 	.size	clone_proc_t, .-clone_proc_t
@@ -1176,8 +1198,8 @@ clone_proc_io_block_t:
 	call	get_proc_io_block_t
 	movl	%eax, -16(%ebp)
 	movl	$0, -12(%ebp)
-	jmp	.L82
-.L84:
+	jmp	.L83
+.L85:
 	movl	-12(%ebp), %eax
 	leal	0(,%eax,4), %edx
 	movl	-16(%ebp), %eax
@@ -1193,18 +1215,18 @@ clone_proc_io_block_t:
 	movl	-12(%ebp), %edx
 	movl	(%eax,%edx,4), %eax
 	testl	%eax, %eax
-	je	.L83
+	je	.L84
 	movl	-16(%ebp), %eax
 	movl	-12(%ebp), %edx
 	movl	(%eax,%edx,4), %eax
 	movl	24(%eax), %edx
 	incl	%edx
 	movl	%edx, 24(%eax)
-.L83:
+.L84:
 	incl	-12(%ebp)
-.L82:
+.L83:
 	cmpl	$15, -12(%ebp)
-	jle	.L84
+	jle	.L85
 	movl	12(%ebp), %eax
 	movl	-16(%ebp), %edx
 	movl	%edx, (%eax)
@@ -1277,7 +1299,7 @@ clone_wq:
 	movl	136(%eax), %eax
 	movl	%eax, -12(%ebp)
 	cmpl	$0, -12(%ebp)
-	je	.L88
+	je	.L89
 	call	get_process_node_t
 	movl	%eax, -16(%ebp)
 	movl	-16(%ebp), %eax
@@ -1288,7 +1310,7 @@ clone_wq:
 	movl	-12(%ebp), %eax
 	movl	(%eax), %eax
 	testl	%eax, %eax
-	jne	.L90
+	jne	.L91
 	movl	-12(%ebp), %eax
 	movl	-20(%ebp), %edx
 	movl	%edx, (%eax)
@@ -1298,8 +1320,8 @@ clone_wq:
 	movl	-20(%ebp), %eax
 	movl	-20(%ebp), %edx
 	movl	%edx, 4(%eax)
-	jmp	.L91
-.L90:
+	jmp	.L92
+.L91:
 	movl	-12(%ebp), %eax
 	movl	(%eax), %eax
 	movl	4(%eax), %eax
@@ -1318,11 +1340,11 @@ clone_wq:
 	movl	-24(%ebp), %eax
 	movl	-20(%ebp), %edx
 	movl	%edx, (%eax)
-.L91:
+.L92:
 	movl	8(%ebp), %eax
 	movl	-12(%ebp), %edx
 	movl	%edx, 136(%eax)
-.L88:
+.L89:
 	leave
 	ret
 	.size	clone_wq, .-clone_wq
@@ -1374,9 +1396,9 @@ fork_process:
 	call	copy_page_tables
 	movl	%eax, -20(%ebp)
 	cmpl	$0, -20(%ebp)
-	je	.L93
-	jmp	.L94
-.L93:
+	je	.L94
+	jmp	.L95
+.L94:
 	leal	-68(%ebp), %eax
 	movl	%eax, 4(%esp)
 	movl	-24(%ebp), %eax
@@ -1384,9 +1406,9 @@ fork_process:
 	call	clone_proc_t
 	movl	%eax, -20(%ebp)
 	cmpl	$0, -20(%ebp)
-	je	.L95
-	jmp	.L94
-.L95:
+	je	.L96
+	jmp	.L95
+.L96:
 	movl	-68(%ebp), %eax
 	movl	-24(%ebp), %edx
 	movl	%edx, 4(%esp)
@@ -1510,7 +1532,7 @@ fork_process:
 	movl	%eax, -52(%ebp)
 	movl	global_proc_list, %eax
 	testl	%eax, %eax
-	jne	.L96
+	jne	.L97
 	movl	-52(%ebp), %eax
 	movl	%eax, global_proc_list
 	movl	-52(%ebp), %eax
@@ -1519,8 +1541,8 @@ fork_process:
 	movl	-52(%ebp), %eax
 	movl	-52(%ebp), %edx
 	movl	%edx, 4(%eax)
-	jmp	.L94
-.L96:
+	jmp	.L95
+.L97:
 	movl	global_proc_list, %eax
 	movl	%eax, -56(%ebp)
 	movl	global_proc_list, %eax
@@ -1540,7 +1562,7 @@ fork_process:
 	movl	%edx, (%eax)
 	movl	-52(%ebp), %eax
 	movl	%eax, global_proc_list
-.L94:
+.L95:
 	movl	$954, 8(%esp)
 	movl	$.LC2, 4(%esp)
 	movl	$.LC3, (%esp)

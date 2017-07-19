@@ -33,7 +33,10 @@ void free_proc_io_block_t(proc_io_block_t* pio_blk);
 
 void free_wq_t(wq_t* p_wqt);
 
+void init_objects();
 
+
+extern list_head_t* global_proc_node_list;
 
 
 

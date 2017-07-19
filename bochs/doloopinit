@@ -1,0 +1,5 @@
+
+losetup -o 2097152 /dev/loop0 c.img
+
+mke2fs -b1024 /dev/loop0
+

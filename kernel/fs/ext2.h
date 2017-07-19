@@ -1,9 +1,19 @@
 
-#ifndef __fs_ext2
-#define __fs_ext2
+#ifndef __fs_ext2_h
+#define __fs_ext2_h
+
+#define SIZE_SB		1024
+#define OFFSET_SB	1024
+#define BLK_SIZE_EXT2	1024
+#define LOG_IN_PHYS	2
+
+#define MAX_PATH_COMPONENTS 32
 
 
-typedef struct superblock_s {
+#define EXT2_S_IFDIR	0x4000
+#define EXT2_S_IFREG	0x8000
+
+typedef struct superblock_ext2_s {
 /*0	4 */ uint32_t	s_inodes_count;
 /*4	4	*/ uint32_t s_blocks_count;
 /*8	4 */ uint32_t s_r_blocks_count;
@@ -67,10 +77,10 @@ typedef struct superblock_s {
 /*256	4	*/ uint32_t s_default_mount_options;
 /*260	4	*/ uint32_t s_first_meta_bg;
 /*264	*/ uint8_t s_unused_padding[760]; // 760	Unused - reserved for future revisions
-} superblock_t;
+} superblock_ext2_t;
 
 
-typedef struct bg_desc_s {
+typedef struct bg_desc_ext2_s {
 /* 0	4 */	uint32_t bg_block_bitmap;
 /* 4	4 */	uint32_t bg_inode_bitmap;
 /* 8	4 */	uint32_t bg_inode_table;
@@ -79,10 +89,10 @@ typedef struct bg_desc_s {
 /* 16	2 */	uint16_t bg_used_dirs_count;
 /* 18	2 */	uint16_t bg_pad;
 /* 20	12 */	uint8_t  bg_reserved[12];
-} bg_desc_t;
+} bg_desc_ext2_t;
 
 
-typedef struct inode_s {
+typedef struct inode_ext2_s {
 /* 0	2	*/ uint16_t i_mode;
 /* 2	2	*/ uint16_t i_uid;
 /* 4	4	*/ uint32_t i_size;
@@ -101,6 +111,50 @@ typedef struct inode_s {
 /* 108	4	*/	uint32_t i_dir_acl;
 /* 112	4	*/	uint32_t i_faddr;
 /* 116	12 */	uint8_t i_osd2[12];
-} inode_t;
+} inode_ext2_t;
+
+typedef struct dir_entry_ext2_s
+{
+	uint32_t	inode;
+	uint16_t	rec_len;
+	uint8_t		name_len;
+	uint8_t		file_type;
+} dir_entry_ext2_t;
+
+
+extern superblock_ext2_t* gsb_ext2;
+
+extern uint32_t g_blocks_per_group_ext2;
+
+extern bg_desc_ext2_t* gbgd_ext2;
+
+// operations
+
+void test_ide_rw_blk(file_t* dev_file);
+
+int init_superblock_ext2(file_t* dev_file);
+int init_ext2_system(file_t* dev_file);
+
+int print_sb_ext2(superblock_ext2_t* sb);
+
+
+int read_inode_ext2(file_t* dev_file, uint32_t inode_index, inode_ext2_t* pinode);
+
+
+
+int readdir_ext2(file_t *dev_file, inode_ext2_t *pinode, dir_entry_ext2_t* dir_entry,
+		char* namebuf, uint32_t *dir_offset);
+int read_file_ext2(file_t* dev_file, inode_ext2_t *pinode, char* buf, uint32_t count, uint32_t offset);
+
+int parse_path_ext2(file_t* dev_file, char* path, inode_ext2_t *pinode);
+
+int get_indirect_blocks(uint32_t offset, uint32_t* index_arr, uint32_t *mode);
+int test_get_indirect_blocks();
+
+
+int display_directory_ext2(file_t* dev_file, inode_ext2_t* pinode);
+int display_regular_file_ext2(file_t* dev_file, inode_ext2_t* pinode);
+int display_inode_ext2(file_t* dev_file, inode_ext2_t* pinode);
+
 
 #endif

@@ -610,6 +610,7 @@ int outb_print(char* str)
 
 #define PRINTF_BUFFER_LEN	1024
 
+
 int outb_printf(char* format, ... )
 {
 	int i = 0;
@@ -702,7 +703,7 @@ int sprintf(char* s, char* format, ... )
 
 	va_end(ap);
 
-	return 0;
+	return strlen(s);
 }
 
 
@@ -855,19 +856,25 @@ int getc(uint32_t fd)
 
 void waitkey()
 {
+	int i;
+	//mtx_lock(&key_wait_mutex[screen_current]);
 
-	mtx_lock(&key_wait_mutex[screen_current]);
+	for(i = 0; i < 2; ++i)
+	{
+		do {} while (!key_avail_raw(screen_current));
+		read_keyb_byte_raw(screen_current);
+	}
 
-	do {} while (!key_avail(screen_current));
-
+/*
 	uint32_t keyb_full_code = 0;
 	do
 	{
 		keyb_full_code = read_key_with_modifiers(screen_current);
 	}
 	while (keyb_full_code == 0);
+*/
 
-	mtx_unlock(&key_wait_mutex[screen_current]);
+	//mtx_unlock(&key_wait_mutex[screen_current]);
 }
 
 // memcpy
@@ -922,4 +929,59 @@ uint32_t rand()
 	rand_val = (314159261 * rand_val  + 1) % (1 << 29);
 	return rand_val >> 5;
 }
+
+// some string utilities
+
+bool in_delim(char c, char* delims)
+{
+	char *q = delims;
+	while (*q)
+	{
+		if (*q == c)
+		{
+			break;
+		}
+		++q;
+	}
+	return (bool)*q;
+}
+
+void parse_buf(char* buf, int len, char* delims, int* argc, char* argv[])
+{
+	char* p = buf;
+	int argc_local = 0;
+
+	*argc = argc_local;
+
+	while (p - buf < len)
+	{
+		if (argc_local && *p)
+		{
+			*p = 0;
+			++p;
+		}
+		while (in_delim(*p, delims))
+		{
+			++p;
+		}
+
+		if (*p)
+		{
+			argv[argc_local] = p;
+			++argc_local;
+			while (*p && !in_delim(*p, delims))
+				++p;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	*argc = argc_local;
+
+	//printf("parse_buf: argc = %d\n", *argc);
+
+}
+
 

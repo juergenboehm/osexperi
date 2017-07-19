@@ -11,7 +11,7 @@ typedef unsigned char uint8_t;
 
 typedef unsigned int uint_t;
 
-typedef uint_t size_t;
+typedef uint32_t size_t;
 typedef long long loff_t;
 
 typedef uint32_t physaddr_t;
@@ -26,7 +26,7 @@ typedef int bool;
 
 #define	NULL 0
 
-//#define SIMULATOR 1
+#define SIMULATOR 1
 
 
 #ifdef SIMULATOR

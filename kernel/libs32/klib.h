@@ -100,6 +100,10 @@ int strlen(char* str);
 
 int atoi(char* str);
 
+void parse_buf(char* buf, int len, char* delims, int* argc, char* argv[]);
+
+
+
 // memcpy
 
 void* memcpy(void* dest, void* src, size_t n);

@@ -198,6 +198,9 @@ file_ops_t* create_file_ops(int type, file_ops_t* buf);
 #define DEV_TTY2	6
 #define DEV_TTY3	7
 
+#define DEV_IDE		8
+#define DEV_IDE1	9
+
 
 
 

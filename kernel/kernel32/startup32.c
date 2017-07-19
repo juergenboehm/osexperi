@@ -35,6 +35,7 @@
 
 #include "mem/gdt32.h"
 
+#include "kernel32/objects.h"
 #include "kernel32/process.h"
 
 
@@ -72,6 +73,7 @@ void kmain32()
 	//raw_printf("kmain32 started ");
 
 	current = 0;
+	screen_current = 0;
 
 	uint32_t i;
 	for(i = 0; i < NUM_PROCESSES/8; ++i)
@@ -121,10 +123,6 @@ void kmain32()
 	int fd_vga2 = do_open("/dev/vga2", 1);
 	int fd_vga3 = do_open("/dev/vga3", 1);
 
-	test_ext2();
-
-
-
 	//test_malloc();
 
 
@@ -168,6 +166,8 @@ void kmain32()
 
 	init_sync_system();
 
+	init_objects();
+
   sti();
 
 	i = 0;
@@ -178,13 +178,12 @@ void kmain32()
 
 	init_keytables();
 
-	keyb_sema = 0;
 	timer_sema = 0;
 
 	display_bios_mem_area_table();
 
 
-	//waitkey();
+	waitkey();
 
 	enumerate_pci_bus(pci_addr_ide_contr);
 
@@ -235,8 +234,10 @@ void kmain32()
 	//use_keyboard();
 
 
-//	for(i = 0; i < 2; ++i)
-//		waitkey();
+	for(i = 0; i < 2; ++i)
+	{
+		waitkey();
+	}
 
 	void* uproc_1 = (void*) 0x1000;
 

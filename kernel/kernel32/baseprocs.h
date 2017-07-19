@@ -9,7 +9,7 @@
 void display_tss(tss_t* tss);
 
 void idle_forever();
-void idle_vn();
+void kernel_shell_proc();
 void idle_watched();
 
 

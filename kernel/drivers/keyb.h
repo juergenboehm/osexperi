@@ -24,9 +24,13 @@ volatile extern uint32_t keyb_sema;
 void keyb_irq_handler(uint32_t errcode, uint32_t irq_num, void* esp);
 
 
+uint32_t key_avail(int keyb);
 uint32_t read_keyb_byte();
 
-uint32_t key_avail();
+
+uint32_t key_avail_raw(int keyb);
+uint32_t read_keyb_byte_raw(int keyb);
+
 
 uint32_t init_keyboard();
 

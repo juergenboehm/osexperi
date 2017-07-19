@@ -5,6 +5,13 @@
 #include "libs/utils.h"
 
 
+#define 	IDE_BLKSIZE		512
+
+#define 	DEV_IDE1_BLK_OFFSET		4096
+
+#define		DEV_IDE_DEV_CODE	0
+
+
 /* IDE harddisk functions */
 
 #define 	IDE_PRIM_COMMAND_BLOCK	0x1f0
@@ -86,6 +93,13 @@ extern uint8_t* ide_buffer;
 extern prd_entry_t* prd_table;
 
 
+// device driver interface
+
+int readblk_ide(file_t* fil, uint32_t blk_index, char **buf);
+int writeblk_ide(file_t* fil, uint32_t blk_index, char *buf);
+
+
+// general functions
 
 uint32_t ide_init();
 
@@ -114,6 +128,8 @@ uint32_t ide_WRITE_DMA(ide_ctrl_t* ide_ctrl, prd_entry_t* prd_table,
 
 
 void ide_irq_handler(uint32_t errcode, uint32_t irq_num, void* esp);
+
+
 
 
 // as simple read test

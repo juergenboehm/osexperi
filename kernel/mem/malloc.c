@@ -104,7 +104,7 @@ void* malloc(uint32_t size)
 	// that are acted upon by the now called code.
 	IRQ_CLI_SAVE(eflags);
 
-	DEBUGOUT1(0, "enter malloc(%d)\n", size);
+	DEBUGOUT1(1, "enter malloc(%d)\n", size);
 
 	uint32_t size_4 = align(size, 4);
 	ASSERT(size_4 <= (1 << (MALLOC_HEADS_NUM + LOG_MIN_ALLOC_SIZE - 1)) );
@@ -117,7 +117,7 @@ void* malloc(uint32_t size)
 	DEBUGOUT1(1, "log_size = %d\n", log_size);
 
 	void *p_ret = get_malloc_node(log_size);
-	DEBUGOUT1(0, "leave malloc p_ret = %08x\n", (uint32_t) p_ret);
+	DEBUGOUT1(1, "leave malloc p_ret = %08x\n", (uint32_t) p_ret);
 
 #if 0
 	if (p_ret)
@@ -142,7 +142,7 @@ void free(void * p)
 	page_desc_t *pdesc = BLK_PTR(q_pd);
 	uint32_t malloc_order_log = pdesc->malloc_order;
 
-	DEBUGOUT1(0, "free(%d)\n", (1 << (malloc_order_log + LOG_MIN_ALLOC_SIZE)));
+	DEBUGOUT1(1, "free(%d)\n", (1 << (malloc_order_log + LOG_MIN_ALLOC_SIZE)));
 
 	if (malloc_order_log >= PG_FRAME_BITS - LOG_MIN_ALLOC_SIZE)
 	{

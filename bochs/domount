@@ -1,0 +1,5 @@
+#!/bin/bash
+
+mount -text2 /dev/loop0 ./mnt
+
+

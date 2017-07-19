@@ -70,8 +70,10 @@ ende:
 
 int mtx_unlock(mutex_t *mtx)
 {
+	IRQ_CLI_SAVE(eflags);
 	mtx->val = 1;
 	wq_wakeup(mtx->wq);
+	IRQ_RESTORE(eflags);
 	return 0;
 }
 
@@ -173,6 +175,7 @@ int wq_free(wq_t* wq)
 
 int wq_wait(wq_t* wq)
 {
+
 	IRQ_CLI_SAVE(eflags);
 
 	process_node_t* pnd = get_process_node_t();
@@ -197,7 +200,7 @@ int wq_wakeup(wq_t* wq)
 
 	IRQ_CLI_SAVE(eflags);
 
-	if (wq && wq->head)
+	if (wq->head)
 	{
 		process_node_t* pnd = container_of(wq->head, process_node_t, link);
 		process_t *proc = pnd->proc;
@@ -214,7 +217,37 @@ int wq_wakeup(wq_t* wq)
 
 void remove_from_wait_queues(process_t *proc)
 {
+	wq_t* proc_wq = proc->proc_data.in_wq;
 
+	if (proc_wq)
+	{
+
+		list_head_t* the_wq = proc_wq->head;
+
+		INIT_LISTVAR(p);
+		FORLIST(p, the_wq)
+		{
+			process_node_t* pnd = container_of(p, process_node_t, link);
+
+			if (pnd->proc == proc)
+			{
+				delete_elem(&the_wq, &pnd->link);
+				free_process_node_t(pnd);
+
+				outb_printf("remove_from_wait_queues: remove done.\n");
+
+				break;
+			}
+
+			p = p->next;
+		}
+		END_FORLIST(p, the_wq);
+
+		proc_wq->head = the_wq;
+
+		outb_printf("proc_wq->head = %08x\n", (uint32_t)proc_wq->head);
+
+	}
 }
 
 void release_sync_primitives(process_t *proc)
