@@ -119,7 +119,38 @@ esp Stand nach Abladen aller Register im irq-Stub. Damit kann dann über *(esp +
 Register zugegriffen werden. Damit funktioniert dann auch der Syscall print_character jetzt mit ebx
 als Übergabe-Register.
 
+19.07.2017, Mittwoch, 21:01
 
+Seit etwa 3 Wochen Code stark überarbeitet. Richtiger Scheduler, 4 Screens für Output, umschaltbar
+mit F1 bis F4, getrennte Keyboard-Queues für jeden Screen einzeln. Prozeß-Management: destroy, fork
+(mit Copy-on-Write). Signale können an Prozesse gesendet werden. Semaphoren, Mutexe und Waitqueues
+implementiert. Page-fault handling jetzt komplexer und für übliche Userprozesse tauglich.
+Grundlegende Syscalls vorhanden, Prozesse haben File-I/O Tabellen. 
+
+Stringentes Device-Konzept implementiert mit major/minor und den Linux file_ops.
+
+Festplatte Primary-Master stellt jetzt Devices /dev/ide (für ganze Platte) und /dev/ide1
+für alles >= 4096 * 512 bereit. Auf /dev/ide1 lebt ein ext2 System das mit /dev/loop aufgebracht
+wurde. Rudimentäres Lesen im ext2-System ist implementiert. 
+
+Eine Benutzerkonsole, die als Systemprozeß in Screen 3 läuft, gestattet verschiedene Tests.
+Befehle: ps, mem, spd, spdx, sst usw.
+
+Alles unter Code-Versioning mit git gestellt und bei github hochgeladen.
+
+
+26.07.2017, Mittwoch, 00:00
+
+Letzte Woche Leseroutinen für ext2-Filesystem geschrieben und erfolgreich getestet.
+Danach ext2 Routinen erstmal getrennt ausgegliedert, um Schreibroutinen in einer isolierten
+Umgebung zu entwickeln und zu testen. Am Montag erfolgreich Daten zufallsgesteuert in mehrere
+Dateien geschrieben und bei Tests sowohl Gleichheit der Dateien, als auch Integrität des
+ext2-Filesystems (mit e2fsck) nachgewiesen. Gestern, Dienstag, Zeit- und Datumsfunktionen
+für osexperi eingebaut: Lesen der RTC, exaktes Fortschreiben der Systemzeit in Sekunden,
+Konversion von Unix-Time in normales Datumsformat und zurück.
+
+Dienstag abend: Cross-Compiler gebaut und erfolgreich eingesetzt. Kleine Änderungen an
+den Makefiles und Berücksichtigung von .eh_frames in den Linkerskripten.
 
 
 

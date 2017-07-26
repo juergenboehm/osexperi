@@ -1,0 +1,4 @@
+
+
+mke2fs -b1024 /dev/loop0
+

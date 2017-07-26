@@ -152,7 +152,6 @@ void kmain32()
 
 	schedule_off = 1;
 
-	timer_special_counter = 0;
 	keyb_special_counter = 0;
 
   uint8_t* test_dummy = MALLOC_FIXED_TYPE(uint8_t, 128, 4096);
@@ -178,7 +177,7 @@ void kmain32()
 
 	init_keytables();
 
-	timer_sema = 0;
+	init_timer();
 
 	display_bios_mem_area_table();
 

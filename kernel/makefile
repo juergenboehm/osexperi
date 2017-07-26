@@ -6,11 +6,17 @@ loader_sec = 13
 # the global debug level
 DEB_LEVEL = 0
 
-ccflags = -m32 -c -DDEBUG_LEVEL=${DEB_LEVEL} -march=i386 -nostdinc -nostdlib -ffreestanding \
+# the tools
+
+GCC = i686-elf-gcc
+LD = i686-elf-gcc
+
+
+ccflags = -c -DDEBUG_LEVEL=${DEB_LEVEL} -nostdlib -ffreestanding \
 		-fno-asynchronous-unwind-tables -Werror
 ccflagsS = $(ccflags) -DASM_SOURCE=1
 
-ldflags = -melf_i386 #--cref
+ldflags = -nostdlib #--cref
 
 # objects in a library common to loader and kernel
 
@@ -54,6 +60,7 @@ objectsC_kernel32 = kernel32/startup32.o \
 			drivers/keyb_decode.o \
 			drivers/ide.o \
 			drivers/timer.o \
+			drivers/rtc.o \
 			fs/vfs.o \
 			fs/ext2.o \
 			fs/gendrivers.o \
@@ -91,7 +98,8 @@ objects32_kernel =  $(objectsS_kernel32) $(objectsC_kernel32) $(objectsLib32All)
 kernel_objects:   $(objects32_kernel)
 
 
-objects_kernel_combined = kernel16/stubAux.o kernel16.o kernel32.o kernel32_user.o
+#objects_kernel_combined = kernel16/stubAux.o kernel16.o kernel32.o kernel32_user.o
+objects_kernel_combined = kernel16/stubAux.o kernel16.o kernel32.o
 
 
 # headers
@@ -114,23 +122,29 @@ debugs = boot/loader.s libs16/bioslib.s kernel16/startup.s kernel32/startup32.s 
 # ld for loader
 
 loader.bin: $(objectsAll_loader) $(debugs)
-	ld  $(ldflags) -M -o loader.bin $(objectsAll_loader) -T ./ldscript.ld.ls
+	$(LD)  $(ldflags) -o loader.bin $(objectsAll_loader) -T ./ldscript.ld.ls
 
 
 # ld for kernel
 
 kernel.bin: $(objects_kernel_combined)
-	ld  $(ldflags) -M -o kernel.bin $(objects_kernel_combined) -T ./ldscript.kr.ls
+	$(LD)  $(ldflags)  -o kernel.bin $(objects_kernel_combined) -T ./ldscript.kr.ls
 
 kernel16.o: $(objects16_kernel)
-	ld  $(ldflags) -o kernel16.o $(objects16_kernel) -T ./ldscript.kr16.ls
+	$(LD)  $(ldflags) -o kernel16.o $(objects16_kernel) -T ./ldscript.kr16.ls
 
 kernel32.o: $(objects32_kernel)
-	ld  $(ldflags) -M -o kernel32.o $(objects32_kernel) -T ./ldscript.kr32.ls
+	$(LD)  $(ldflags) -o kernel32.o  $(objects32_kernel) -lgcc -T ./ldscript.kr32.ls
 
-kernel32_user.o: $(objectsS_kernel_user_mode) $(objectsC_kernel_user_mode)
-	ld $(ldflags) -M -o kernel32_user.o $(objectsS_kernel_user_mode) $(objectsC_kernel_user_mode) \
-			 -T ./ldscript.kr32_user.ls
+#kernel32_user.o: $(objectsS_kernel_user_mode) $(objectsC_kernel_user_mode)
+#	$(LD) $(ldflags) -o kernel32_user.o $(objectsS_kernel_user_mode) $(objectsC_kernel_user_mode) \
+#			 -T ./ldscript.kr32_user.ls
+
+user.bin: $(objectsS_kernel_user_mode) $(objectsC_kernel_user_mode)
+	$(LD) $(ldflags) -o user.bin $(objectsS_kernel_user_mode) $(objectsC_kernel_user_mode) \
+			 -T ./ldscript.user.ls
+
+
 
 # shortcuts
 
@@ -160,65 +174,65 @@ rebuild : clean all
 # debug .s
 
 $(debugs): %.s : %.c *.h boot/*.h libs16/*.h
-	gcc $(ccflags) -I$(PWD) -I. -I kernel32 -I libs32 -I libs16 -DCODE16 -DKERNEL_LEN=`stat -c %s kernel.bin` -DNUM_LOADER_SEC=$(loader_sec)\
+	$(GCC) $(ccflags) -I$(PWD) -I. -I kernel32 -I libs32 -I libs16 -DCODE16 -DKERNEL_LEN=`stat -c %s kernel.bin` -DNUM_LOADER_SEC=$(loader_sec)\
 	 -S -o $@ -c $<
 
 #loader
 
 $(objectsLib16): %.o : %.c *.h boot/*.h libs16/*.h
-	gcc $(ccflags) -I$(PWD) -I. -DCODE16  -o $@ -c $<
+	$(GCC) $(ccflags) -I$(PWD) -I. -DCODE16  -o $@ -c $<
 
 ## Attention: NUM_LOADER_SEC must be kept corresponding to size of loader.bin manually
 
 $(objectsC16_loader): %.o : %.c *.h boot/*.h libs16/*.h kernel.bin
-	gcc $(ccflags) -I$(PWD) -I. -DCODE16 -DKERNEL_LEN=`stat -c %s kernel.bin` \
+	$(GCC) $(ccflags) -I$(PWD) -I. -DCODE16 -DKERNEL_LEN=`stat -c %s kernel.bin` \
 		-DNUM_LOADER_SEC=$(loader_sec) -o $@ -c $<
 
 $(objectsS_loader) : %.o : %.S
-	gcc $(ccflagsS) -o $@ -c $<
+	$(GCC) $(ccflagsS) -o $@ -c $<
 
 # kernel
 
 $(objectsC_kernel16): %.o : %.c *.h kernel16/*.h libs16/*.h libs32/*.h kernel32/*.h libs/*.h
-	gcc $(ccflags) -I$(PWD) -I. -I kernel32 -I libs32 -I libs16 -DCODE16 -o $@ -c $<
+	$(GCC) $(ccflags) -I$(PWD) -I. -I kernel32 -I libs32 -I libs16 -DCODE16 -o $@ -c $<
 
 $(objectsC_kernel32): %.o : %.c *.h $(headerskernel)
-	gcc $(ccflags) -I$(PWD) -I. -I kernel32 -I libs32 -I libs16 -o $@ -c $<
+	$(GCC) $(ccflags) -I$(PWD) -I. -I kernel32 -I libs32 -I libs16 -o $@ -c $<
 
 
 $(objectsS_kernel16) : %.o : %.S
-	gcc $(ccflagsS) -I. -o $@ -c $<
+	$(GCC) $(ccflagsS) -I. -o $@ -c $<
 
 $(objectsS_kernelAux) : %.o : %.S
-	gcc $(ccflagsS) -I. -o $@ -c $<
+	$(GCC) $(ccflagsS) -I. -o $@ -c $<
 
 
 $(objectsS_kernel32) : %.o : %.S
-	gcc $(ccflagsS) -I. -o $@ -c $<
+	$(GCC) $(ccflagsS) -I. -o $@ -c $<
 
 # kernel usermode
 
 $(objectsC_kernel_user_mode): %.o : %.c *.h $(headerskernel)
-	gcc $(ccflags) -I$(PWD) -I. -I kernel32 -I libs32 -I libs16 -o $@ -c $<
+	$(GCC) $(ccflags) -I$(PWD) -I. -I kernel32 -I libs32 -I libs16 -o $@ -c $<
 
 $(objectsS_kernel_user_mode) : %.o : %.S
-	gcc $(ccflagsS) -I. -o $@ -c $<
+	$(GCC) $(ccflagsS) -I. -o $@ -c $<
 
 
 # lib32
 
 $(objectsLib32): %.o : %.c *.h libs32/*.h libs/*.h
-	gcc $(ccflags) -I$(PWD) -I. -o $@ -c $<
+	$(GCC) $(ccflags) -I$(PWD) -I. -o $@ -c $<
 
 $(objectsSLib32) : %.o : %.S
-	gcc $(ccflagsS) -I. -o $@ -c $<
+	$(GCC) $(ccflagsS) -I. -o $@ -c $<
 
 
 .PHONY	: debug
 
 debug:	kernel16/startup.c $(debugs)
-	gcc $(ccflags) -I$(PWD) -I. -I kernel32 -I libs32 -I libs16 -DCODE16 -E -o kernel16/startup1.c -c kernel16/startup.c
-	gcc $(ccflags) -I$(PWD) -I. -I kernel32 -I libs32  -S -o mem/paging.S -c mem/paging.c
+	$(GCC) $(ccflags) -I$(PWD) -I. -I kernel32 -I libs32 -I libs16 -DCODE16 -E -o kernel16/startup1.c -c kernel16/startup.c
+	$(GCC) $(ccflags) -I$(PWD) -I. -I kernel32 -I libs32  -S -o mem/paging.S -c mem/paging.c
 
 
 .PHONY	: clean
@@ -237,11 +251,12 @@ clean	:
 	rm -f syscalls/*.o
 	rm -f kernel.bin
 	rm -f loader.bin
-	rm -f kernel16.o kernel32.o kernel32_user.o
+	rm -f user.bin
+	rm -f kernel16.o kernel32.o
 
 .PHONY	: all
 
-all	: loader.bin kernel.bin
+all	: loader.bin kernel.bin user.bin
 
 .PHONY	: libs
 

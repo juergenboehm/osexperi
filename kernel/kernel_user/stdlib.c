@@ -303,7 +303,8 @@ static char* parse_format_command(char *p, fmt_flag_type* flags,
 }
 
 
-/* now we print a signed integer to string */
+
+#if 1
 
 static uint64_t __udivdi3(uint64_t num, uint64_t den)
 {
@@ -340,6 +341,9 @@ static uint64_t __umoddi3(uint64_t num, uint64_t den)
 	return num - __udivdi3(num, den) * den;
 }
 
+#endif
+
+/* now we print a signed integer to string */
 
 static int int_to_str(char* buf, size_t buf_size, long long val, unsigned int base, bool is_unsigned,
 									fmt_flag_type flags, int width, int precision, fmt_length_type length, char** pout)

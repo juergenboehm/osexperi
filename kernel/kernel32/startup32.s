@@ -7,15 +7,15 @@ inb:
 	subl	$20, %esp
 	movl	8(%ebp), %eax
 	movw	%ax, -20(%ebp)
-	movl	-20(%ebp), %eax
+	movzwl	-20(%ebp), %eax
 	movl	%eax, %edx
-#APP
-# 18 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
+/APP
+/  18 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
 	inb %dx, %al
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	movb	%al, -1(%ebp)
-	movb	-1(%ebp), %al
+	movzbl	-1(%ebp), %eax
 	leave
 	ret
 	.size	inb, .-inb
@@ -24,17 +24,17 @@ outb:
 	pushl	%ebp
 	movl	%esp, %ebp
 	subl	$8, %esp
-	movl	8(%ebp), %eax
-	movl	12(%ebp), %edx
-	movw	%ax, -4(%ebp)
-	movb	%dl, -8(%ebp)
-	movl	-4(%ebp), %edx
-	movb	-8(%ebp), %al
-#APP
-# 25 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
+	movl	8(%ebp), %edx
+	movl	12(%ebp), %eax
+	movw	%dx, -4(%ebp)
+	movb	%al, -8(%ebp)
+	movzwl	-4(%ebp), %edx
+	movzbl	-8(%ebp), %eax
+/APP
+/  25 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
 	outb %al, %dx
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	leave
 	ret
 	.size	outb, .-outb
@@ -42,18 +42,18 @@ outb:
 sti:
 	pushl	%ebp
 	movl	%esp, %ebp
-#APP
-# 60 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
+/APP
+/  60 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
 	sti
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	popl	%ebp
 	ret
 	.size	sti, .-sti
-#APP
+/APP
 	.code16gcc	
 
-#NO_APP
+/NO_APP
 	.comm	ide_result,4,4
 	.comm	ide_ctrl_PM,4,4
 	.comm	malloc_sizes_log,60,32
@@ -124,11 +124,11 @@ kmain32:
 	movl	-12(%ebp), %eax
 	addl	$pidbuf, %eax
 	movb	$0, (%eax)
-	incl	-12(%ebp)
+	addl	$1, -12(%ebp)
 .L7:
 	cmpl	$3, -12(%ebp)
 	jbe	.L8
-	movb	pidbuf, %al
+	movzbl	pidbuf, %eax
 	orl	$1, %eax
 	movb	%al, pidbuf
 	movl	$.LC0, (%esp)
@@ -174,7 +174,6 @@ kmain32:
 	call	init_idt_table
 	call	init_pic_alt
 	movl	$1, schedule_off
-	movl	$0, timer_special_counter
 	movl	$0, keyb_special_counter
 	movl	$128, (%esp)
 	call	malloc
@@ -186,11 +185,11 @@ kmain32:
 	movw	$2047, idt_ptr
 	movl	idt_table, %eax
 	movl	%eax, idt_ptr+2
-#APP
-# 163 "kernel32/startup32.c" 1
+/APP
+/  162 "kernel32/startup32.c" 1
 	lidt idt_ptr
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	call	init_global_tss
 	call	init_sync_system
 	call	init_objects
@@ -198,7 +197,7 @@ kmain32:
 	movl	$0, -12(%ebp)
 	call	init_keyboard
 	call	init_keytables
-	movl	$0, timer_sema
+	call	init_timer
 	call	display_bios_mem_area_table
 	call	waitkey
 	movl	$pci_addr_ide_contr, (%esp)
@@ -227,7 +226,7 @@ kmain32:
 	jmp	.L10
 .L11:
 	call	waitkey
-	incl	-12(%ebp)
+	addl	$1, -12(%ebp)
 .L10:
 	cmpl	$1, -12(%ebp)
 	jbe	.L11
@@ -238,5 +237,4 @@ kmain32:
 	leave
 	ret
 	.size	kmain32, .-kmain32
-	.ident	"GCC: (GNU) 4.8.2 20140120 (Red Hat 4.8.2-15)"
-	.section	.note.GNU-stack,"",@progbits
+	.ident	"GCC: (GNU) 4.8.2"

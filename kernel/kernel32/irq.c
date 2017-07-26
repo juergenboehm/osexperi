@@ -133,10 +133,12 @@ void segment_not_present_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 	while (1) {}
 }
 
+
 void gpf_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 {
 	printf("General Protection Fault: errcode = %d irq_num = %d.\n", errcode, irq_num);
 	outb_printf("General Protection Fault: errcode = %d irq_num = %d.\n", errcode, irq_num);
+	display_regs();
 	while (1) {}
 }
 

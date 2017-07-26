@@ -555,7 +555,7 @@ void process_signals(uint32_t esp)
 
 void print_iret_blk(iret_blk_t* pir)
 {
-#if 0
+#if 1
 	outb_printf("pir = %08x\n", (uint32_t) pir);
 	outb_printf("pir->ss = %08x\n", (uint32_t) pir->ss);
 	outb_printf("pir->esp = %08x\n", (uint32_t) pir->esp);
@@ -564,7 +564,7 @@ void print_iret_blk(iret_blk_t* pir)
 	outb_printf("pir->eip = %08x\n", (uint32_t) pir->eip);
 #endif
 
-#if 1
+#if 0
 
 	printf("pir = %08x\n", (uint32_t) pir);
 	printf("pir->ss = %08x\n", (uint32_t) pir->ss);
@@ -948,6 +948,8 @@ int fork_process()
 	pnd_new->proc = new_proc;
 
 	prepend_list(&global_proc_list, &(pnd_new->link));
+
+	DEBUGOUT1(0, "new_proc signal handler = %08x\n", new_proc->proc_data.handler);
 
 	ende:
 

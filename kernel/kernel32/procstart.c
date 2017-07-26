@@ -17,6 +17,8 @@
 #include "libs/structs.h"
 #include "libs/utils.h"
 
+#include "fs/ext2.h"
+
 #include "fs/gendrivers.h"
 
 #include "kernel32/process.h"
@@ -34,6 +36,7 @@ uint32_t esp0_global;
 
 uint32_t ax_old;
 uint32_t cx_old;
+
 
 
 void insert_process(process_t * proc, list_head_t** pproc_list_head, uint32_t status)
@@ -134,21 +137,146 @@ void prepare_process(void* fun_addr, int pid, file_t* f_stdin, file_t* f_stdout)
 	uint32_t esp_new;
 
 	build_artificial_switch_save_block(0, 0, 0, 0, get_cr3(), (uint32_t)esp0, &esp_new);
-
 	new_process->proc_data.tss.esp = esp_new;
-
-
 }
 
 uint32_t npid0;
 uint32_t npid1;
 uint32_t npid2;
+uint32_t npidu;
+
+void start_user_process()
+{
+
+	while(!ext2_system_on);
+
+
+	uint32_t usercode_virtual = 0x1000;
+
+	char* userprog_area = (char*)malloc(5 * PAGE_SIZE);
+
+	file_t *dev_file = &fixed_file_list[DEV_IDE + 1];
+
+	inode_ext2_t res_inode;
+
+	char* demo_path = "/user.bin";
+
+	int nlen = strlen(demo_path);
+
+	//outb_printf("nlen = %d : demo_path = %s", nlen, demo_path);
+	char* copy_path = (char*) malloc(nlen + 1);
+	memcpy(copy_path, demo_path, nlen + 1);
+	copy_path[nlen] = 0;
+
+	printf("copy_path = %s\n", copy_path);
+
+  parse_path_ext2(dev_file, copy_path, &res_inode);
+
+	uint32_t user_prog_size = res_inode.i_size;
+
+	int nrd = read_file_ext2(dev_file, &res_inode, userprog_area, user_prog_size, 0);
+
+	printf("user.bin loaded: size = %d.\n", user_prog_size);
+
+	//while (1) {};
+
+	cli();
+
+	p_tss_current = &current->proc_data.tss;
+
+	const int is_user_mode_process = 1;
+
+	init_proc_tss_segments(current, is_user_mode_process);
+
+	init_proc_eip(current, (uint32_t) 0x1000, 0);
+
+	uint32_t* esp0_system = (uint32_t*)PROC_STACK_BEG(current);
+
+	init_proc_tss_stacks(current, (uint32_t) esp0_system, USER32_STACK);
+
+
+
+	uint32_t new_page_dir_phys_addr;
+
+
+	page_table_entry_t* new_page_dir;
+	make_page_directory(&new_page_dir_phys_addr, &new_page_dir);
+
+	init_proc_cr3(current, new_page_dir_phys_addr);
+
+	int j;
+	int i;
+
+	for(i = 0, j = 0; i < 5; ++i, j += PAGE_SIZE) {
+		map_page((usercode_virtual + j),
+				(uint32_t)__PHYS(userprog_area + j), new_page_dir,
+				PG_BIT_P | PG_BIT_RW | PG_BIT_US);
+	}
+
+#if 0
+	sti();
+
+	while (1) {};
+#endif
+
+
+	IRQ_CLI_SAVE(eflags);
+	init_proc_eflags(current, eflags | (1 << 9));
+
+
+	asm __volatile__ ( \
+	"lower_privilege_qq: \n\t " \
+	\
+	"movl p_tss_current, %%edx \n\t" \
+	\
+	"movl " XSTR(OFFSET_CR3) "(%%edx), %%eax \n\t" \
+	"movl %%eax, %%cr3 \n\t" \
+	LOADREG_SEG_DX(FS) \
+	LOADREG_SEG_DX(GS) \
+	LOADREG_SEG_DX(ES) \
+	\
+	"movl " XSTR(OFFSET_ESP0) "(%%edx), %%eax \n\t" \
+	"movl global_tss, %%edx \n\t" \
+	"movl %%eax, " XSTR(OFFSET_ESP0) "(%%edx) \n\t" \
+	"movl p_tss_current, %%edx \n\t" \
+	"movw " XSTR(OFFSET_SS0) "(%%edx), %%ax \n\t" \
+	"movl global_tss, %%edx \n\t" \
+	"movw %%ax, " XSTR(OFFSET_SS0) "(%%edx) \n\t" \
+	"movl p_tss_current, %%edx \n\t" \
+	\
+	"movw $0, %%ax \n\t" \
+	"pushw %%ax \n\t" \
+	"movw " XSTR(OFFSET_SS) "(%%edx), %%ax \n\t" \
+	"pushw %%ax \n\t" /* ss */ \
+	"movl " XSTR(OFFSET_ESP) "(%%edx), %%eax \n\t" \
+	"pushl %%eax \n\t" \
+	"do_eflags_qq: \n\t" \
+	"movl " XSTR(OFFSET_EFLAGS) "(%%edx), %%eax \n\t" \
+	"pushl %%eax \n\t" \
+	"movw $0, %%ax \n\t" \
+	"pushw %%ax \n\t" \
+	"movw " XSTR(OFFSET_CS) "(%%edx), %%ax \n\t" \
+	"pushw %%ax \n\t" /* ss */ \
+	"movl " XSTR(OFFSET_EIP) "(%%edx), %%eax \n\t" \
+	"pushl %%eax \n\t" /* eip */ \
+	"movw " XSTR(OFFSET_DS) "(%%edx), %%ax \n\t" \
+	"movw %%ax, %%ds \n\t" \
+	\
+	"movb $'Y', %%al \n\t"  \
+	"outb %%al, $0xe9 \n\t"  \
+	\
+	"iretl" : );
+
+
+}
 
 
 void init_process_1_xp(void* fun_addr)
 {
 	uint32_t i;
 	uint32_t j;
+
+	ext2_system_on = 0;
 
 	cli();
 
@@ -162,6 +290,7 @@ void init_process_1_xp(void* fun_addr)
 	npid0 = get_new_pid();
 	npid1 = get_new_pid();
 	npid2 = get_new_pid();
+	npidu = get_new_pid();
 
 	// /dev/vga1
 	prepare_process(idle_forever, npid0, NULL, &fixed_file_list[DEV_VGA1]);
@@ -169,9 +298,16 @@ void init_process_1_xp(void* fun_addr)
 	prepare_process(kernel_shell_proc, npid1, &fixed_file_list[DEV_KBD2], &fixed_file_list[DEV_VGA2]);
 	// /dev/vga0
 	prepare_process(idle_watched, npid2, NULL, &fixed_file_list[DEV_VGA0]);
+	//
+	prepare_process(start_user_process, npidu, &fixed_file_list[DEV_KBD3], &fixed_file_list[DEV_VGA3]);
 
+	//current_node = container_of(global_proc_list, process_node_t, link);
+
+	current = 0;
 
 	uint32_t new_page_dir_phys_addr;
+
+
 
 /*
 
@@ -196,6 +332,7 @@ void init_process_1_xp(void* fun_addr)
 
 	// current is the first user process
 
+#if 0
 	current = get_process_t();
 	insert_process(current, &global_proc_list, PROC_READY);
 	current_node = container_of(global_proc_list, process_node_t, link);
@@ -246,84 +383,45 @@ void init_process_1_xp(void* fun_addr)
 
 	DEBUGOUT(0, "_usercode_phys = %08x\nlen16 = %08x\nlen32 = %08x\n", _usercode_phys, _len16, _len32);
 
-	uint32_t real_usercode_phys = 0x100000 + _usercode_phys;
-	uint32_t usercode_virtual = 0x1000;
+	//uint32_t real_usercode_phys = 0x100000 + _usercode_phys;
 
 
-	for(i = 0, j = 0; i < 5; ++i, j += PAGE_SIZE) {
-		map_page((usercode_virtual + j),
-				(real_usercode_phys + j), new_page_dir, PG_BIT_P | PG_BIT_RW | PG_BIT_US);
 
+/*
 		void* p = __VADDR(real_usercode_phys + j);
 		page_desc_t* pdesc = BLK_PTR(ADDR_TO_PDESC_INDEX(p));
 		++pdesc->use_cnt;
-	}
+*/
 
 	DEBUGOUT(0, "pages mapped.\n");
 
+#endif
+
+
 	proc_switch_count = 0;
 
+/*
 	outb_printf("init_process_1_xp: proc = %08x io_block = %08x\n",
 			(uint32_t) current,
 			(uint32_t) current->proc_data.io_block);
-
+*/
 
 	outb_printf("init_process_1_xp: before asm...\n");
 
 	//WAIT(20 * (1 << 24));
 
-	screen_current = 3;
+	screen_current = 2;
 
 	schedule_off = 0;
 
-	++num_procs;
+	//++num_procs;
 
 	// jump with iret into lower privilege user level
 
 	reset_keyboard();
 
+	sti();
 
-	asm __volatile__ ( \
-	"lower_privilege_qq: \n\t " \
-	\
-	"movl p_tss_current, %%edx \n\t" \
-	\
-	"movl " XSTR(OFFSET_CR3) "(%%edx), %%eax \n\t" \
-	"movl %%eax, %%cr3 \n\t" \
-	LOADREG_SEG_DX(FS) \
-	LOADREG_SEG_DX(GS) \
-	LOADREG_SEG_DX(ES) \
-	\
-	"movl " XSTR(OFFSET_ESP0) "(%%edx), %%eax \n\t" \
-	"movl global_tss, %%edx \n\t" \
-	"movl %%eax, " XSTR(OFFSET_ESP0) "(%%edx) \n\t" \
-	"movl p_tss_current, %%edx \n\t" \
-	"movw " XSTR(OFFSET_SS0) "(%%edx), %%ax \n\t" \
-	"movl global_tss, %%edx \n\t" \
-	"movw %%ax, " XSTR(OFFSET_SS0) "(%%edx) \n\t" \
-	"movl p_tss_current, %%edx \n\t" \
-	\
-	"movw $0, %%ax \n\t" \
-	"pushw %%ax \n\t" \
-	"movw " XSTR(OFFSET_SS) "(%%edx), %%ax \n\t" \
-	"pushw %%ax \n\t" /* ss */ \
-	"movl " XSTR(OFFSET_ESP) "(%%edx), %%eax \n\t" \
-	"pushl %%eax \n\t" \
-	"do_eflags_qq: \n\t" \
-	"movl " XSTR(OFFSET_EFLAGS) "(%%edx), %%eax \n\t" \
-	"pushl %%eax \n\t" \
-	"movw $0, %%ax \n\t" \
-	"pushw %%ax \n\t" \
-	"movw " XSTR(OFFSET_CS) "(%%edx), %%ax \n\t" \
-	"pushw %%ax \n\t" /* ss */ \
-	"movl " XSTR(OFFSET_EIP) "(%%edx), %%eax \n\t" \
-	"pushl %%eax \n\t" /* eip */ \
-	"movw " XSTR(OFFSET_DS) "(%%edx), %%ax \n\t" \
-	"movw %%ax, %%ds \n\t" \
-	\
-/*	"movb $'Y', %%al \n\t" */ \
-/*	"outb %%al, $0xe9 \n\t" */ \
-	\
-	"iretl" : );
+	while (1) {};
 
 }

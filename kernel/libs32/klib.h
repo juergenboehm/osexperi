@@ -13,6 +13,34 @@
 typedef unsigned int uint;
 
 
+// time data structure
+
+typedef struct tm_s
+{
+	uint32_t year;
+	uint32_t month;
+	uint32_t day;
+
+	uint32_t hour;
+	uint32_t minute;
+	uint32_t sec;
+
+	uint32_t sec_from_epoch;
+
+} tm_t;
+
+
+typedef int time_t;
+
+time_t mktime(tm_t* tm);
+tm_t* gmtime(time_t time);
+
+int strftime(char* buf, tm_t* tm);
+
+
+
+
+
 
 // some things from several other .h collected here preliminarily
 
@@ -134,6 +162,11 @@ void waitkey();
 // random numbers
 
 uint32_t rand();
+
+// lowlevel hardware
+
+void display_regs();
+
 
 
 #endif

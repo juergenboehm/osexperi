@@ -61,11 +61,14 @@ void uproc_1()
 
 	register_handler(my_handler);
 
+	uoutb_printf("proc_1: presenting: the primes: cs = 0x%08x ds = 0x%08x\n", (uint32_t)uget_cs(), (uint32_t)uget_ds());
+	uoutb_printf("                                                       \n");
+	uoutb_printf("                                                       \n");
+
 	uprintf("proc_1: presenting: the primes: cs = 0x%08x ds = 0x%08x\n", (uint32_t)uget_cs(), (uint32_t)uget_ds());
 	uprintf("                                                       \n");
 	uprintf("                                                       \n");
 
-	while (1) {};
 
 	uprintf("proc1: forking");
 	uint32_t ret = fork();

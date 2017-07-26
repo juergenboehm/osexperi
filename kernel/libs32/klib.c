@@ -249,8 +249,8 @@ char* parse_format_command(char *p, fmt_flag_type* flags,
 	return p;
 }
 
+#if 0
 
-/* now we print a signed integer to string */
 
 uint64_t __udivdi3(uint64_t num, uint64_t den)
 {
@@ -281,12 +281,19 @@ uint64_t __udivdi3(uint64_t num, uint64_t den)
 	return q;
 }
 
+
+
 uint64_t __umoddi3(uint64_t num, uint64_t den)
 {
 
 	return num - __udivdi3(num, den) * den;
 }
 
+
+#endif
+
+
+/* now we print a signed integer to string */
 
 int int_to_str(char* buf, size_t buf_size, long long val, unsigned int base, bool is_unsigned,
 									fmt_flag_type flags, int width, int precision, fmt_length_type length, char** pout)
@@ -981,6 +988,129 @@ void parse_buf(char* buf, int len, char* delims, int* argc, char* argv[])
 	*argc = argc_local;
 
 	//printf("parse_buf: argc = %d\n", *argc);
+
+}
+
+
+// time functions
+
+static int month_yday[12] = {0,31,59,90,120,151,181,212,243,273,304,334};
+
+// returns seconds since epoch = 01-01-1970 00:00:00
+time_t mktime(tm_t* tm)
+{
+	uint32_t tm_year = tm->year - 1900;
+
+	uint32_t tm_yday = month_yday[tm->month-1] + tm->day - 1;
+
+	time_t val =
+			tm->sec + tm->minute * 60 + tm->hour * 3600 + tm_yday * 86400 +
+	    (tm_year - 70) * 31536000 + ((tm_year - 69)/4) * 86400 -
+	    ((tm_year - 1)/100) * 86400 + ((tm_year + 299)/400) * 86400;
+
+	return val;
+
+}
+
+int strftime(char* buf, tm_t* tm)
+{
+	sprintf(buf, "date %02d-%02d-%04d time %02d:%02d:%02d",
+			tm->day, tm->month, tm->year, tm->hour, tm->minute, tm->sec);
+}
+
+#define DAY_IN_SECS		86400
+#define YEAR_IN_SECS		(DAY_IN_SECS * 365)
+#define LEAP_YEAR_IN_SECS  (YEAR_IN_SECS + DAY_IN_SECS)
+
+// converts seconds since epoch into calendar time
+tm_t* gmtime_r(time_t time, tm_t* tm)
+{
+
+	time_t time1 = time;
+
+	uint32_t first_two_years_in_sec = 2 * 365 * DAY_IN_SECS;
+	uint32_t year;
+
+	if (time1 < first_two_years_in_sec)
+	{
+		year = time1 / YEAR_IN_SECS;
+
+		time1 -= year * YEAR_IN_SECS;
+	}
+	else
+	{
+		year = 2;
+
+		time1 -= first_two_years_in_sec;
+
+		uint32_t leap_year_blk_in_sec = 4 * YEAR_IN_SECS + DAY_IN_SECS;
+
+		uint32_t aux_blk_num = time1 / leap_year_blk_in_sec;
+
+		year += aux_blk_num * 4;
+
+		time1 -= aux_blk_num * leap_year_blk_in_sec;
+
+
+		uint32_t year_in_blk = time1 < LEAP_YEAR_IN_SECS ? 0 :
+				(time1 - LEAP_YEAR_IN_SECS) / YEAR_IN_SECS + 1;
+
+
+		year += year_in_blk;
+
+		time1 -= year_in_blk * YEAR_IN_SECS + (year_in_blk > 0 ? DAY_IN_SECS : 0);
+	}
+
+	year += 1970;
+
+	int i = 0;
+	while (i < 12 && month_yday[i] * DAY_IN_SECS <= time1)
+	{
+		++i;
+	}
+	uint32_t yday_month = month_yday[i-1];
+	uint32_t month = i;
+
+	time1 -= yday_month * DAY_IN_SECS;
+
+	uint32_t day_in_month = time1 / DAY_IN_SECS;
+
+	time1 -= day_in_month * DAY_IN_SECS;
+
+	uint32_t hour = time1 / 3600;
+
+	time1 -= hour * 3600;
+
+	uint32_t minute = time1 / 60;
+
+	time1 -= minute * 60;
+
+	uint32_t second = time1;
+
+	tm->year = year;
+	tm->month = month;
+	tm->day = day_in_month + 1;
+
+	tm->hour = hour;
+	tm->minute = minute;
+	tm->sec = second;
+
+	return tm;
+
+}
+
+// low level
+
+void display_regs()
+{
+
+	outb_printf("cs = %08x ds = %08x esp = %08x ss = %08x\n",
+			get_cs(), get_ds(), get_esp(), get_ss());
+
+	iret_blk_t* pir = (iret_blk_t*)(PROC_STACK_BEG(current) - sizeof(iret_blk_t));
+
+	print_iret_blk(pir);
+
 
 }
 

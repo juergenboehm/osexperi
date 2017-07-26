@@ -97,58 +97,52 @@ int readline_echo(char* buffer, int *cnt)
 
 	while (1)
 	{
-		if (1)
+		uint32_t keyb_full_code = getc(0);
+
+		uint8_t ascii_code = (keyb_full_code >> 16) & 0xff;
+
+		if (ascii_code != 0)
 		{
-			uint32_t keyb_full_code = getc(0);
-
-			//uint32_t keyb_full_code = read_keyb_byte();
-			//printf("%08d + %08d + %08x\n", timer_special_counter, keyb_special_counter, keyb_full_code);
-
-			uint8_t ascii_code = (keyb_full_code >> 16) & 0xff;
-
-			if (ascii_code != 0)
+			uint8_t display_code = (ascii_code >= 32) ? ascii_code : 32;
+			if (ascii_code == ASCII_CR)
 			{
-				uint8_t display_code = (ascii_code >= 32) ? ascii_code : 32;
-				if (ascii_code == ASCII_CR)
+				goto ende;
+			}
+			else if (ascii_code == ASCII_BS)
+			{
+				if (char_cnt > 0 && ((curr_cnt == -1) || (curr_cnt > 0)))
 				{
-					goto ende;
-				}
-				else if (ascii_code == ASCII_BS)
-				{
-					if (char_cnt > 0 && ((curr_cnt == -1) || (curr_cnt > 0)))
-					{
-						display_code = ascii_code;
-						--char_cnt;
-						--p;
-						*p = 0;
-						if (curr_cnt > 0)
-						{
-							--curr_cnt;
-						}
-						printf("%c", display_code);
-					}
-				}
-				else if (char_cnt < max_len)
-				{
-					*p = display_code;
-					++p;
+					display_code = ascii_code;
+					--char_cnt;
+					--p;
 					*p = 0;
-					++char_cnt;
-					if (curr_cnt >= 0)
+					if (curr_cnt > 0)
 					{
-						++curr_cnt;
+						--curr_cnt;
 					}
 					printf("%c", display_code);
+				}
+			}
+			else if (char_cnt < max_len)
+			{
+				*p = display_code;
+				++p;
+				*p = 0;
+				++char_cnt;
+				if (curr_cnt >= 0)
+				{
+					++curr_cnt;
+				}
+				printf("%c", display_code);
 
-					if (char_cnt && !(char_cnt % max_screen_line_len))
-					{
-						curr_cnt = 0;
-						printf("\n");
-					}
-
+				if (char_cnt && !(char_cnt % max_screen_line_len))
+				{
+					curr_cnt = 0;
+					printf("\n");
 				}
 
 			}
+
 		}
 	}
 
@@ -240,8 +234,6 @@ void print_proc_info_line(process_t* proc)
 int execute_sig(int argc, char* argv[])
 {
 	int ret = -1;
-
-	printf("ps: started.\n");
 
 	if (argc < 3)
 	{
@@ -811,6 +803,25 @@ int execute_cat(int argc, char* argv[])
 }
 
 
+
+int execute_date(int argc, char* argv[])
+{
+	char buf[64];
+	tm_t tm1;
+	uint32_t system_secs = get_secs_time();
+
+	printf("date: seconds = %d\n", system_secs);
+
+	gmtime_r(system_secs, &tm1);
+
+	strftime(buf, &tm1);
+
+	printf("%s\n", buf);
+
+	return 0;
+}
+
+
 typedef struct exec_struct_s {
 	char* command_name;
 	int (*command)(int argc, char* argv[]);
@@ -827,7 +838,8 @@ exec_struct_t my_commands[] = { {"calc", execute_calc},
 																	{"mtx", execute_mtx},
 																	{"sem", execute_sem},
 																	{"ide", execute_ide},
-																	{"cat", execute_cat}};
+																	{"cat", execute_cat},
+																	{"date", execute_date}};
 
 
 void dispatch_op(exec_struct_t *commands, int ncommands, int argc, char* argv[])
@@ -897,6 +909,7 @@ void idle_watched()
 	}
 }
 
+int ext2_system_on = 0;
 
 void kernel_shell_proc()
 {
@@ -910,6 +923,8 @@ void kernel_shell_proc()
 	init_ext2_system(dev_ide1);
 
 	printf("ext2 system initialized.\n");
+
+	ext2_system_on = 1;
 
 	use_keyboard();
 

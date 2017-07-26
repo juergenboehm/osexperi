@@ -1,25 +1,25 @@
 	.file	"process.c"
-#APP
+/APP
 	.code16gcc	
 
-#NO_APP
+/NO_APP
 	.text
 	.type	outb, @function
 outb:
 	pushl	%ebp
 	movl	%esp, %ebp
 	subl	$8, %esp
-	movl	8(%ebp), %eax
-	movl	12(%ebp), %edx
-	movw	%ax, -4(%ebp)
-	movb	%dl, -8(%ebp)
-	movl	-4(%ebp), %edx
-	movb	-8(%ebp), %al
-#APP
-# 25 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
+	movl	8(%ebp), %edx
+	movl	12(%ebp), %eax
+	movw	%dx, -4(%ebp)
+	movb	%al, -8(%ebp)
+	movzwl	-4(%ebp), %edx
+	movzbl	-8(%ebp), %eax
+/APP
+/  25 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
 	outb %al, %dx
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	leave
 	ret
 	.size	outb, .-outb
@@ -27,11 +27,11 @@ outb:
 sti:
 	pushl	%ebp
 	movl	%esp, %ebp
-#APP
-# 60 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
+/APP
+/  60 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
 	sti
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	popl	%ebp
 	ret
 	.size	sti, .-sti
@@ -40,14 +40,14 @@ irq_cli_save:
 	pushl	%ebp
 	movl	%esp, %ebp
 	subl	$16, %esp
-#APP
-# 72 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
+/APP
+/  72 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
 	pushfl 
 	popl %eax 
 	cli 
 	
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	movl	%eax, -4(%ebp)
 	movl	-4(%ebp), %eax
 	leave
@@ -58,13 +58,13 @@ get_eflags:
 	pushl	%ebp
 	movl	%esp, %ebp
 	subl	$16, %esp
-#APP
-# 83 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
+/APP
+/  83 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
 	pushfl 
 	popl %eax 
 	
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	movl	%eax, -4(%ebp)
 	movl	-4(%ebp), %eax
 	leave
@@ -78,11 +78,11 @@ irq_restore:
 	andl	$512, %eax
 	testl	%eax, %eax
 	je	.L7
-#APP
-# 94 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
+/APP
+/  94 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
 	sti
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 .L7:
 	popl	%ebp
 	ret
@@ -92,13 +92,13 @@ get_cs:
 	pushl	%ebp
 	movl	%esp, %ebp
 	subl	$16, %esp
-#APP
-# 119 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
+/APP
+/  119 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
 	movw %cs, %ax
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	movw	%ax, -2(%ebp)
-	movw	-2(%ebp), %ax
+	movzwl	-2(%ebp), %eax
 	leave
 	ret
 	.size	get_cs, .-get_cs
@@ -107,13 +107,13 @@ get_ds:
 	pushl	%ebp
 	movl	%esp, %ebp
 	subl	$16, %esp
-#APP
-# 126 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
+/APP
+/  126 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
 	movw %ds, %ax
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	movw	%ax, -2(%ebp)
-	movw	-2(%ebp), %ax
+	movzwl	-2(%ebp), %eax
 	leave
 	ret
 	.size	get_ds, .-get_ds
@@ -122,13 +122,13 @@ get_es:
 	pushl	%ebp
 	movl	%esp, %ebp
 	subl	$16, %esp
-#APP
-# 133 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
+/APP
+/  133 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
 	movw %es, %ax
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	movw	%ax, -2(%ebp)
-	movw	-2(%ebp), %ax
+	movzwl	-2(%ebp), %eax
 	leave
 	ret
 	.size	get_es, .-get_es
@@ -137,13 +137,13 @@ get_fs:
 	pushl	%ebp
 	movl	%esp, %ebp
 	subl	$16, %esp
-#APP
-# 140 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
+/APP
+/  140 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
 	movw %fs, %ax
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	movw	%ax, -2(%ebp)
-	movw	-2(%ebp), %ax
+	movzwl	-2(%ebp), %eax
 	leave
 	ret
 	.size	get_fs, .-get_fs
@@ -152,13 +152,13 @@ get_gs:
 	pushl	%ebp
 	movl	%esp, %ebp
 	subl	$16, %esp
-#APP
-# 147 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
+/APP
+/  147 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
 	movw %gs, %ax
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	movw	%ax, -2(%ebp)
-	movw	-2(%ebp), %ax
+	movzwl	-2(%ebp), %eax
 	leave
 	ret
 	.size	get_gs, .-get_gs
@@ -167,13 +167,13 @@ get_ss:
 	pushl	%ebp
 	movl	%esp, %ebp
 	subl	$16, %esp
-#APP
-# 154 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
+/APP
+/  154 "/home/juergen/osexperi/kernel/drivers/hardware.h" 1
 	movw %ss, %ax
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	movw	%ax, -2(%ebp)
-	movw	-2(%ebp), %ax
+	movzwl	-2(%ebp), %eax
 	leave
 	ret
 	.size	get_ss, .-get_ss
@@ -214,9 +214,9 @@ get_new_pid:
 	jmp	.L22
 .L25:
 	movl	pid_index, %eax
-	incl	%eax
+	addl	$1, %eax
 	movl	%eax, pid_index
-	incl	-12(%ebp)
+	addl	$1, -12(%ebp)
 	movl	pid_index, %eax
 	cmpl	$32, %eax
 	jne	.L23
@@ -228,11 +228,11 @@ get_new_pid:
 .L22:
 	movl	pid_index, %eax
 	shrl	$3, %eax
-	movb	pidbuf(%eax), %dl
+	movzbl	pidbuf(%eax), %edx
 	movl	pid_index, %eax
 	andl	$7, %eax
 	movl	$1, %ebx
-	movb	%al, %cl
+	movl	%eax, %ecx
 	sall	%cl, %ebx
 	movl	%ebx, %eax
 	andl	%edx, %eax
@@ -251,11 +251,11 @@ get_new_pid:
 	movl	%eax, %edx
 	movl	pid_index, %eax
 	shrl	$3, %eax
-	movb	pidbuf(%eax), %bl
+	movzbl	pidbuf(%eax), %ebx
 	movl	pid_index, %eax
 	andl	$7, %eax
 	movl	$1, %esi
-	movb	%al, %cl
+	movl	%eax, %ecx
 	sall	%cl, %esi
 	movl	%esi, %eax
 	orl	%ebx, %eax
@@ -285,7 +285,7 @@ release_pid:
 	movl	%eax, %edx
 	movl	8(%ebp), %eax
 	shrl	$3, %eax
-	movb	pidbuf(%eax), %al
+	movzbl	pidbuf(%eax), %eax
 	movl	8(%ebp), %ecx
 	andl	$7, %ecx
 	movl	$1, %ebx
@@ -336,31 +336,31 @@ init_global_tss:
 	movb	$0, gdt_table_32+84
 	movb	$0, gdt_table_32+87
 	movw	$0, gdt_table_32+80
-	movb	gdt_table_32+86, %al
+	movzbl	gdt_table_32+86, %eax
 	andl	$-16, %eax
 	movb	%al, gdt_table_32+86
-	movb	gdt_table_32+86, %al
+	movzbl	gdt_table_32+86, %eax
 	andl	$127, %eax
 	movb	%al, gdt_table_32+86
-	movb	gdt_table_32+86, %al
+	movzbl	gdt_table_32+86, %eax
 	andl	$-65, %eax
 	movb	%al, gdt_table_32+86
-	movb	gdt_table_32+86, %al
+	movzbl	gdt_table_32+86, %eax
 	andl	$-33, %eax
 	movb	%al, gdt_table_32+86
-	movb	gdt_table_32+86, %al
+	movzbl	gdt_table_32+86, %eax
 	andl	$-17, %eax
 	movb	%al, gdt_table_32+86
-	movb	gdt_table_32+85, %al
+	movzbl	gdt_table_32+85, %eax
 	andl	$-17, %eax
 	movb	%al, gdt_table_32+85
-	movb	gdt_table_32+85, %al
+	movzbl	gdt_table_32+85, %eax
 	andl	$127, %eax
 	movb	%al, gdt_table_32+85
-	movb	gdt_table_32+85, %al
+	movzbl	gdt_table_32+85, %eax
 	andl	$-97, %eax
 	movb	%al, gdt_table_32+85
-	movb	gdt_table_32+85, %al
+	movzbl	gdt_table_32+85, %eax
 	andl	$-15, %eax
 	movb	%al, gdt_table_32+85
 	movl	global_tss, %eax
@@ -372,37 +372,37 @@ init_global_tss:
 	shrl	$24, %eax
 	movb	%al, gdt_table_32+87
 	movw	$8191, gdt_table_32+80
-	movb	gdt_table_32+86, %al
+	movzbl	gdt_table_32+86, %eax
 	andl	$-16, %eax
 	movb	%al, gdt_table_32+86
-	movb	gdt_table_32+86, %al
+	movzbl	gdt_table_32+86, %eax
 	andl	$127, %eax
 	movb	%al, gdt_table_32+86
-	movb	gdt_table_32+86, %al
+	movzbl	gdt_table_32+86, %eax
 	andl	$-65, %eax
 	movb	%al, gdt_table_32+86
-	movb	gdt_table_32+86, %al
+	movzbl	gdt_table_32+86, %eax
 	andl	$-33, %eax
 	movb	%al, gdt_table_32+86
-	movb	gdt_table_32+85, %al
+	movzbl	gdt_table_32+85, %eax
 	orl	$-128, %eax
 	movb	%al, gdt_table_32+85
-	movb	gdt_table_32+85, %al
+	movzbl	gdt_table_32+85, %eax
 	andl	$-97, %eax
 	movb	%al, gdt_table_32+85
-	movb	gdt_table_32+85, %al
+	movzbl	gdt_table_32+85, %eax
 	andl	$-17, %eax
 	movb	%al, gdt_table_32+85
-	movb	gdt_table_32+85, %al
+	movzbl	gdt_table_32+85, %eax
 	andl	$-16, %eax
 	orl	$9, %eax
 	movb	%al, gdt_table_32+85
-#APP
-# 421 "kernel32/process.c" 1
+/APP
+/  421 "kernel32/process.c" 1
 	movw $80, %ax 
 	 ltr %ax
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	movl	$423, 8(%esp)
 	movl	$.LC2, 4(%esp)
 	movl	$.LC3, (%esp)
@@ -422,8 +422,8 @@ schedule_1:
 	movl	%eax, p_tss_current
 	movl	next, %eax
 	movl	%eax, p_tss_next
-#APP
-# 444 "kernel32/process.c" 1
+/APP
+/  444 "kernel32/process.c" 1
 	movl p_tss_current, %edx 
 	popl %ecx 
 	movl %ecx, 0x3c(%edx) 
@@ -481,8 +481,8 @@ schedule_1:
 	pushl %eax 
 	ret 
 	
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	popl	%ebp
 	ret
 	.size	schedule_1, .-schedule_1
@@ -493,8 +493,8 @@ schedule_2:
 	movl	%esp, %ebp
 	movl	next, %eax
 	movl	%eax, p_tss_next
-#APP
-# 456 "kernel32/process.c" 1
+/APP
+/  456 "kernel32/process.c" 1
 	movl p_tss_next, %edx 
 	movl 0x38(%edx), %eax 
 	movl %eax, %esp 
@@ -533,8 +533,8 @@ schedule_2:
 	pushl %eax 
 	ret 
 	
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	popl	%ebp
 	ret
 	.size	schedule_2, .-schedule_2
@@ -569,7 +569,7 @@ schedule:
 	movl	%eax, current
 	movl	current, %eax
 	movl	116(%eax), %edx
-	incl	%edx
+	addl	$1, %edx
 	movl	%edx, 116(%eax)
 .L38:
 	movl	current_node, %eax
@@ -600,7 +600,7 @@ schedule:
 	movl	next, %eax
 	movl	$2, 120(%eax)
 	movl	proc_switch_count, %eax
-	incl	%eax
+	addl	$1, %eax
 	movl	%eax, proc_switch_count
 	movl	current, %eax
 	testl	%eax, %eax
@@ -679,34 +679,34 @@ print_iret_blk:
 	movl	8(%ebp), %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC8, (%esp)
-	call	printf
+	call	outb_printf
 	movl	8(%ebp), %eax
-	movw	16(%eax), %ax
+	movzwl	16(%eax), %eax
 	movzwl	%ax, %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC9, (%esp)
-	call	printf
+	call	outb_printf
 	movl	8(%ebp), %eax
 	movl	12(%eax), %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC10, (%esp)
-	call	printf
+	call	outb_printf
 	movl	8(%ebp), %eax
 	movl	8(%eax), %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC11, (%esp)
-	call	printf
+	call	outb_printf
 	movl	8(%ebp), %eax
-	movw	4(%eax), %ax
+	movzwl	4(%eax), %eax
 	movzwl	%ax, %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC12, (%esp)
-	call	printf
+	call	outb_printf
 	movl	8(%ebp), %eax
 	movl	(%eax), %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC13, (%esp)
-	call	printf
+	call	outb_printf
 	leave
 	ret
 	.size	print_iret_blk, .-print_iret_blk
@@ -733,7 +733,7 @@ call_user_handler:
 	addl	$36, %eax
 	movl	%eax, -12(%ebp)
 	movl	-12(%ebp), %eax
-	movw	4(%eax), %ax
+	movzwl	4(%eax), %eax
 	movzwl	%ax, %eax
 	andl	$3, %eax
 	testl	%eax, %eax
@@ -837,7 +837,7 @@ free_user_memory:
 	addl	%edx, %eax
 	movl	%eax, (%esp)
 	call	free_page_table
-	incl	-12(%ebp)
+	addl	$1, -12(%ebp)
 .L55:
 	cmpl	$767, -12(%ebp)
 	jle	.L56
@@ -968,7 +968,7 @@ take_out_of_global_proc_list:
 	movl	-12(%ebp), %eax
 	movl	(%eax), %eax
 	movl	%eax, -12(%ebp)
-	incl	-16(%ebp)
+	addl	$1, -16(%ebp)
 	cmpl	$7, -16(%ebp)
 	jle	.L67
 	movl	global_proc_list, %eax
@@ -1088,7 +1088,7 @@ destroy_process:
 	jmp	.L73
 .L74:
 	movl	$0, -24(%ebp)
-	incl	-12(%ebp)
+	addl	$1, -12(%ebp)
 .L73:
 	cmpl	$32767, -12(%ebp)
 	jle	.L74
@@ -1220,10 +1220,10 @@ clone_proc_io_block_t:
 	movl	-12(%ebp), %edx
 	movl	(%eax,%edx,4), %eax
 	movl	24(%eax), %edx
-	incl	%edx
+	addl	$1, %edx
 	movl	%edx, 24(%eax)
 .L84:
-	incl	-12(%ebp)
+	addl	$1, -12(%ebp)
 .L83:
 	cmpl	$15, -12(%ebp)
 	jle	.L85
@@ -1362,7 +1362,10 @@ clone_wq:
 	.align 4
 .LC27:
 	.string	"ret eip = %08x, old_bp = %08x\n"
+	.align 4
 .LC28:
+	.string	"new_proc signal handler = %08x\n"
+.LC29:
 	.string	"leaving fork parent.\n"
 	.text
 	.globl	fork_process
@@ -1541,7 +1544,7 @@ fork_process:
 	movl	-52(%ebp), %eax
 	movl	-52(%ebp), %edx
 	movl	%edx, 4(%eax)
-	jmp	.L95
+	jmp	.L98
 .L97:
 	movl	global_proc_list, %eax
 	movl	%eax, -56(%ebp)
@@ -1562,12 +1565,22 @@ fork_process:
 	movl	%edx, (%eax)
 	movl	-52(%ebp), %eax
 	movl	%eax, global_proc_list
-.L95:
-	movl	$954, 8(%esp)
+.L98:
+	movl	$952, 8(%esp)
 	movl	$.LC2, 4(%esp)
 	movl	$.LC3, (%esp)
 	call	outb_printf
+	movl	-68(%ebp), %eax
+	movl	124(%eax), %eax
+	movl	%eax, 4(%esp)
 	movl	$.LC28, (%esp)
+	call	outb_printf
+.L95:
+	movl	$956, 8(%esp)
+	movl	$.LC2, 4(%esp)
+	movl	$.LC3, (%esp)
+	call	outb_printf
+	movl	$.LC29, (%esp)
 	call	outb_printf
 	movl	-16(%ebp), %eax
 	movl	%eax, (%esp)
@@ -1576,5 +1589,4 @@ fork_process:
 	leave
 	ret
 	.size	fork_process, .-fork_process
-	.ident	"GCC: (GNU) 4.8.2 20140120 (Red Hat 4.8.2-15)"
-	.section	.note.GNU-stack,"",@progbits
+	.ident	"GCC: (GNU) 4.8.2"

@@ -1,8 +1,8 @@
 	.file	"irq.c"
-#APP
+/APP
 	.code16gcc	
 
-#NO_APP
+/NO_APP
 	.comm	ide_result,4,4
 	.comm	ide_ctrl_PM,4,4
 	.comm	idt_table,4,4
@@ -91,7 +91,7 @@ idt_set:
 	movl	8(%ebp), %ecx
 	sall	$3, %ecx
 	addl	%ecx, %eax
-	movb	5(%eax), %al
+	movzbl	5(%eax), %eax
 	orl	$-128, %eax
 	movb	%al, 5(%edx)
 	movl	idt_table, %eax
@@ -102,7 +102,7 @@ idt_set:
 	movl	8(%ebp), %ecx
 	sall	$3, %ecx
 	addl	%ecx, %edx
-	movb	5(%edx), %dl
+	movzbl	5(%edx), %edx
 	andl	$-97, %edx
 	movb	%dl, 5(%eax)
 	movl	idt_table, %eax
@@ -113,7 +113,7 @@ idt_set:
 	movl	8(%ebp), %ecx
 	sall	$3, %ecx
 	addl	%ecx, %eax
-	movb	5(%eax), %al
+	movzbl	5(%eax), %eax
 	andl	$-16, %eax
 	orl	$14, %eax
 	movb	%al, 5(%edx)
@@ -186,7 +186,7 @@ idt_set_trap:
 	movl	8(%ebp), %ecx
 	sall	$3, %ecx
 	addl	%ecx, %eax
-	movb	5(%eax), %al
+	movzbl	5(%eax), %eax
 	orl	$-128, %eax
 	movb	%al, 5(%edx)
 	movl	idt_table, %eax
@@ -197,7 +197,7 @@ idt_set_trap:
 	movl	8(%ebp), %ecx
 	sall	$3, %ecx
 	addl	%ecx, %edx
-	movb	5(%edx), %dl
+	movzbl	5(%edx), %edx
 	andl	$-97, %edx
 	movb	%dl, 5(%eax)
 	movl	idt_table, %eax
@@ -208,7 +208,7 @@ idt_set_trap:
 	movl	8(%ebp), %ecx
 	sall	$3, %ecx
 	addl	%ecx, %eax
-	movb	5(%eax), %al
+	movzbl	5(%eax), %eax
 	orl	$15, %eax
 	movb	%al, 5(%edx)
 	movl	8(%ebp), %eax
@@ -280,7 +280,7 @@ idt_set_trap_user:
 	movl	8(%ebp), %ecx
 	sall	$3, %ecx
 	addl	%ecx, %eax
-	movb	5(%eax), %al
+	movzbl	5(%eax), %eax
 	orl	$-128, %eax
 	movb	%al, 5(%edx)
 	movl	idt_table, %eax
@@ -291,7 +291,7 @@ idt_set_trap_user:
 	movl	8(%ebp), %ecx
 	sall	$3, %ecx
 	addl	%ecx, %eax
-	movb	5(%eax), %al
+	movzbl	5(%eax), %eax
 	orl	$96, %eax
 	movb	%al, 5(%edx)
 	movl	idt_table, %eax
@@ -302,7 +302,7 @@ idt_set_trap_user:
 	movl	8(%ebp), %ecx
 	sall	$3, %ecx
 	addl	%ecx, %eax
-	movb	5(%eax), %al
+	movzbl	5(%eax), %eax
 	orl	$15, %eax
 	movb	%al, 5(%edx)
 	movl	8(%ebp), %eax
@@ -374,7 +374,7 @@ idt_set_err:
 	movl	8(%ebp), %ecx
 	sall	$3, %ecx
 	addl	%ecx, %eax
-	movb	5(%eax), %al
+	movzbl	5(%eax), %eax
 	orl	$-128, %eax
 	movb	%al, 5(%edx)
 	movl	idt_table, %eax
@@ -385,7 +385,7 @@ idt_set_err:
 	movl	8(%ebp), %ecx
 	sall	$3, %ecx
 	addl	%ecx, %edx
-	movb	5(%edx), %dl
+	movzbl	5(%edx), %edx
 	andl	$-97, %edx
 	movb	%dl, 5(%eax)
 	movl	idt_table, %eax
@@ -396,7 +396,7 @@ idt_set_err:
 	movl	8(%ebp), %ecx
 	sall	$3, %ecx
 	addl	%ecx, %eax
-	movb	5(%eax), %al
+	movzbl	5(%eax), %eax
 	andl	$-16, %eax
 	orl	$14, %eax
 	movb	%al, 5(%edx)
@@ -469,7 +469,7 @@ idt_set_err_trap:
 	movl	8(%ebp), %ecx
 	sall	$3, %ecx
 	addl	%ecx, %eax
-	movb	5(%eax), %al
+	movzbl	5(%eax), %eax
 	orl	$-128, %eax
 	movb	%al, 5(%edx)
 	movl	idt_table, %eax
@@ -480,7 +480,7 @@ idt_set_err_trap:
 	movl	8(%ebp), %ecx
 	sall	$3, %ecx
 	addl	%ecx, %edx
-	movb	5(%edx), %dl
+	movzbl	5(%edx), %edx
 	andl	$-97, %edx
 	movb	%dl, 5(%eax)
 	movl	idt_table, %eax
@@ -491,7 +491,7 @@ idt_set_err_trap:
 	movl	8(%ebp), %ecx
 	sall	$3, %ecx
 	addl	%ecx, %eax
-	movb	5(%eax), %al
+	movzbl	5(%eax), %eax
 	orl	$15, %eax
 	movb	%al, 5(%edx)
 	movl	8(%ebp), %eax
@@ -610,6 +610,7 @@ gpf_handler:
 	movl	%eax, 4(%esp)
 	movl	$.LC4, (%esp)
 	call	outb_printf
+	call	display_regs
 .L17:
 	jmp	.L17
 	.size	gpf_handler, .-gpf_handler
@@ -653,7 +654,7 @@ init_idt_table:
 	movl	-4(%ebp), %eax
 	movl	%eax, (%esp)
 	call	idt_set
-	incl	-4(%ebp)
+	addl	$1, -4(%ebp)
 .L21:
 	cmpl	$7, -4(%ebp)
 	jle	.L22
@@ -667,7 +668,7 @@ init_idt_table:
 	movl	-4(%ebp), %eax
 	movl	%eax, (%esp)
 	call	idt_set_err
-	incl	-4(%ebp)
+	addl	$1, -4(%ebp)
 .L23:
 	cmpl	$15, -4(%ebp)
 	jle	.L24
@@ -696,7 +697,7 @@ init_idt_table:
 	movl	-4(%ebp), %eax
 	movl	%eax, (%esp)
 	call	idt_set
-	incl	-4(%ebp)
+	addl	$1, -4(%ebp)
 .L25:
 	cmpl	$31, -4(%ebp)
 	jle	.L26
@@ -707,7 +708,7 @@ init_idt_table:
 	movl	-4(%ebp), %eax
 	movl	%eax, (%esp)
 	call	idt_set
-	incl	-4(%ebp)
+	addl	$1, -4(%ebp)
 .L27:
 	cmpl	$255, -4(%ebp)
 	jle	.L28
@@ -726,5 +727,4 @@ init_idt_table:
 	leave
 	ret
 	.size	init_idt_table, .-init_idt_table
-	.ident	"GCC: (GNU) 4.8.2 20140120 (Red Hat 4.8.2-15)"
-	.section	.note.GNU-stack,"",@progbits
+	.ident	"GCC: (GNU) 4.8.2"

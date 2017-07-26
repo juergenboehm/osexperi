@@ -150,6 +150,17 @@ SECTIONS
 
 /*			 . = logic2 + lencode2 + lendata2 + lenbss2 + lenrodata2; */
 
+
+/* .eh_frame became necessary, when linking with option -lgcc is
+   added
+*/
+			 .eh_frame : AT(physAx + eh_frame - logic2)
+			 {
+			 		eh_frame = .;
+					*32.o(.eh_frame*)
+			 		eh_frameend = ALIGN(., 16);
+			 }
+
 			 aligner2 = ALIGN(physAx + . - logic2 + 2, 4096) - 2;
 
 			 .alignit2 : AT(aligner2)
@@ -157,13 +168,16 @@ SECTIONS
 			 		SHORT(0x1234)
 			 }
 			 
+			 len32 = aligner2 + 2 - physAx; /* is a global member in stubAux.S. is length of 32-bit part of kernel */
+			 
+			 
 
 /* 32 bit part user mode*/
 
 		physAxx = aligner2 + 2;
 		
 		usercode_phys = physAxx - physA - len16;
-
+/*
 		. = logic2x;
 
 	 	.text2x : AT(physAxx)
@@ -175,9 +189,9 @@ SECTIONS
 
 		lencode2x = code2endx - code2x;
 
-
+*/
 	/*	. = logic2x + lencode2x; */
-
+/*
        .data2x : AT(physAxx + data2x - logic2x)
 			  {
 					data2x = .;
@@ -187,9 +201,9 @@ SECTIONS
 
 				lendata2x = data2endx - data2x;
 
-
+*/
 	/*		 . = logic2x + lencode2x + lendata2x; */
-
+/*
        .bss2x : AT(physAxx + bss2x - logic2x)
 			 {
 			 		bss2x = .;
@@ -199,9 +213,9 @@ SECTIONS
 			 }
 
 			 lenbss2x = bss2endx - bss2x;
-
+*/
 	/*		 . = logic2x + lencode2x + lendata2x + lenbss2x; */
-
+/*
 			 .rodata2x : AT(physAxx + rodata2x - logic2x)
 			 {
 			 		rodata2x = .;
@@ -220,12 +234,8 @@ SECTIONS
 			 		SHORT(0x1234)
 			 }
 
-			 
-			 
-			 
-
-			 len32 = aligner2x + 2 - physAx; /* is a global member in stubAux.S. is length of 32-bit part of kernel */
-			 
+			 len32 = aligner2x + 2 - physAx; 
+*/			 
 
 			 end = .;
 			 

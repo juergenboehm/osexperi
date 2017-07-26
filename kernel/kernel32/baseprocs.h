@@ -12,7 +12,7 @@ void idle_forever();
 void kernel_shell_proc();
 void idle_watched();
 
-
+extern int ext2_system_on;
 
 
 
