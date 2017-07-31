@@ -55,31 +55,31 @@ uint32_t FILE;
 
 // print main routines
 
-int uprintf(char* format, ... );
-int uoutb_printf(char* format, ... );
+int printf(char* format, ... );
+int outb_printf(char* format, ... );
 
 // read from keyboard
 
-int ugetc(uint32_t fd);
+int getc(uint32_t fd);
 
 
 // some machine-level functions
 
-static inline uint16_t uget_cs()
+static inline uint16_t get_cs()
 {
 		uint16_t cs_val;
 		asm __volatile__("movw %%cs, %0": "=r"(cs_val));
 		return cs_val;
 }
 
-static inline uint16_t uget_ds()
+static inline uint16_t get_ds()
 {
 		uint16_t ds_val;
 		asm __volatile__("movw %%ds, %0": "=r"(ds_val));
 		return ds_val;
 }
 
-static inline void uoutb(uint16_t port, uint8_t val)
+static inline void outb(uint16_t port, uint8_t val)
 {
 	asm __volatile__ ( "outb %1, %0" :
 				 : "Nd"(port), "a"(val) );
@@ -94,7 +94,7 @@ static inline void uoutb(uint16_t port, uint8_t val)
 
 // memcpy
 
-int ustrlen(char *str);
+int strlen(char *str);
 
 
 

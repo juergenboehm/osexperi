@@ -1,8 +1,8 @@
 	.file	"loader.c"
-#APP
+/APP
 	.code16gcc	
 
-#NO_APP
+/NO_APP
 	.comm	diskbuf_global,4,4
 	.comm	dapa_global,16,8
 	.comm	mm_block,48,8
@@ -122,14 +122,14 @@ lmain:
 	movl	-36(%ebp), %edx
 	addl	%edx, %eax
 	movl	%eax, -44(%ebp)
-	movl	$219, -48(%ebp)
+	movl	$216, -48(%ebp)
 	movl	$.LC3, (%esp)
 	call	print_str
 	movl	$.LC4, (%esp)
 	call	print_str
 	movl	$.LC8, (%esp)
 	call	print_str
-	movl	$112128, (%esp)
+	movl	$110592, (%esp)
 	call	print_U32
 	call	print_newline
 	movl	$1, -52(%ebp)
@@ -151,13 +151,10 @@ lmain:
 	call	print_U32
 	call	print_newline
 	jmp	.L2
-.L7:
-	movl	-12(%ebp), %edx
-	movl	-52(%ebp), %eax
-	cmpl	%edx, %eax
-	jle	.L3
-	movl	%edx, %eax
-.L3:
+.L5:
+	movl	-12(%ebp), %eax
+	cmpl	%eax, -52(%ebp)
+	cmovle	-52(%ebp), %eax
 	movl	%eax, -60(%ebp)
 	movl	$.LC3, (%esp)
 	call	print_str
@@ -193,18 +190,18 @@ lmain:
 	movl	-60(%ebp), %edx
 	sall	$9, %edx
 	addl	%edx, %eax
+	movl	$65536, %edx
 	cmpl	$65536, %eax
-	jle	.L4
-	movl	$65536, %eax
-.L4:
-	movzwl	-18(%ebp), %edx
-	subl	%edx, %eax
+	cmovle	%eax, %edx
+	movzwl	-18(%ebp), %eax
+	subl	%eax, %edx
+	movl	%edx, %eax
 	movl	%eax, -64(%ebp)
-	movw	-18(%ebp), %ax
+	movzwl	-18(%ebp), %eax
 	cmpw	-54(%ebp), %ax
-	jae	.L5
+	jae	.L3
 	cmpl	$0, -64(%ebp)
-	jle	.L5
+	jle	.L3
 	movl	$.LC3, (%esp)
 	call	print_str
 	movl	$.LC4, (%esp)
@@ -228,11 +225,11 @@ lmain:
 	movl	%eax, -80(%ebp)
 	movl	-64(%ebp), %eax
 	addw	%ax, -18(%ebp)
-	jmp	.L6
-.L5:
-	movw	-54(%ebp), %ax
+	jmp	.L4
+.L3:
+	movzwl	-54(%ebp), %eax
 	movw	%ax, -18(%ebp)
-.L6:
+.L4:
 	movl	$.LC3, (%esp)
 	call	print_str
 	movl	$.LC4, (%esp)
@@ -302,14 +299,14 @@ lmain:
 	subl	%eax, -12(%ebp)
 .L2:
 	cmpl	$0, -12(%ebp)
-	jg	.L7
+	jg	.L5
 	movl	$.LC3, (%esp)
 	call	print_str
 	movl	$.LC4, (%esp)
 	call	print_str
 	movl	$.LC8, (%esp)
 	call	print_str
-	movl	$112128, (%esp)
+	movl	$110592, (%esp)
 	call	print_U32
 	call	print_newline
 	movl	$.LC17, (%esp)
@@ -342,27 +339,27 @@ test_disk:
 	movl	-20(%ebp), %eax
 	movl	%eax, -16(%ebp)
 	movl	$0, -12(%ebp)
-	jmp	.L10
-.L11:
+	jmp	.L8
+.L9:
 	movl	diskbuf_global, %edx
 	movl	-12(%ebp), %eax
 	leal	(%edx,%eax), %ecx
 	movl	-16(%ebp), %eax
 	leal	1(%eax), %edx
 	movl	%edx, -16(%ebp)
-	movb	(%eax), %al
+	movzbl	(%eax), %eax
 	movb	%al, (%ecx)
-	incl	-12(%ebp)
-.L10:
+	addl	$1, -12(%ebp)
+.L8:
 	movl	-16(%ebp), %eax
-	movb	(%eax), %al
+	movzbl	(%eax), %eax
 	testb	%al, %al
-	jne	.L11
+	jne	.L9
 	movl	diskbuf_global, %edx
 	movl	-12(%ebp), %eax
 	addl	%eax, %edx
 	movl	-16(%ebp), %eax
-	movb	(%eax), %al
+	movzbl	(%eax), %eax
 	movb	%al, (%edx)
 	movl	diskbuf_global, %eax
 	movl	%eax, (%esp)
@@ -371,5 +368,4 @@ test_disk:
 	leave
 	ret
 	.size	test_disk, .-test_disk
-	.ident	"GCC: (GNU) 4.8.2 20140120 (Red Hat 4.8.2-15)"
-	.section	.note.GNU-stack,"",@progbits
+	.ident	"GCC: (GNU) 4.8.2"

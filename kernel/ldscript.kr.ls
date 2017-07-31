@@ -49,8 +49,6 @@ SECTIONS
 				lencode1 = code1end - code1;
 
 
-/*				. = logic1 + lencode1; */
-
        .data1 : AT(physA + data1 - logic1)
 			  {
 					data1 = .;
@@ -62,8 +60,6 @@ SECTIONS
 				lendata1 = data1end - data1;
 
 
-	/*		 . = logic1 + lencode1 + lendata1; */
-
        .bss1 : AT(physA + bss1 - logic1)
 			 {
 			 		bss1 = .;
@@ -74,7 +70,6 @@ SECTIONS
 
 			 lenbss1 = bss1end - bss1;
 
-/*			 . = logic1 + lencode1 + lendata1 + lenbss1; */
 
 			 .rodata1 : AT(physA + rodata1 - logic1)
 			 {
@@ -85,7 +80,6 @@ SECTIONS
 
 			 lenrodata1 = rodata1end - rodata1;
 
-/*			 . = logic1 + lencode1 + lendata1 + lenbss1 + lenrodata1; */
 
 			 aligner = ALIGN(physA + . - logic1 + 2, 4096) - 2;
 
@@ -113,8 +107,6 @@ SECTIONS
 		lencode2 = code2end - code2;
 
 
-/*		. = logic2 + lencode2; */
-
        .data2 : AT(physAx + data2 - logic2)
 			  {
 					data2 = .;
@@ -124,8 +116,6 @@ SECTIONS
 
 				lendata2 = data2end - data2;
 
-
-/*			 . = logic2 + lencode2 + lendata2; */
 
        .bss2 : AT(physAx + bss2 - logic2)
 			 {
@@ -137,8 +127,6 @@ SECTIONS
 
 			 lenbss2 = bss2end - bss2;
 
-/*			 . = logic2 + lencode2 + lendata2 + lenbss2; */
-
 			 .rodata2 : AT(physAx + rodata2 - logic2)
 			 {
 			 		rodata2 = .;
@@ -148,7 +136,6 @@ SECTIONS
 
 			 lenrodata2 = rodata2end - rodata2;
 
-/*			 . = logic2 + lencode2 + lendata2 + lenbss2 + lenrodata2; */
 
 
 /* .eh_frame became necessary, when linking with option -lgcc is
@@ -177,65 +164,6 @@ SECTIONS
 		physAxx = aligner2 + 2;
 		
 		usercode_phys = physAxx - physA - len16;
-/*
-		. = logic2x;
-
-	 	.text2x : AT(physAxx)
-	 	{
-	 		code2x = .;
-			*32_user.o(.text2u)
-			code2endx = ALIGN(.,16);
-		}
-
-		lencode2x = code2endx - code2x;
-
-*/
-	/*	. = logic2x + lencode2x; */
-/*
-       .data2x : AT(physAxx + data2x - logic2x)
-			  {
-					data2x = .;
-					*32_user.o(.data2u)
-					data2endx = ALIGN(., 16);
-				}
-
-				lendata2x = data2endx - data2x;
-
-*/
-	/*		 . = logic2x + lencode2x + lendata2x; */
-/*
-       .bss2x : AT(physAxx + bss2x - logic2x)
-			 {
-			 		bss2x = .;
-			 		*32_user.o(.bss2u)
-					*32_user.o(COMMON)
-			 		bss2endx = ALIGN(., 16);
-			 }
-
-			 lenbss2x = bss2endx - bss2x;
-*/
-	/*		 . = logic2x + lencode2x + lendata2x + lenbss2x; */
-/*
-			 .rodata2x : AT(physAxx + rodata2x - logic2x)
-			 {
-			 		rodata2x = .;
-					*32_user.o(.rodata2u*)
-			 		rodata2endx = ALIGN(., 16);
-			 }
-
-			 lenrodata2x = rodata2endx - rodata2x;
-
-			 . = rodata2endx;
-
-			 aligner2x = ALIGN(physAxx + . - logic2x + 2, 512) - 2;
-
-			 .alignit2x : AT(aligner2x)
-			 {
-			 		SHORT(0x1234)
-			 }
-
-			 len32 = aligner2x + 2 - physAx; 
-*/			 
 
 			 end = .;
 			 

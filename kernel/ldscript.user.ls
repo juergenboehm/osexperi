@@ -22,8 +22,6 @@ SECTIONS
 				lencode2u = code2endu - code2u;
 				
 																
-/*				. = logic2u + lencode2u; */
-				
 
 	       .data2u : AT( data2u - logic2u )       			
 			  { 
@@ -35,7 +33,6 @@ SECTIONS
 				lendata2u = data2endu - data2u;
 				
 								
-/*			 . = logic2u + lencode2u + lendata2u; */
 
        .bss2u : AT(bss2u - logic2u)
 			 {
@@ -47,7 +44,6 @@ SECTIONS
 			 
 			 lenbss2u = bss2endu - bss2u;
 			 
-/*			 . = logic2u + lencode2u + lendata2u + lenbss2u; */
 			 
 			 .rodata2u : AT(rodata2u - logic2u)
 			 {
@@ -60,9 +56,19 @@ SECTIONS
 			 
 			 . = rodata2endu;
 
-/*			 
-			 . = logic2u + lencode2u + lendata2u + lenbss2u + lenrodata2u;
+			 
+/* .eh_frame became necessary, when linking with option -lgcc is
+   added
 */
+
+			 .eh_frame : AT(eh_frame - logic2u)
+			 {
+			 		eh_frame = .;
+					*32.o(.eh_frame*)
+			 		eh_frameend = ALIGN(., 16);
+			 }
+			 
+
 
 /*			 
 			 aligner2 = ALIGN(physA32 + . - logic2u + 2, 512) - 2;

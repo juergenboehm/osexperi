@@ -18,6 +18,7 @@
 
 
 #include "fs/vfs.h"
+#include "fs/bufcache.h"
 
 #include "libs32/klib.h"
 
@@ -187,6 +188,8 @@ void kmain32()
 	enumerate_pci_bus(pci_addr_ide_contr);
 
 	uint32_t res = ide_init(pci_addr_ide_contr);
+
+	init_bufcache();
 
 
 	// the following structures are needed for the ide driver

@@ -18,6 +18,8 @@ semaphore_t init_sema_table[NUM_INIT_SEMAPHORES];
 semaphore_t ide_irq_sema;
 mutex_t ide_op_mutex;
 
+mutex_t ide_buf_mutex;
+
 mutex_t key_wait_mutex[NUM_SCREENS];
 semaphore_t key_read_sema[NUM_SCREENS];
 

@@ -21,6 +21,7 @@
 
 #include "fs/ext2.h"
 #include "fs/gendrivers.h"
+#include "fs/bufcache.h"
 
 #include "kernel32/mutex.h"
 #include "kernel32/process.h"
@@ -61,21 +62,47 @@ void display_tss(tss_t* tss)
 
 }
 
-void idle_forever()
+void idle_process()
 {
-	outb_0xe9( 'B');
 
 	uint32_t i = 0;
+	uint32_t j = 0;
 
-	while (1) {
-		printf("I am idle (0). %d\n", ++i);
-		if (!(i % (1 << 24)))
+	uint32_t old_system_ticks = system_ticks;
+
+	while (1)
+	{
+		//printf("running: %d : system_ticks = %d\n", i, system_ticks);
+
 		{
-			outb_0xe9( 'B');
-		}
 
-		if (screen_current != screen_current_old) {
-			screen_update();
+			outb_printf("idle_process: before mtx_lock ide_buf_mutex : writing hash list %d\n", j);
+
+			mtx_lock(&ide_buf_mutex);
+
+			INIT_LISTVAR(p);
+
+			FORLIST(p, global_ide_buf_list[j].use_list_head)
+			{
+				buf_node_t* pbuf = container_of(p, buf_node_t, link);
+				if (pbuf->dirty)
+				{
+					outb_printf("written dirty sec: %d\n", pbuf->sec_num);
+					writeblk_ide(pbuf->fil, pbuf->sec_num, pbuf->bufp);
+					pbuf->dirty = 0;
+				}
+				p = p->next;
+			}
+			END_FORLIST(p, global_ide_buf_list[j].use_list_head);
+
+			j = (j+1) % NUM_HASH_IDE_BUF_LIST;
+
+			outb_printf("idle_process: unlock ide_buf_mutex\n");
+
+			mtx_unlock(&ide_buf_mutex);
+
+			sleep(2);
+
 		}
 
 		++i;
@@ -316,6 +343,8 @@ int execute_ps(int argc, char* argv[])
 	}
 	END_FORLIST(p, global_proc_list);
 
+	return 0;
+
 }
 
 
@@ -398,6 +427,8 @@ int execute_kill(int argc, char* argv[])
 	END_FORLIST(p, global_proc_list);
 
 	printf("kill: kill %d done\n", pid);
+
+	return 0;
 }
 
 int execute_spd(int argc, char* argv[])
@@ -598,6 +629,31 @@ int execute_mem(int argc, char* argv[])
 	}
 	printf("\n");
 
+	mtx_lock(&ide_buf_mutex);
+
+	INIT_LISTVAR(p);
+
+	int len_ide_freelist = 0;
+
+	FORLIST(p, global_ide_buf_free_list)
+	{
+		p = p->next;
+		++len_ide_freelist;
+
+	}
+	END_FORLIST(p, global_ide_buf_free_list);
+
+	mtx_unlock(&ide_buf_mutex);
+
+	printf("number of used ide_bufs = %d\n", MAX_NUM_BUFS - len_ide_freelist);
+
+	uint32_t sum = 0;
+	for(i = 0; i < NUM_HASH_IDE_BUF_LIST; ++i)
+	{
+		sum += global_ide_buf_list[i].length;
+	}
+	printf("summed length of bin lists = %d\n", sum);
+
 	return 0;
 }
 
@@ -652,6 +708,8 @@ int execute_sem(int argc, char* argv[])
 			sema_down(&init_sema_table[sema_idx]);
 		}
 	}
+
+	return 0;
 }
 
 int execute_ide(int argc, char* argv[])
@@ -780,6 +838,28 @@ int execute_cat(int argc, char* argv[])
 
 	}
 
+#if 0
+	if (!strcmp("dummy", argv[1]))
+	{
+		int i;
+		char* pline = (char*) malloc(128);
+
+		for(i = 0; i < 75; ++i){
+			pline[i] = 'A' + (rand() >> 5) % 30;
+		}
+		pline[i] = 0;
+
+		for(i = 0; i < 860; ++i)
+		{
+			printf("%s\n", pline);
+		}
+
+		free(pline);
+
+		return 0;
+	}
+#endif
+
 	file_t *dev_file = &fixed_file_list[DEV_IDE + 1];
 
 	inode_ext2_t res_inode;
@@ -799,6 +879,8 @@ int execute_cat(int argc, char* argv[])
 	display_inode_ext2(dev_file, &res_inode);
 
 	free(copy_path);
+
+	return 0;
 
 }
 
@@ -890,22 +972,17 @@ void use_keyboard()
 }
 
 
-void idle_watched()
+void idle_screen()
 {
 	outb_0xe9( 'B');
 
 	uint32_t i = 0;
-	uint32_t semaval = 0;
 
 	while (1) {
 
-		semaval = sema_down(&init_sema_table[0]);
-
-		printf("I am watched (2). %d semaval = %d\n", i, semaval);
-
-		mtx_lock(&init_mutex_table[0]);
-		++i;
-		mtx_unlock(&init_mutex_table[0]);
+		if (screen_current != screen_current_old) {
+			screen_update();
+		}
 	}
 }
 

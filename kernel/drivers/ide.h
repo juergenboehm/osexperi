@@ -3,6 +3,7 @@
 
 #include "kerneltypes.h"
 #include "libs/utils.h"
+#include "libs/lists.h"
 
 
 #define 	IDE_BLKSIZE		512
@@ -132,7 +133,7 @@ void ide_irq_handler(uint32_t errcode, uint32_t irq_num, void* esp);
 
 
 
-// as simple read test
+// a simple read test
 void ide_test(uint32_t opcode, uint32_t blk_num);
 
 

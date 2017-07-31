@@ -5,8 +5,8 @@
 /NO_APP
 	.comm	FILE,4,4
 	.text
-	.type	uget_cs, @function
-uget_cs:
+	.type	get_cs, @function
+get_cs:
 	pushl	%ebp
 	movl	%esp, %ebp
 	subl	$16, %esp
@@ -19,9 +19,9 @@ uget_cs:
 	movzwl	-2(%ebp), %eax
 	leave
 	ret
-	.size	uget_cs, .-uget_cs
-	.type	uget_ds, @function
-uget_ds:
+	.size	get_cs, .-get_cs
+	.type	get_ds, @function
+get_ds:
 	pushl	%ebp
 	movl	%esp, %ebp
 	subl	$16, %esp
@@ -34,7 +34,7 @@ uget_ds:
 	movzwl	-2(%ebp), %eax
 	leave
 	ret
-	.size	uget_ds, .-uget_ds
+	.size	get_ds, .-get_ds
 	.section	.rodata
 .LC0:
 	.string	"\nmy handler_called: arg = %d\n"
@@ -48,7 +48,7 @@ my_handler:
 	movl	8(%ebp), %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC0, (%esp)
-	call	uprintf
+	call	printf
 	leave
 	ret
 	.size	my_handler, .-my_handler
@@ -117,40 +117,40 @@ uproc_1:
 	movl	%eax, -36(%ebp)
 	movl	$my_handler, (%esp)
 	call	register_handler
-	call	uget_ds
+	call	get_ds
 	movzwl	%ax, %ebx
-	call	uget_cs
+	call	get_cs
 	movzwl	%ax, %eax
 	movl	%ebx, 8(%esp)
 	movl	%eax, 4(%esp)
 	movl	$.LC1, (%esp)
-	call	uoutb_printf
+	call	outb_printf
 	movl	$.LC2, (%esp)
-	call	uoutb_printf
+	call	outb_printf
 	movl	$.LC2, (%esp)
-	call	uoutb_printf
-	call	uget_ds
+	call	outb_printf
+	call	get_ds
 	movzwl	%ax, %ebx
-	call	uget_cs
+	call	get_cs
 	movzwl	%ax, %eax
 	movl	%ebx, 8(%esp)
 	movl	%eax, 4(%esp)
 	movl	$.LC1, (%esp)
-	call	uprintf
+	call	printf
 	movl	$.LC2, (%esp)
-	call	uprintf
+	call	printf
 	movl	$.LC2, (%esp)
-	call	uprintf
+	call	printf
 	movl	$.LC3, (%esp)
-	call	uprintf
+	call	printf
 	call	fork
 	movl	%eax, -40(%ebp)
 	movl	-40(%ebp), %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC4, (%esp)
-	call	uprintf
+	call	printf
 	movl	$.LC5, (%esp)
-	call	uprintf
+	call	printf
 	cmpl	$0, -40(%ebp)
 	jne	.L10
 	movl	$1, -24(%ebp)
@@ -163,7 +163,7 @@ uproc_1:
 	movl	-24(%ebp), %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC6, (%esp)
-	call	uprintf
+	call	printf
 	addl	$1, -24(%ebp)
 .L11:
 	cmpl	$9, -24(%ebp)
@@ -175,7 +175,7 @@ uproc_1:
 	jmp	.L13
 .L14:
 	movl	$0, (%esp)
-	call	ugetc
+	call	getc
 	movl	%eax, -28(%ebp)
 .L13:
 	movl	-28(%ebp), %eax
@@ -189,13 +189,13 @@ uproc_1:
 	cmpb	$13, -41(%ebp)
 	jne	.L15
 	movl	$.LC7, (%esp)
-	call	uprintf
+	call	printf
 	jmp	.L17
 .L15:
 	movzbl	-41(%ebp), %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC8, (%esp)
-	call	uprintf
+	call	printf
 	jmp	.L17
 .L10:
 	jmp	.L18
@@ -225,13 +225,13 @@ uproc_1:
 	movl	-12(%ebp), %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC9, (%esp)
-	call	uprintf
+	call	printf
 	movl	-20(%ebp), %eax
 	andl	$3, %eax
 	testl	%eax, %eax
 	jne	.L23
 	movl	$.LC10, (%esp)
-	call	uprintf
+	call	printf
 .L23:
 	addl	$1, -12(%ebp)
 	movl	-12(%ebp), %eax
@@ -280,9 +280,9 @@ uproc_1:
 .LC23:
 	.string	"es = 0x%08x\n"
 	.text
-	.globl	udisplay_tss
-	.type	udisplay_tss, @function
-udisplay_tss:
+	.globl	display_tss
+	.type	display_tss, @function
+display_tss:
 	pushl	%ebp
 	movl	%esp, %ebp
 	subl	$24, %esp
@@ -290,72 +290,72 @@ udisplay_tss:
 	movl	56(%eax), %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC11, (%esp)
-	call	uprintf
+	call	printf
 	movl	8(%ebp), %eax
 	movzwl	80(%eax), %eax
 	movzwl	%ax, %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC12, (%esp)
-	call	uprintf
+	call	printf
 	movl	8(%ebp), %eax
 	movl	4(%eax), %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC13, (%esp)
-	call	uprintf
+	call	printf
 	movl	8(%ebp), %eax
 	movzwl	8(%eax), %eax
 	movzwl	%ax, %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC14, (%esp)
-	call	uprintf
+	call	printf
 	movl	8(%ebp), %eax
 	movl	60(%eax), %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC15, (%esp)
-	call	uprintf
+	call	printf
 	movl	8(%ebp), %eax
 	movl	52(%eax), %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC16, (%esp)
-	call	uprintf
+	call	printf
 	movl	8(%ebp), %eax
 	movl	52(%eax), %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC17, (%esp)
-	call	uprintf
+	call	printf
 	movl	8(%ebp), %eax
 	movl	52(%eax), %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC18, (%esp)
-	call	uprintf
+	call	printf
 	movl	8(%ebp), %eax
 	movl	52(%eax), %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC19, (%esp)
-	call	uprintf
+	call	printf
 	movl	8(%ebp), %eax
 	movl	64(%eax), %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC20, (%esp)
-	call	uprintf
+	call	printf
 	movl	8(%ebp), %eax
 	movl	68(%eax), %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC21, (%esp)
-	call	uprintf
+	call	printf
 	movl	8(%ebp), %eax
 	movzwl	84(%eax), %eax
 	movzwl	%ax, %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC22, (%esp)
-	call	uprintf
+	call	printf
 	movl	8(%ebp), %eax
 	movzwl	72(%eax), %eax
 	movzwl	%ax, %eax
 	movl	%eax, 4(%esp)
 	movl	$.LC23, (%esp)
-	call	uprintf
+	call	printf
 	leave
 	ret
-	.size	udisplay_tss, .-udisplay_tss
+	.size	display_tss, .-display_tss
 	.ident	"GCC: (GNU) 4.8.2"

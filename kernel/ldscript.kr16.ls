@@ -28,9 +28,7 @@ SECTIONS
 				
 				lencode1 = code1end - code1;
 				
-																
-/*				. = logic1 + lencode1; */
-									
+																								
        .data1 : AT(physA16 + data1 - logic1)
 			  { 
 					data1 = .;
@@ -41,8 +39,6 @@ SECTIONS
 				lendata1 = data1end - data1;
 				
 								
-/*			 . = logic1 + lencode1 + lendata1; */
-
        .bss1 : AT(physA16 + bss1 - logic1)
 			 {
 			 		bss1 = .; 
@@ -52,9 +48,7 @@ SECTIONS
 			 }
 			 
 			 lenbss1 = bss1end - bss1;
-			 
-/*			 . = logic1 + lencode1 + lendata1 + lenbss1; */
-			 
+			 		 
 			 .rodata1 : AT(physA16 + rodata1 - logic1)
 			 {
 			 		rodata1 = .;
@@ -63,8 +57,6 @@ SECTIONS
 			 }
 			 
 			 lenrodata1 = rodata1end - rodata1;
-			 
-/*			 . = logic1 + lencode1 + lendata1 + lenbss1 + lenrodata1; */
 			 
 
 /*

@@ -117,7 +117,27 @@ void enumerate_pci_bus(pci_access_data_t* pci_addr_ide_contr)
 						prim_bus = pci_read_byte(bus_num, dev_num, fun_num, 0x06, 0x00 );
 					}
 					
+					uint32_t class_subclass = pci_read_class_code_and_subclass(bus_num, dev_num, fun_num);
+
+#define USE_CLASSCODE
+
+#ifdef USE_CLASSCODE
+
+					if ((class_subclass >> 16) == 0x0101)
+					{
+						pci_addr_ide_contr->bus_number = bus_num;
+						pci_addr_ide_contr->device_number = dev_num;
+						pci_addr_ide_contr->function_number = fun_num;
+
+						pci_addr_ide_contr->register_number = 0x20;
+						printf("ide controller found\n");
+
+					}
+#endif
+
 					int i = 0;
+#ifndef USE_CLASSCODE
+
 					for( i = 0; i < PCI_NUM_IDE_CONTR; ++i )
 					{
 						if ((pci_ide_controller_list[i].v == vendor_id) &&
@@ -131,8 +151,9 @@ void enumerate_pci_bus(pci_access_data_t* pci_addr_ide_contr)
 							printf("ide controller found\n");
 						}
 					}
+#endif
 
-					uint32_t class_subclass = pci_read_class_code_and_subclass(bus_num, dev_num, fun_num);
+
 					printf("*** %09d: bus: %02x dev: %02x : fun: %02x : %08x\n", cnt++, bus_num, dev_num, 
 							fun_num, class_subclass);
 					printf("** DeviceId: %04x Vendor Id: %04x\n", device_id, vendor_id );

@@ -74,7 +74,7 @@ int fork()
 	return make_syscall1(SC_SYS_FORK, (uint32_t) 0);
 }
 
-int ugetc(uint32_t fd)
+int getc(uint32_t fd)
 {
 	uint32_t key = 0;
 	uint32_t ret = make_syscall3(SC_SYS_READ_NO, fd, (uint32_t)&key, sizeof(key));
@@ -83,15 +83,15 @@ int ugetc(uint32_t fd)
 
 static int kprint_str(uint32_t fd, char* str)
 {
-	int nlen = ustrlen(str);
+	int nlen = strlen(str);
 	return make_syscall3(SC_SYS_WRITE_NO, (uint32_t)fd, (uint32_t)str, (uint32_t) nlen);
 }
 
-static int uoutb_kprint_str(uint32_t fd,char* buffer)
+static int outb_kprint_str(uint32_t fd,char* buffer)
 {
 	char* p = buffer;
 	while (*p) {
-		uoutb_0xe9( *p++);
+		outb_0xe9( *p++);
 	}
 	return 0;
 }
@@ -304,7 +304,7 @@ static char* parse_format_command(char *p, fmt_flag_type* flags,
 
 
 
-#if 1
+#if 0
 
 static uint64_t __udivdi3(uint64_t num, uint64_t den)
 {
@@ -636,7 +636,7 @@ static int vprintf(char* buf, size_t buf_size, char* format, va_list ap)
 
 }
 
-int uprintf(char* format, ... )
+int printf(char* format, ... )
 {
 	int i = 0;
 	char* p = format;
@@ -655,7 +655,7 @@ int uprintf(char* format, ... )
 
 }
 
-int uoutb_printf(char* format, ... )
+int outb_printf(char* format, ... )
 {
 	int i = 0;
 	char* p = format;
@@ -670,7 +670,7 @@ int uoutb_printf(char* format, ... )
 
 	va_end(ap);
 
-	return uoutb_kprint_str(1, buffer);
+	return outb_kprint_str(1, buffer);
 
 }
 
@@ -749,7 +749,7 @@ char* strcat(char* str1, char* str2)
 
 */
 
-int ustrlen(char *str)
+int strlen(char *str)
 {
 	int i = 0;
 	char* p = str;

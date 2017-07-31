@@ -4,7 +4,7 @@
 
 void my_handler(uint32_t arg)
 {
-	uprintf("\nmy handler_called: arg = %d\n", arg);
+	printf("\nmy handler_called: arg = %d\n", arg);
 }
 
 int fak(int n)
@@ -61,26 +61,26 @@ void uproc_1()
 
 	register_handler(my_handler);
 
-	uoutb_printf("proc_1: presenting: the primes: cs = 0x%08x ds = 0x%08x\n", (uint32_t)uget_cs(), (uint32_t)uget_ds());
-	uoutb_printf("                                                       \n");
-	uoutb_printf("                                                       \n");
+	outb_printf("proc_1: presenting: the primes: cs = 0x%08x ds = 0x%08x\n", (uint32_t)get_cs(), (uint32_t)get_ds());
+	outb_printf("                                                       \n");
+	outb_printf("                                                       \n");
 
-	uprintf("proc_1: presenting: the primes: cs = 0x%08x ds = 0x%08x\n", (uint32_t)uget_cs(), (uint32_t)uget_ds());
-	uprintf("                                                       \n");
-	uprintf("                                                       \n");
+	printf("proc_1: presenting: the primes: cs = 0x%08x ds = 0x%08x\n", (uint32_t)get_cs(), (uint32_t)get_ds());
+	printf("                                                       \n");
+	printf("                                                       \n");
 
 
-	uprintf("proc1: forking");
+	printf("proc1: forking");
 	uint32_t ret = fork();
-	uprintf("after fork: ret = %d\n", ret);
-	uprintf("proc1: fork done.");
+	printf("after fork: ret = %d\n", ret);
+	printf("proc1: fork done.");
 
 	if (ret == 0)
 	{
 		int i;
 		for(i = 1; i < 10; ++i)
 		{
-			uprintf("fak(%d) = %d\n", i, fak(i));
+			printf("fak(%d) = %d\n", i, fak(i));
 		}
 #ifdef MEM_BIG_ALLOCATE_TEST
 		uint8_t* pt = (uint8_t*)0x100000;
@@ -100,16 +100,16 @@ void uproc_1()
 			key = 0;
 			while (!((key >> 16) & 0xff))
 			{
-				key = ugetc(0);
+				key = getc(0);
 			}
 			uint8_t ascii_code = (key >> 16) & 0xff;
 			if (ascii_code == '\r')
 			{
-				uprintf("\r\n");
+				printf("\r\n");
 			}
 			else
 			{
-				uprintf("%c", ascii_code);
+				printf("%c", ascii_code);
 			}
 		}
 
@@ -143,14 +143,14 @@ void uproc_1()
 		if (j != 0)
 		{
 			++cnt;
-			uprintf(" %d ", i);
+			printf(" %d ", i);
 			if (!(cnt % 4))
 			{
-				uprintf("\n");
+				printf("\n");
 			}
 		}
 		i = i + 1;
-		//uoutb_0xe9('A');
+		//outb_0xe9('A');
 		if (i % 8 == 0)
 		{
 			WAIT(126 * (1 << 24));
@@ -162,25 +162,25 @@ void uproc_1()
 	while (1);
 }
 
-void udisplay_tss(tss_t* tss)
+void display_tss(tss_t* tss)
 {
-	uprintf("esp = 0x%08x\n", tss->esp);
-	uprintf("ss = 0x%08x\n", tss->ss);
+	printf("esp = 0x%08x\n", tss->esp);
+	printf("ss = 0x%08x\n", tss->ss);
 
-	uprintf("esp0 = 0x%08x\n", tss->esp0);
-	uprintf("ss0 = 0x%08x\n", tss->ss0);
+	printf("esp0 = 0x%08x\n", tss->esp0);
+	printf("ss0 = 0x%08x\n", tss->ss0);
 
-	uprintf("ebp = 0x%08x\n", tss->ebp);
+	printf("ebp = 0x%08x\n", tss->ebp);
 
-	uprintf("ebx = 0x%08x\n", tss->ebx);
-	uprintf("eax = 0x%08x\n", tss->ebx);
-	uprintf("ecx = 0x%08x\n", tss->ebx);
-	uprintf("edx = 0x%08x\n", tss->ebx);
+	printf("ebx = 0x%08x\n", tss->ebx);
+	printf("eax = 0x%08x\n", tss->ebx);
+	printf("ecx = 0x%08x\n", tss->ebx);
+	printf("edx = 0x%08x\n", tss->ebx);
 
-	uprintf("esi = 0x%08x\n", tss->esi);
-	uprintf("edi = 0x%08x\n", tss->edi);
+	printf("esi = 0x%08x\n", tss->esi);
+	printf("edi = 0x%08x\n", tss->edi);
 
-	uprintf("ds = 0x%08x\n", tss->ds);
-	uprintf("es = 0x%08x\n", tss->es);
+	printf("ds = 0x%08x\n", tss->ds);
+	printf("es = 0x%08x\n", tss->es);
 
 }

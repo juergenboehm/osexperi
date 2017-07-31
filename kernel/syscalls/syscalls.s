@@ -1,8 +1,8 @@
 	.file	"syscalls.c"
-#APP
+/APP
 	.code16gcc	
 
-#NO_APP
+/NO_APP
 	.text
 	.globl	syscall_handler
 	.type	syscall_handler, @function
@@ -93,6 +93,9 @@ syscall_handler:
 	leal	28(%eax), %edx
 	movl	-36(%ebp), %eax
 	movl	%eax, (%edx)
+	movl	16(%ebp), %eax
+	movl	%eax, (%esp)
+	call	process_signals
 	leave
 	ret
 	.size	syscall_handler, .-syscall_handler
@@ -221,5 +224,4 @@ sys_fork:
 	leave
 	ret
 	.size	sys_fork, .-sys_fork
-	.ident	"GCC: (GNU) 4.8.2 20140120 (Red Hat 4.8.2-15)"
-	.section	.note.GNU-stack,"",@progbits
+	.ident	"GCC: (GNU) 4.8.2"

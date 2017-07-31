@@ -1,8 +1,8 @@
 	.file	"startup.c"
-#APP
+/APP
 	.code16gcc	
 
-#NO_APP
+/NO_APP
 	.comm	gdt_table_provis,64,16
 	.comm	gdt_ptr_provis,6,8
 	.section	.rodata
@@ -49,11 +49,11 @@ init_gdtptr:
 	movw	$63, gdt_ptr_provis
 	movl	-12(%ebp), %eax
 	movl	%eax, gdt_ptr_provis+2
-#APP
-# 46 "kernel16/startup.c" 1
+/APP
+/  46 "kernel16/startup.c" 1
 	lgdt gdt_ptr_provis
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	leave
 	ret
 	.size	init_gdtptr, .-init_gdtptr
@@ -63,16 +63,16 @@ enable_a20:
 	pushl	%ebp
 	movl	%esp, %ebp
 	subl	$16, %esp
-#APP
-# 55 "kernel16/startup.c" 1
+/APP
+/  55 "kernel16/startup.c" 1
 	movw $0x2401, %ax
 	int $0x15
 	movb $0, %al
 	rclb %al
 	movw %ax, %dx
 	
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	movw	%dx, -2(%ebp)
 	movzwl	-2(%ebp), %eax
 	leave
@@ -88,8 +88,8 @@ keyb_wait:
 	movl	12(%ebp), %eax
 	movb	%dl, -4(%ebp)
 	movb	%al, -8(%ebp)
-#APP
-# 69 "kernel16/startup.c" 1
+/APP
+/  69 "kernel16/startup.c" 1
 	1: 
 	testb $0xff, -8(%ebp) 
 	jz 3f 
@@ -105,8 +105,8 @@ keyb_wait:
 	4: 
 	nop 
 	
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	leave
 	ret
 	.size	keyb_wait, .-keyb_wait
@@ -121,12 +121,12 @@ keyb_send_cmd:
 	movl	$0, 4(%esp)
 	movl	$2, (%esp)
 	call	keyb_wait
-	movb	-4(%ebp), %al
-#APP
-# 90 "kernel16/startup.c" 1
+	movzbl	-4(%ebp), %eax
+/APP
+/  90 "kernel16/startup.c" 1
 	outb %al, $0x64
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	leave
 	ret
 	.size	keyb_send_cmd, .-keyb_send_cmd
@@ -141,12 +141,12 @@ keyb_send_data:
 	movl	$0, 4(%esp)
 	movl	$2, (%esp)
 	call	keyb_wait
-	movb	-4(%ebp), %al
-#APP
-# 99 "kernel16/startup.c" 1
+	movzbl	-4(%ebp), %eax
+/APP
+/  99 "kernel16/startup.c" 1
 	outb %al, $0x60
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	leave
 	ret
 	.size	keyb_send_data, .-keyb_send_data
@@ -160,13 +160,13 @@ keyb_get_data:
 	movl	$1, 4(%esp)
 	movl	$1, (%esp)
 	call	keyb_wait
-#APP
-# 109 "kernel16/startup.c" 1
+/APP
+/  109 "kernel16/startup.c" 1
 	inb $0x60, %al
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	movb	%al, -1(%ebp)
-	movb	-1(%ebp), %al
+	movzbl	-1(%ebp), %eax
 	leave
 	ret
 	.size	keyb_get_data, .-keyb_get_data
@@ -176,11 +176,11 @@ enable_a20_keyb:
 	pushl	%ebp
 	movl	%esp, %ebp
 	subl	$20, %esp
-#APP
-# 118 "kernel16/startup.c" 1
+/APP
+/  118 "kernel16/startup.c" 1
 	cli
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	movl	$173, (%esp)
 	call	keyb_send_cmd
 	movl	$208, (%esp)
@@ -195,11 +195,11 @@ enable_a20_keyb:
 	call	keyb_send_data
 	movl	$174, (%esp)
 	call	keyb_send_cmd
-#APP
-# 130 "kernel16/startup.c" 1
+/APP
+/  130 "kernel16/startup.c" 1
 	sti
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	movl	$0, %eax
 	leave
 	ret
@@ -214,8 +214,8 @@ enable_a20_bios_15:
 	pushl	%ebx
 	subl	$20, %esp
 	movl	$0, -16(%ebp)
-#APP
-# 139 "kernel16/startup.c" 1
+/APP
+/  139 "kernel16/startup.c" 1
 	pushl %ebp 
 	pushal 
 	pushw %ds 
@@ -257,8 +257,8 @@ enable_a20_bios_15:
 	popal 
 	popl %ebp 
 	
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	movl	-32(%ebp), %eax
 	movl	%eax, -16(%ebp)
 	movl	-16(%ebp), %eax
@@ -281,15 +281,15 @@ set_video_mode:
 	movl	8(%ebp), %eax
 	movb	%al, -32(%ebp)
 	movb	$0, -13(%ebp)
-#APP
-# 185 "kernel16/startup.c" 1
+/APP
+/  185 "kernel16/startup.c" 1
 	movb $0, %ah 
 	movb -32(%ebp), %al 
 	 int $0x10 
 	movb %al, -29(%ebp)
-# 0 "" 2
-#NO_APP
-	movb	-29(%ebp), %al
+/  0 "" 2
+/NO_APP
+	movzbl	-29(%ebp), %eax
 	movb	%al, -13(%ebp)
 	movzbl	-13(%ebp), %eax
 	addl	$20, %esp
@@ -333,60 +333,60 @@ kmain:
 	movl	-12(%ebp), %eax
 	movw	$0, gdt_table_provis(,%eax,8)
 	movl	-12(%ebp), %eax
-	movb	gdt_table_provis+6(,%eax,8), %al
+	movzbl	gdt_table_provis+6(,%eax,8), %eax
 	andl	$-16, %eax
-	movb	%al, %dl
+	movl	%eax, %edx
 	movl	-12(%ebp), %eax
 	movb	%dl, gdt_table_provis+6(,%eax,8)
 	movl	-12(%ebp), %eax
-	movb	gdt_table_provis+6(,%eax,8), %al
+	movzbl	gdt_table_provis+6(,%eax,8), %eax
 	andl	$127, %eax
-	movb	%al, %dl
+	movl	%eax, %edx
 	movl	-12(%ebp), %eax
 	movb	%dl, gdt_table_provis+6(,%eax,8)
 	movl	-12(%ebp), %eax
-	movb	gdt_table_provis+6(,%eax,8), %al
+	movzbl	gdt_table_provis+6(,%eax,8), %eax
 	andl	$-65, %eax
-	movb	%al, %dl
+	movl	%eax, %edx
 	movl	-12(%ebp), %eax
 	movb	%dl, gdt_table_provis+6(,%eax,8)
 	movl	-12(%ebp), %eax
-	movb	gdt_table_provis+6(,%eax,8), %al
+	movzbl	gdt_table_provis+6(,%eax,8), %eax
 	andl	$-33, %eax
-	movb	%al, %dl
+	movl	%eax, %edx
 	movl	-12(%ebp), %eax
 	movb	%dl, gdt_table_provis+6(,%eax,8)
 	movl	-12(%ebp), %eax
-	movb	gdt_table_provis+6(,%eax,8), %al
+	movzbl	gdt_table_provis+6(,%eax,8), %eax
 	andl	$-17, %eax
-	movb	%al, %dl
+	movl	%eax, %edx
 	movl	-12(%ebp), %eax
 	movb	%dl, gdt_table_provis+6(,%eax,8)
 	movl	-12(%ebp), %eax
-	movb	gdt_table_provis+5(,%eax,8), %al
+	movzbl	gdt_table_provis+5(,%eax,8), %eax
 	andl	$-17, %eax
-	movb	%al, %dl
+	movl	%eax, %edx
 	movl	-12(%ebp), %eax
 	movb	%dl, gdt_table_provis+5(,%eax,8)
 	movl	-12(%ebp), %eax
-	movb	gdt_table_provis+5(,%eax,8), %al
+	movzbl	gdt_table_provis+5(,%eax,8), %eax
 	andl	$127, %eax
-	movb	%al, %dl
+	movl	%eax, %edx
 	movl	-12(%ebp), %eax
 	movb	%dl, gdt_table_provis+5(,%eax,8)
 	movl	-12(%ebp), %eax
-	movb	gdt_table_provis+5(,%eax,8), %al
+	movzbl	gdt_table_provis+5(,%eax,8), %eax
 	andl	$-97, %eax
-	movb	%al, %dl
+	movl	%eax, %edx
 	movl	-12(%ebp), %eax
 	movb	%dl, gdt_table_provis+5(,%eax,8)
 	movl	-12(%ebp), %eax
-	movb	gdt_table_provis+5(,%eax,8), %al
+	movzbl	gdt_table_provis+5(,%eax,8), %eax
 	andl	$-15, %eax
-	movb	%al, %dl
+	movl	%eax, %edx
 	movl	-12(%ebp), %eax
 	movb	%dl, gdt_table_provis+5(,%eax,8)
-	incl	-12(%ebp)
+	addl	$1, -12(%ebp)
 .L16:
 	cmpl	$7, -12(%ebp)
 	jle	.L17
@@ -398,31 +398,31 @@ kmain:
 	movb	$0, gdt_table_provis+20
 	movb	$0, gdt_table_provis+23
 	movw	$-1, gdt_table_provis+16
-	movb	gdt_table_provis+22, %al
+	movzbl	gdt_table_provis+22, %eax
 	orl	$15, %eax
 	movb	%al, gdt_table_provis+22
-	movb	gdt_table_provis+22, %al
+	movzbl	gdt_table_provis+22, %eax
 	orl	$-128, %eax
 	movb	%al, gdt_table_provis+22
-	movb	gdt_table_provis+22, %al
+	movzbl	gdt_table_provis+22, %eax
 	orl	$64, %eax
 	movb	%al, gdt_table_provis+22
-	movb	gdt_table_provis+22, %al
+	movzbl	gdt_table_provis+22, %eax
 	andl	$-33, %eax
 	movb	%al, gdt_table_provis+22
-	movb	gdt_table_provis+22, %al
+	movzbl	gdt_table_provis+22, %eax
 	andl	$-17, %eax
 	movb	%al, gdt_table_provis+22
-	movb	gdt_table_provis+21, %al
+	movzbl	gdt_table_provis+21, %eax
 	orl	$16, %eax
 	movb	%al, gdt_table_provis+21
-	movb	gdt_table_provis+21, %al
+	movzbl	gdt_table_provis+21, %eax
 	orl	$-128, %eax
 	movb	%al, gdt_table_provis+21
-	movb	gdt_table_provis+21, %al
+	movzbl	gdt_table_provis+21, %eax
 	andl	$-97, %eax
 	movb	%al, gdt_table_provis+21
-	movb	gdt_table_provis+21, %al
+	movzbl	gdt_table_provis+21, %eax
 	andl	$-16, %eax
 	orl	$10, %eax
 	movb	%al, gdt_table_provis+21
@@ -430,31 +430,31 @@ kmain:
 	movb	$0, gdt_table_provis+28
 	movb	$0, gdt_table_provis+31
 	movw	$-1, gdt_table_provis+24
-	movb	gdt_table_provis+30, %al
+	movzbl	gdt_table_provis+30, %eax
 	orl	$15, %eax
 	movb	%al, gdt_table_provis+30
-	movb	gdt_table_provis+30, %al
+	movzbl	gdt_table_provis+30, %eax
 	orl	$-128, %eax
 	movb	%al, gdt_table_provis+30
-	movb	gdt_table_provis+30, %al
+	movzbl	gdt_table_provis+30, %eax
 	orl	$64, %eax
 	movb	%al, gdt_table_provis+30
-	movb	gdt_table_provis+30, %al
+	movzbl	gdt_table_provis+30, %eax
 	andl	$-33, %eax
 	movb	%al, gdt_table_provis+30
-	movb	gdt_table_provis+30, %al
+	movzbl	gdt_table_provis+30, %eax
 	andl	$-17, %eax
 	movb	%al, gdt_table_provis+30
-	movb	gdt_table_provis+29, %al
+	movzbl	gdt_table_provis+29, %eax
 	orl	$16, %eax
 	movb	%al, gdt_table_provis+29
-	movb	gdt_table_provis+29, %al
+	movzbl	gdt_table_provis+29, %eax
 	orl	$-128, %eax
 	movb	%al, gdt_table_provis+29
-	movb	gdt_table_provis+29, %al
+	movzbl	gdt_table_provis+29, %eax
 	andl	$-97, %eax
 	movb	%al, gdt_table_provis+29
-	movb	gdt_table_provis+29, %al
+	movzbl	gdt_table_provis+29, %eax
 	andl	$-16, %eax
 	orl	$2, %eax
 	movb	%al, gdt_table_provis+29
@@ -465,42 +465,42 @@ kmain:
 	movb	$3, gdt_table_provis+28
 	movb	$0, gdt_table_provis+31
 	movw	$-49, gdt_table_provis+16
-	movb	gdt_table_provis+22, %al
+	movzbl	gdt_table_provis+22, %eax
 	orl	$15, %eax
 	movb	%al, gdt_table_provis+22
 	movw	$-49, gdt_table_provis+24
-	movb	gdt_table_provis+30, %al
+	movzbl	gdt_table_provis+30, %eax
 	orl	$15, %eax
 	movb	%al, gdt_table_provis+30
 	movw	$0, gdt_table_provis+34
 	movb	$0, gdt_table_provis+36
 	movb	$0, gdt_table_provis+39
 	movw	$-1, gdt_table_provis+32
-	movb	gdt_table_provis+38, %al
+	movzbl	gdt_table_provis+38, %eax
 	orl	$15, %eax
 	movb	%al, gdt_table_provis+38
-	movb	gdt_table_provis+38, %al
+	movzbl	gdt_table_provis+38, %eax
 	orl	$-128, %eax
 	movb	%al, gdt_table_provis+38
-	movb	gdt_table_provis+38, %al
+	movzbl	gdt_table_provis+38, %eax
 	orl	$64, %eax
 	movb	%al, gdt_table_provis+38
-	movb	gdt_table_provis+38, %al
+	movzbl	gdt_table_provis+38, %eax
 	andl	$-33, %eax
 	movb	%al, gdt_table_provis+38
-	movb	gdt_table_provis+38, %al
+	movzbl	gdt_table_provis+38, %eax
 	andl	$-17, %eax
 	movb	%al, gdt_table_provis+38
-	movb	gdt_table_provis+37, %al
+	movzbl	gdt_table_provis+37, %eax
 	orl	$16, %eax
 	movb	%al, gdt_table_provis+37
-	movb	gdt_table_provis+37, %al
+	movzbl	gdt_table_provis+37, %eax
 	orl	$-128, %eax
 	movb	%al, gdt_table_provis+37
-	movb	gdt_table_provis+37, %al
+	movzbl	gdt_table_provis+37, %eax
 	andl	$-97, %eax
 	movb	%al, gdt_table_provis+37
-	movb	gdt_table_provis+37, %al
+	movzbl	gdt_table_provis+37, %eax
 	andl	$-16, %eax
 	orl	$10, %eax
 	movb	%al, gdt_table_provis+37
@@ -508,31 +508,31 @@ kmain:
 	movb	$0, gdt_table_provis+44
 	movb	$0, gdt_table_provis+47
 	movw	$-1, gdt_table_provis+40
-	movb	gdt_table_provis+46, %al
+	movzbl	gdt_table_provis+46, %eax
 	orl	$15, %eax
 	movb	%al, gdt_table_provis+46
-	movb	gdt_table_provis+46, %al
+	movzbl	gdt_table_provis+46, %eax
 	orl	$-128, %eax
 	movb	%al, gdt_table_provis+46
-	movb	gdt_table_provis+46, %al
+	movzbl	gdt_table_provis+46, %eax
 	orl	$64, %eax
 	movb	%al, gdt_table_provis+46
-	movb	gdt_table_provis+46, %al
+	movzbl	gdt_table_provis+46, %eax
 	andl	$-33, %eax
 	movb	%al, gdt_table_provis+46
-	movb	gdt_table_provis+46, %al
+	movzbl	gdt_table_provis+46, %eax
 	andl	$-17, %eax
 	movb	%al, gdt_table_provis+46
-	movb	gdt_table_provis+45, %al
+	movzbl	gdt_table_provis+45, %eax
 	orl	$16, %eax
 	movb	%al, gdt_table_provis+45
-	movb	gdt_table_provis+45, %al
+	movzbl	gdt_table_provis+45, %eax
 	orl	$-128, %eax
 	movb	%al, gdt_table_provis+45
-	movb	gdt_table_provis+45, %al
+	movzbl	gdt_table_provis+45, %eax
 	andl	$-97, %eax
 	movb	%al, gdt_table_provis+45
-	movb	gdt_table_provis+45, %al
+	movzbl	gdt_table_provis+45, %eax
 	andl	$-16, %eax
 	orl	$2, %eax
 	movb	%al, gdt_table_provis+45
@@ -540,31 +540,31 @@ kmain:
 	movb	$0, gdt_table_provis+52
 	movb	$0, gdt_table_provis+55
 	movw	$-1, gdt_table_provis+48
-	movb	gdt_table_provis+54, %al
+	movzbl	gdt_table_provis+54, %eax
 	orl	$15, %eax
 	movb	%al, gdt_table_provis+54
-	movb	gdt_table_provis+54, %al
+	movzbl	gdt_table_provis+54, %eax
 	orl	$-128, %eax
 	movb	%al, gdt_table_provis+54
-	movb	gdt_table_provis+54, %al
+	movzbl	gdt_table_provis+54, %eax
 	orl	$64, %eax
 	movb	%al, gdt_table_provis+54
-	movb	gdt_table_provis+54, %al
+	movzbl	gdt_table_provis+54, %eax
 	andl	$-33, %eax
 	movb	%al, gdt_table_provis+54
-	movb	gdt_table_provis+54, %al
+	movzbl	gdt_table_provis+54, %eax
 	andl	$-17, %eax
 	movb	%al, gdt_table_provis+54
-	movb	gdt_table_provis+53, %al
+	movzbl	gdt_table_provis+53, %eax
 	orl	$16, %eax
 	movb	%al, gdt_table_provis+53
-	movb	gdt_table_provis+53, %al
+	movzbl	gdt_table_provis+53, %eax
 	orl	$-128, %eax
 	movb	%al, gdt_table_provis+53
-	movb	gdt_table_provis+53, %al
+	movzbl	gdt_table_provis+53, %eax
 	orl	$96, %eax
 	movb	%al, gdt_table_provis+53
-	movb	gdt_table_provis+53, %al
+	movzbl	gdt_table_provis+53, %eax
 	andl	$-16, %eax
 	orl	$10, %eax
 	movb	%al, gdt_table_provis+53
@@ -572,31 +572,31 @@ kmain:
 	movb	$0, gdt_table_provis+60
 	movb	$0, gdt_table_provis+63
 	movw	$-1, gdt_table_provis+56
-	movb	gdt_table_provis+62, %al
+	movzbl	gdt_table_provis+62, %eax
 	orl	$15, %eax
 	movb	%al, gdt_table_provis+62
-	movb	gdt_table_provis+62, %al
+	movzbl	gdt_table_provis+62, %eax
 	orl	$-128, %eax
 	movb	%al, gdt_table_provis+62
-	movb	gdt_table_provis+62, %al
+	movzbl	gdt_table_provis+62, %eax
 	orl	$64, %eax
 	movb	%al, gdt_table_provis+62
-	movb	gdt_table_provis+62, %al
+	movzbl	gdt_table_provis+62, %eax
 	andl	$-33, %eax
 	movb	%al, gdt_table_provis+62
-	movb	gdt_table_provis+62, %al
+	movzbl	gdt_table_provis+62, %eax
 	andl	$-17, %eax
 	movb	%al, gdt_table_provis+62
-	movb	gdt_table_provis+61, %al
+	movzbl	gdt_table_provis+61, %eax
 	orl	$16, %eax
 	movb	%al, gdt_table_provis+61
-	movb	gdt_table_provis+61, %al
+	movzbl	gdt_table_provis+61, %eax
 	orl	$-128, %eax
 	movb	%al, gdt_table_provis+61
-	movb	gdt_table_provis+61, %al
+	movzbl	gdt_table_provis+61, %eax
 	orl	$96, %eax
 	movb	%al, gdt_table_provis+61
-	movb	gdt_table_provis+61, %al
+	movzbl	gdt_table_provis+61, %eax
 	andl	$-16, %eax
 	orl	$2, %eax
 	movb	%al, gdt_table_provis+61
@@ -609,7 +609,7 @@ kmain:
 	movl	%edx, -16(%ebp)
 	movl	%eax, (%esp)
 	call	print_gdt_entry
-	incl	-12(%ebp)
+	addl	$1, -12(%ebp)
 .L18:
 	cmpl	$1, -12(%ebp)
 	jle	.L19
@@ -694,8 +694,8 @@ kmain:
 	movl	%eax, (%esp)
 	call	print_U32
 	call	print_newline
-#APP
-# 313 "kernel16/startup.c" 1
+/APP
+/  313 "kernel16/startup.c" 1
 	movw		$0xb800, %ax 
 	movw		%ax, %es 
 	xor		%di, %di 
@@ -703,13 +703,12 @@ kmain:
 	inc		%di 
 	movb		$0x1e, %es:(%di) 
 	
-# 0 "" 2
-#NO_APP
+/  0 "" 2
+/NO_APP
 	movl	$0, %eax
 	addl	$52, %esp
 	popl	%edi
 	popl	%ebp
 	ret
 	.size	kmain, .-kmain
-	.ident	"GCC: (GNU) 4.8.2 20140120 (Red Hat 4.8.2-15)"
-	.section	.note.GNU-stack,"",@progbits
+	.ident	"GCC: (GNU) 4.8.2"

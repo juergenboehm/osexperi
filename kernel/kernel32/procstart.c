@@ -148,12 +148,17 @@ uint32_t npidu;
 void start_user_process()
 {
 
+	const int MAX_NUM_USERPROG_PAGES = 5;
+
+	printf("start_user_process: begin\n");
+
 	while(!ext2_system_on);
 
 
 	uint32_t usercode_virtual = 0x1000;
 
-	char* userprog_area = (char*)malloc(5 * PAGE_SIZE);
+	char* userprog_pages[MAX_NUM_USERPROG_PAGES];
+
 
 	file_t *dev_file = &fixed_file_list[DEV_IDE + 1];
 
@@ -174,9 +179,31 @@ void start_user_process()
 
 	uint32_t user_prog_size = res_inode.i_size;
 
-	int nrd = read_file_ext2(dev_file, &res_inode, userprog_area, user_prog_size, 0);
+	uint32_t count = user_prog_size;
+	uint32_t offset = 0;
 
-	printf("user.bin loaded: size = %d.\n", user_prog_size);
+	int i = 0;
+	while (count > 0)
+	{
+		uint32_t to_read = min(count, PAGE_SIZE);
+		char* userprog_area = (char*)get_page_with_refcnt(0);
+		int nrd = read_file_ext2(dev_file, &res_inode, userprog_area, to_read, offset);
+
+		ASSERT(nrd == to_read);
+
+		userprog_pages[i] = userprog_area;
+		++i;
+		count -= nrd;
+		offset += nrd;
+	}
+
+	//userprog_pages[i] = (char*) get_page_with_refcnt(0);
+	//++i;
+
+	uint32_t num_pages_loaded = i;
+
+	outb_printf("user.bin loaded: size = %d : pages_loaded = %d.\n",
+			user_prog_size, num_pages_loaded);
 
 	//while (1) {};
 
@@ -205,11 +232,10 @@ void start_user_process()
 	init_proc_cr3(current, new_page_dir_phys_addr);
 
 	int j;
-	int i;
 
-	for(i = 0, j = 0; i < 5; ++i, j += PAGE_SIZE) {
+	for(i = 0, j = 0; i < num_pages_loaded; ++i, j += PAGE_SIZE) {
 		map_page((usercode_virtual + j),
-				(uint32_t)__PHYS(userprog_area + j), new_page_dir,
+				(uint32_t)__PHYS(userprog_pages[i]), new_page_dir,
 				PG_BIT_P | PG_BIT_RW | PG_BIT_US);
 	}
 
@@ -293,11 +319,11 @@ void init_process_1_xp(void* fun_addr)
 	npidu = get_new_pid();
 
 	// /dev/vga1
-	prepare_process(idle_forever, npid0, NULL, &fixed_file_list[DEV_VGA1]);
+	prepare_process(idle_process, npid0, NULL, &fixed_file_list[DEV_VGA1]);
 	// /dev/vga2
 	prepare_process(kernel_shell_proc, npid1, &fixed_file_list[DEV_KBD2], &fixed_file_list[DEV_VGA2]);
 	// /dev/vga0
-	prepare_process(idle_watched, npid2, NULL, &fixed_file_list[DEV_VGA0]);
+	prepare_process(idle_screen, npid2, NULL, &fixed_file_list[DEV_VGA0]);
 	//
 	prepare_process(start_user_process, npidu, &fixed_file_list[DEV_KBD3], &fixed_file_list[DEV_VGA3]);
 

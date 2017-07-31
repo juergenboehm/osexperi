@@ -70,6 +70,7 @@ extern semaphore_t init_sema_table[NUM_INIT_SEMAPHORES];
 
 extern semaphore_t ide_irq_sema;
 extern mutex_t ide_op_mutex;
+extern mutex_t ide_buf_mutex;
 
 extern mutex_t key_wait_mutex[NUM_SCREENS];
 

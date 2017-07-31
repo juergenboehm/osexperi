@@ -1,6 +1,7 @@
 
 
 #include "kernel32/process.h"
+#include "kernel32/objects.h"
 
 #include "libs32/klib.h"
 
@@ -16,6 +17,10 @@ volatile uint32_t timer_sema;
 volatile uint32_t system_time_in_secs;
 volatile uint32_t period_val;
 volatile uint32_t period_tenth_mus;
+volatile uint32_t system_ticks;
+
+list_head_t* global_alarm_list;
+
 
 
 tm_t tm_base;
@@ -29,6 +34,10 @@ void init_timer()
 	get_rtc_clock(&tm_base);
 
 	system_time_in_secs = mktime(&tm_base);
+
+	system_ticks = 0;
+
+	global_alarm_list = 0;
 
 }
 
@@ -51,9 +60,8 @@ void timer_irq_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 	outb(PIC1_COMMAND, PIC_EOI);
 	io_wait();
 
-	uint32_t esp_val = get_esp();
-
 #if 0
+	uint32_t esp_val = get_esp();
 	outb_printf("\n\ntimer_irq_handler: esp = 0x%08x\n\n", esp_val);
 #endif
 
@@ -63,6 +71,9 @@ void timer_irq_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 		period_val -= 10 * ONE_MILLION;
 		++system_time_in_secs;
 	}
+	++system_ticks;
+
+	process_wakeups();
 
 	schedule();
 
@@ -87,5 +98,101 @@ void timer_irq_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 
 }
 
+void process_wakeups()
+{
+	INIT_LISTVAR(p);
+
+	int i = 0;
+
+	while (p = global_alarm_list)
+	{
+		timer_node_t* ptnd = container_of(p, timer_node_t, link);
+		if (ptnd->timeval <= system_ticks)
+		{
+			wq_free(ptnd->wq);
+			delete_elem(&global_alarm_list, p);
+			free_timer_node_t(ptnd);
+		}
+		else
+		{
+			break;
+		}
+	}
+
+}
+
+
+
+void sleep(uint32_t timeval)
+{
+
+	uint32_t goal_time = system_ticks + timeval;
+
+	IRQ_CLI_SAVE(eflags);
+
+	INIT_LISTVAR(q);
+	INIT_LISTVAR(p);
+
+	q = 0;
+
+	uint32_t p_time = 0;
+
+	FORLIST(p, global_alarm_list)
+	{
+		timer_node_t * ptnd = container_of(p, timer_node_t, link);
+		if (ptnd->timeval >= goal_time)
+		{
+			p_time = ptnd->timeval;
+			break;
+		}
+		q = p;
+		p = p->next;
+	}
+	END_FORLIST(p, global_alarm_list);
+
+	timer_node_t* pnd = 0;
+	int new_timer = 0;
+
+	if (p_time == goal_time)
+	{
+		pnd = container_of(p, timer_node_t, link);
+	}
+	else
+	{
+		pnd = get_timer_node_t();
+		pnd->timeval = goal_time;
+		pnd->wq = get_wq_t();
+		wq_init(pnd->wq);
+		new_timer = 1;
+	}
+
+	if (new_timer)
+	{
+		if (!p)
+		{
+			// the list is empty: start a new list
+			prepend_list(&global_alarm_list, &(pnd->link));
+		}
+		else if (p && p != global_alarm_list && q)
+		{
+			// goal_time is smaller than node time at p: insert before p
+			insert_before(&global_alarm_list, &(pnd->link), p);
+		}
+		else if (p && p == global_alarm_list && q)
+		{
+			// goal_time is never smaller than node time: insert at end
+			insert_after(&global_alarm_list, &(pnd->link), global_alarm_list->prev);
+		}
+		else if (p && !q)
+		{
+			// the first element node time is already greater than goal_time: insert before p
+			insert_before(&global_alarm_list, &(pnd->link), p);
+		}
+	}
+
+	IRQ_RESTORE(eflags);
+
+	wq_wait(pnd->wq);
+}
 
 

@@ -3,6 +3,7 @@
 #include "drivers/vga.h"
 #include "drivers/keyb_decode.h"
 #include "drivers/ide.h"
+#include "fs/bufcache.h"
 #include "fs/vfs.h"
 #include "fs/gendrivers.h"
 
@@ -44,7 +45,7 @@ void init_file_ops()
 	init_file_ops_line(&keyb_driver_ops, NULL, &keyb_read, NULL, NULL, NULL, NULL, NULL,
 			NULL, NULL, NULL, NULL);
 	init_file_ops_line(&ide_driver_ops, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-			&readblk_ide, &writeblk_ide, NULL, NULL);
+			&readblk_ide_cached, &writeblk_ide_cached, NULL, NULL);
 	init_file_ops_line(&tty_driver_ops, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 			NULL, NULL, NULL, NULL);
 

@@ -186,7 +186,7 @@ kmain32:
 	movl	idt_table, %eax
 	movl	%eax, idt_ptr+2
 /APP
-/  162 "kernel32/startup32.c" 1
+/  163 "kernel32/startup32.c" 1
 	lidt idt_ptr
 /  0 "" 2
 /NO_APP
@@ -205,6 +205,7 @@ kmain32:
 	movl	$pci_addr_ide_contr, (%esp)
 	call	ide_init
 	movl	%eax, -48(%ebp)
+	call	init_bufcache
 	movl	$65536, (%esp)
 	call	malloc
 	movl	%eax, ide_buffer

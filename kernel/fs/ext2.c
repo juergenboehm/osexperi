@@ -423,7 +423,7 @@ int init_ext2_system(file_t* dev_file)
 	printf("Test ok.\n");
 #endif
 
-
+	return 0;
 }
 
 

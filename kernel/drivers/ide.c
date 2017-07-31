@@ -33,11 +33,6 @@ static uint16_t bmibase = 0;
 static uint8_t dma_mode_byte = 0;
 static uint8_t current_is_write = 0;
 
-#define BBUF_INVALID_INDEX  (1 << 31)
-
-static char* block_buffered = 0;
-static uint32_t blk_index_buffered = 0;
-
 
 
 int readblk_ide(file_t* fil, uint32_t blk_index, char **buf)
@@ -47,21 +42,14 @@ int readblk_ide(file_t* fil, uint32_t blk_index, char **buf)
 		return -1;
 	}
 
-	// crude one block buffering
-	if (blk_index_buffered == blk_index)
-	{
-		//outb_printf("from buffer %d ", blk_index);
-		memcpy(*buf, block_buffered, IDE_BLKSIZE);
-		return IDE_BLKSIZE;
-	}
-
 	int minor = GET_MINOR_DEVICE_NUMBER(fil->f_dentry->d_inode->i_device);
 
 	uint32_t dev_specific_offset = (minor == 0) ? 0:  DEV_IDE1_BLK_OFFSET;
 
 	blk_index += dev_specific_offset;
 
-	// outb_printf("readblk_ide: blk_index = %d :dev_specific_offset = %d\n", blk_index, dev_specific_offset);
+	//outb_printf("readblk_ide: blk_index = %d :dev_specific_offset = %d\n", blk_index, dev_specific_offset);
+	//outb_printf("readblk_ide: taking mutex ide_op_mutex ..\n");
 
 	mtx_lock(&ide_op_mutex);
 
@@ -75,9 +63,7 @@ int readblk_ide(file_t* fil, uint32_t blk_index, char **buf)
 
 	memcpy(*buf, ide_buffer, IDE_BLKSIZE);
 
-	blk_index_buffered = blk_index;
-	memcpy(block_buffered, *buf, IDE_BLKSIZE);
-
+	//outb_printf("readblk_ide: releasing mutex ide_op_mutex ..\n");
 	mtx_unlock(&ide_op_mutex);
 
 	return IDE_BLKSIZE;
@@ -88,15 +74,11 @@ int writeblk_ide(file_t* fil, uint32_t blk_index, char *buf)
 
 	int minor = GET_MINOR_DEVICE_NUMBER(fil->f_dentry->d_inode->i_device);
 
-	// crude one block buffering
-	if (blk_index == blk_index_buffered)
-	{
-		blk_index_buffered = BBUF_INVALID_INDEX;
-	}
-
 	uint32_t dev_specific_offset = (minor == 0) ? 0:  DEV_IDE1_BLK_OFFSET;
 
 	blk_index += dev_specific_offset;
+
+	//outb_printf("writeblk_ide : taking mutex ide_op_mutex ..\n");
 
 	mtx_lock(&ide_op_mutex);
 
@@ -112,9 +94,7 @@ int writeblk_ide(file_t* fil, uint32_t blk_index, char *buf)
 
 	uint32_t ok = ide_WRITE_DMA(ide_ctrl, prd_table, 1, blk_index, DEV_IDE_DEV_CODE);
 
-	blk_index_buffered = blk_index;
-	memcpy(block_buffered, buf, IDE_BLKSIZE);
-
+	//outb_printf("writeblk_ide: releasing mutex ide_op_mutex ..\n");
 	mtx_unlock(&ide_op_mutex);
 
 	return IDE_BLKSIZE;
@@ -202,6 +182,7 @@ uint32_t ide_init(pci_access_data_t* pci_dev)
 	bmibase &= 0xfffc; // lowest two bits zeroed out
 
 	mtx_init(&ide_op_mutex, 0, 0);
+	mtx_init(&ide_buf_mutex, 0, 0);
 	sema_init(&ide_irq_sema, 0, 0, 0);
 
 
@@ -225,8 +206,6 @@ uint32_t ide_init(pci_access_data_t* pci_dev)
 
 	//ide_PACKET();
 
-	block_buffered = (char*) malloc(IDE_BLKSIZE);
-	blk_index_buffered = BBUF_INVALID_INDEX;
 
 	return 1;
 

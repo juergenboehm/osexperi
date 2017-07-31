@@ -8,9 +8,9 @@
 
 void display_tss(tss_t* tss);
 
-void idle_forever();
+void idle_process();
 void kernel_shell_proc();
-void idle_watched();
+void idle_screen();
 
 extern int ext2_system_on;
 

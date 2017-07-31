@@ -75,6 +75,14 @@ wq_t* get_wq_t()
 	return p_new_wq_t;
 }
 
+timer_node_t * get_timer_node_t()
+{
+	timer_node_t* ptnd = (timer_node_t*) malloc(sizeof(timer_node_t));
+	memset(ptnd, 0, sizeof(timer_node_t));
+	return ptnd;
+}
+
+
 
 
 void free_process_node_t(process_node_t* pnd)
@@ -98,6 +106,12 @@ void free_wq_t(wq_t* p_wqt)
 {
 	free(p_wqt);
 }
+
+void free_timer_node_t(timer_node_t* ptnd)
+{
+	free(ptnd);
+}
+
 
 void init_objects()
 {

@@ -47,6 +47,8 @@ void syscall_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 
 	 *(GET_REG_32(esp, IRQ_REG_OFFSET_AX)) = retval;
 
+	 process_signals((uint32_t)esp);
+
 }
 
 int sys_open(char* fname, uint32_t fmode)

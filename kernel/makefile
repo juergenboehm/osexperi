@@ -64,6 +64,7 @@ objectsC_kernel32 = kernel32/startup32.o \
 			fs/vfs.o \
 			fs/ext2.o \
 			fs/gendrivers.o \
+			fs/bufcache.o \
 			drivers/pci.o \
 			mem/paging.o \
 			mem/memareas.o \
@@ -142,7 +143,7 @@ kernel32.o: $(objects32_kernel)
 
 user.bin: $(objectsS_kernel_user_mode) $(objectsC_kernel_user_mode)
 	$(LD) $(ldflags) -o user.bin $(objectsS_kernel_user_mode) $(objectsC_kernel_user_mode) \
-			 -T ./ldscript.user.ls
+			 -lgcc -T ./ldscript.user.ls
 
 
 
