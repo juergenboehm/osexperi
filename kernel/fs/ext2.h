@@ -1,6 +1,7 @@
-
 #ifndef __fs_ext2_h
 #define __fs_ext2_h
+
+#include "fs/vfs.h"
 
 #define SIZE_SB		1024
 #define OFFSET_SB	1024
@@ -9,9 +10,44 @@
 
 #define MAX_PATH_COMPONENTS 32
 
+#define AUX_BLOCK_SIZE	4096
 
-#define EXT2_S_IFDIR	0x4000
+
+#define EXT2_S_IFSOCK	0xC000
+#define EXT2_S_IFLNK	0xA000
 #define EXT2_S_IFREG	0x8000
+#define EXT2_S_IFBLK	0x6000
+#define EXT2_S_IFDIR	0x4000
+#define EXT2_S_IFCHR	0x2000
+#define EXT2_S_IFIFO	0x1000
+
+#define EXT2_S_IRUSR	0x0100
+#define EXT2_S_IWUSR	0x0080
+#define EXT2_S_IXUSR	0x0040
+#define EXT2_S_IRGRP	0x0020
+#define EXT2_S_IWGRP	0x0010
+#define EXT2_S_IXGRP	0x0008
+#define EXT2_S_IROTH	0x0004
+#define EXT2_S_IWOTH	0x0002
+#define EXT2_S_IXOTH	0x0001
+
+#define EXT2_FT_UNKNOWN		0
+#define EXT2_FT_REG_FILE	1
+#define EXT2_FT_DIR				2
+
+#define EXT2_NAMELEN		255
+
+
+
+
+
+#define SI_INDEX	12
+#define DI_INDEX	13
+#define TI_INDEX	14
+
+#define BLKNUM_TO_OFFSET(blk, blk_size) ((blk) * (blk_size))
+
+#define GET_BLOCKSIZE_EXT2(sb) (1024 << (sb->s_log_block_size))
 
 typedef struct superblock_ext2_s {
 /*0	4 */ uint32_t	s_inodes_count;
@@ -121,6 +157,50 @@ typedef struct dir_entry_ext2_s
 	uint8_t		file_type;
 } dir_entry_ext2_t;
 
+typedef struct blk_iterator_s
+	blk_iterator_t;
+
+
+typedef struct file_ext2_s
+{
+	file_t* dev_file;
+	superblock_ext2_t* sb;
+
+	inode_ext2_t* pinode;
+
+	uint32_t inode_index;
+	uint32_t offset_inode;
+
+	bg_desc_ext2_t* pbgd;
+	uint32_t pbgd_index;
+
+	blk_iterator_t* it_lpos;
+	blk_iterator_t* it_end;
+
+
+
+} file_ext2_t;
+
+
+typedef struct blk_iterator_s
+{
+	int mode;
+	uint32_t index[4];
+	char* blks[4];
+	int blk_valid[4];
+	uint32_t blks_blk[4];
+
+	file_ext2_t* file;
+	inode_ext2_t* pinode;
+	uint32_t inode_pos;
+
+	int code;
+	file_t *dev_file;
+	uint32_t offset;
+
+
+} blk_iterator_t;
+
 
 extern superblock_ext2_t* gsb_ext2;
 
@@ -128,33 +208,83 @@ extern uint32_t g_blocks_per_group_ext2;
 
 extern bg_desc_ext2_t* gbgd_ext2;
 
-// operations
 
-void test_ide_rw_blk(file_t* dev_file);
+
+// ext2 routines
+
+
+int read_superblock_ext2(file_t* dev_file, superblock_ext2_t* sb);
+int write_superblock_ext2(file_t* dev_file, superblock_ext2_t* sb);
+
 
 int init_superblock_ext2(file_t* dev_file);
 int init_ext2_system(file_t* dev_file);
 
 int print_sb_ext2(superblock_ext2_t* sb);
+int print_bgdesc_ext2(bg_desc_ext2_t* pbgdesc);
+int print_inode_ext2(inode_ext2_t* pinode);
 
 
-int read_inode_ext2(file_t* dev_file, uint32_t inode_index, inode_ext2_t* pinode);
+int read_inode_ext2(file_ext2_t* file, uint32_t inode_index);
+int read_bgdesc_ext2(file_t* dev_file, bg_desc_ext2_t* pbgd, uint32_t bg_index);
+
+int write_inode_ext2(file_ext2_t* filp);
 
 
 
-int readdir_ext2(file_t *dev_file, inode_ext2_t *pinode, dir_entry_ext2_t* dir_entry,
+int readdir_ext2(file_ext2_t* file, dir_entry_ext2_t* dir_entry,
 		char* namebuf, uint32_t *dir_offset);
-int read_file_ext2(file_t* dev_file, inode_ext2_t *pinode, char* buf, uint32_t count, uint32_t offset);
+int read_file_ext2(file_ext2_t* file, char* buf, uint32_t counta, uint32_t offseta);
+int write_file_ext2(file_ext2_t* file, char* buf, uint32_t counta, uint32_t offseta);
 
-int parse_path_ext2(file_t* dev_file, char* path, inode_ext2_t *pinode);
+int parse_path_ext2(file_ext2_t* file_pwd, uint32_t mode, char* path,
+		file_ext2_t *file, char* last_fname);
+
 
 int get_indirect_blocks(uint32_t offset, uint32_t* index_arr, uint32_t *mode);
 int test_get_indirect_blocks();
 
 
-int display_directory_ext2(file_t* dev_file, inode_ext2_t* pinode);
-int display_regular_file_ext2(file_t* dev_file, inode_ext2_t* pinode);
-int display_inode_ext2(file_t* dev_file, inode_ext2_t* pinode);
+int display_directory_ext2(file_ext2_t *file);
+int display_regular_file_ext2(file_ext2_t *file);
+int display_inode_ext2(file_ext2_t *file);
+
+int read_from_dev(file_t* dev_file, char* buf, uint32_t count, uint32_t offset);
+int write_to_dev(file_t* dev_file, char* buf, uint32_t count, uint32_t offset);
+
+
+
+int blk_iterator_init(blk_iterator_t *it, file_ext2_t* file,
+		uint32_t offset);
+int blk_iterator_destroy(blk_iterator_t* it);
+
+int blk_iterator_next(blk_iterator_t *it, uint32_t offset_new);
+
+uint32_t blk_iterator_get_blk_index(blk_iterator_t *it);
+
+
+
+inode_ext2_t* alloc_inode_ext2();
+bg_desc_ext2_t* alloc_bg_desc_ext2();
+blk_iterator_t* alloc_blk_iterator();
+superblock_ext2_t* alloc_superblock_ext2();
+file_ext2_t* alloc_file_ext2();
+
+int copy_file_ext2(file_ext2_t* fdest, file_ext2_t* fsrc);
+int destroy_file_ext2(file_ext2_t* fdestr);
+
+void init_file_ext2(file_ext2_t* filp, file_t* dev_file, superblock_ext2_t* sb);
+
+
+// randomized testing ext2 file writes
+
+int test_ext2_write(file_t* dev_file, superblock_ext2_t* sb, int no_runs);
+
+// old ide rw test
+
+void test_read_write(file_t* dev_file);
+
+
 
 
 #endif

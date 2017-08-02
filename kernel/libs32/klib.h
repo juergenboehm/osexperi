@@ -136,6 +136,7 @@ void parse_buf(char* buf, int len, char* delims, int* argc, char* argv[]);
 
 void* memcpy(void* dest, void* src, size_t n);
 void* memset(void* dest, uint8_t val, size_t n);
+int memcmp(void* dest, void* src, size_t n);
 
 
 // new print with file descriptors

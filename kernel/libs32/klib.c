@@ -928,6 +928,24 @@ void* memset(void* dest, uint8_t val, size_t n)
   return dest;
 }
 
+int memcmp(void* dest, void* src, size_t n)
+{
+	size_t i = 0;
+	uint8_t* p = dest;
+	uint8_t* q = src;
+	while (i < n)
+	{
+		if (*p++ != *q++)
+		{
+			break;
+		}
+		++i;
+	}
+	return i < n;
+}
+
+
+
 
 static uint32_t rand_val = 27182811;
 

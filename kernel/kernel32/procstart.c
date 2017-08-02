@@ -169,15 +169,21 @@ void start_user_process()
 	int nlen = strlen(demo_path);
 
 	//outb_printf("nlen = %d : demo_path = %s", nlen, demo_path);
-	char* copy_path = (char*) malloc(nlen + 1);
-	memcpy(copy_path, demo_path, nlen + 1);
-	copy_path[nlen] = 0;
 
-	printf("copy_path = %s\n", copy_path);
+	file_ext2_t root_dir;
+	init_file_ext2(&root_dir, dev_file, gsb_ext2);
+	file_ext2_t user_bin_file;
+	init_file_ext2(&user_bin_file, dev_file, gsb_ext2);
 
-  parse_path_ext2(dev_file, copy_path, &res_inode);
 
-	uint32_t user_prog_size = res_inode.i_size;
+	read_inode_ext2(&root_dir, 2);
+
+	char* last_fname = (char*) malloc(EXT2_NAMELEN + 1);
+
+	parse_path_ext2(&root_dir, 0, demo_path, &user_bin_file, last_fname);
+
+
+	uint32_t user_prog_size = user_bin_file.pinode->i_size;
 
 	uint32_t count = user_prog_size;
 	uint32_t offset = 0;
@@ -187,7 +193,7 @@ void start_user_process()
 	{
 		uint32_t to_read = min(count, PAGE_SIZE);
 		char* userprog_area = (char*)get_page_with_refcnt(0);
-		int nrd = read_file_ext2(dev_file, &res_inode, userprog_area, to_read, offset);
+		int nrd = read_file_ext2(&user_bin_file, userprog_area, to_read, offset);
 
 		ASSERT(nrd == to_read);
 
@@ -204,6 +210,11 @@ void start_user_process()
 
 	outb_printf("user.bin loaded: size = %d : pages_loaded = %d.\n",
 			user_prog_size, num_pages_loaded);
+
+	destroy_file_ext2(&user_bin_file);
+	destroy_file_ext2(&root_dir);
+
+	free(last_fname);
 
 	//while (1) {};
 

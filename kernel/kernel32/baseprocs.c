@@ -62,6 +62,33 @@ void display_tss(tss_t* tss)
 
 }
 
+int syncj(int j)
+{
+	mtx_lock(&ide_buf_mutex);
+
+	INIT_LISTVAR(p);
+
+	FORLIST(p, global_ide_buf_list[j].use_list_head)
+	{
+		buf_node_t* pbuf = container_of(p, buf_node_t, link);
+		if (pbuf->dirty)
+		{
+			outb_printf("written dirty sec: %d\n", pbuf->sec_num);
+			writeblk_ide(pbuf->fil, pbuf->sec_num, pbuf->bufp);
+			pbuf->dirty = 0;
+		}
+		p = p->next;
+	}
+	END_FORLIST(p, global_ide_buf_list[j].use_list_head);
+
+
+	mtx_unlock(&ide_buf_mutex);
+
+
+	return 0;
+
+}
+
 void idle_process()
 {
 
@@ -76,30 +103,11 @@ void idle_process()
 
 		{
 
-			outb_printf("idle_process: before mtx_lock ide_buf_mutex : writing hash list %d\n", j);
+			outb_printf("idle_process: writing hash list %d\n", j);
 
-			mtx_lock(&ide_buf_mutex);
-
-			INIT_LISTVAR(p);
-
-			FORLIST(p, global_ide_buf_list[j].use_list_head)
-			{
-				buf_node_t* pbuf = container_of(p, buf_node_t, link);
-				if (pbuf->dirty)
-				{
-					outb_printf("written dirty sec: %d\n", pbuf->sec_num);
-					writeblk_ide(pbuf->fil, pbuf->sec_num, pbuf->bufp);
-					pbuf->dirty = 0;
-				}
-				p = p->next;
-			}
-			END_FORLIST(p, global_ide_buf_list[j].use_list_head);
+			syncj(j);
 
 			j = (j+1) % NUM_HASH_IDE_BUF_LIST;
-
-			outb_printf("idle_process: unlock ide_buf_mutex\n");
-
-			mtx_unlock(&ide_buf_mutex);
 
 			sleep(2);
 
@@ -254,6 +262,22 @@ void print_proc_info_line(process_t* proc)
 			proc->proc_data.ticks,
 			proc_state_list[proc->proc_data.status],
 			proc->proc_data.in_wq);
+}
+
+
+int execute_sync(int argc, char* argv[])
+{
+
+	int j;
+
+	for(j = 0; j < NUM_HASH_IDE_BUF_LIST; ++j)
+	{
+		syncj(j);
+	}
+
+	printf("sync: done.\n");
+
+	return 0;
 }
 
 
@@ -807,7 +831,7 @@ int execute_ide(int argc, char* argv[])
 	{
 		// do read through file /dev/ide<x>
 		file_t* devide1 = &fixed_file_list[DEV_IDE];
-		test_ide_rw_blk(devide1);
+		test_read_write(devide1);
 	}
 	break;
 
@@ -868,17 +892,28 @@ int execute_cat(int argc, char* argv[])
 	int nlen = strlen(demo_path);
 
 	//outb_printf("nlen = %d : demo_path = %s", nlen, demo_path);
-	char* copy_path = (char*) malloc(nlen + 1);
-	memcpy(copy_path, demo_path, nlen + 1);
-	copy_path[nlen] = 0;
 
-	parse_path_ext2(dev_file, copy_path, &res_inode);
+	file_ext2_t root_dir;
+	init_file_ext2(&root_dir, dev_file, gsb_ext2);
+	file_ext2_t out_file;
+	init_file_ext2(&out_file, dev_file, gsb_ext2);
+
+
+	read_inode_ext2(&root_dir, 2);
+
+	char* last_fname = (char*) malloc(EXT2_NAMELEN + 1);
+
+	parse_path_ext2(&root_dir, 0, demo_path, &out_file, last_fname);
 
 	printf("content of %s\n", demo_path);
 
-	display_inode_ext2(dev_file, &res_inode);
+	display_inode_ext2(&out_file);
 
-	free(copy_path);
+	destroy_file_ext2(&out_file);
+	destroy_file_ext2(&root_dir);
+
+	free(last_fname);
+
 
 	return 0;
 
@@ -921,7 +956,8 @@ exec_struct_t my_commands[] = { {"calc", execute_calc},
 																	{"sem", execute_sem},
 																	{"ide", execute_ide},
 																	{"cat", execute_cat},
-																	{"date", execute_date}};
+																	{"date", execute_date},
+																	{"sync", execute_sync}};
 
 
 void dispatch_op(exec_struct_t *commands, int ncommands, int argc, char* argv[])

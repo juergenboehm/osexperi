@@ -39,6 +39,8 @@ void init_timer()
 
 	global_alarm_list = 0;
 
+	mtx_init(&timer_sleep_mutex, 0, 0);
+
 }
 
 uint32_t get_secs_time()
@@ -128,7 +130,7 @@ void sleep(uint32_t timeval)
 
 	uint32_t goal_time = system_ticks + timeval;
 
-	IRQ_CLI_SAVE(eflags);
+	mtx_lock(&timer_sleep_mutex);
 
 	INIT_LISTVAR(q);
 	INIT_LISTVAR(p);
@@ -190,7 +192,7 @@ void sleep(uint32_t timeval)
 		}
 	}
 
-	IRQ_RESTORE(eflags);
+	mtx_unlock(&timer_sleep_mutex);
 
 	wq_wait(pnd->wq);
 }
