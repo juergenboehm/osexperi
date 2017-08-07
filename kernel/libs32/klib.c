@@ -1014,12 +1014,18 @@ void parse_buf(char* buf, int len, char* delims, int* argc, char* argv[])
 
 static int month_yday[12] = {0,31,59,90,120,151,181,212,243,273,304,334};
 
+static int month_yday_lp[12] = {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335};
+
 // returns seconds since epoch = 01-01-1970 00:00:00
 time_t mktime(tm_t* tm)
 {
 	uint32_t tm_year = tm->year - 1900;
 
-	uint32_t tm_yday = month_yday[tm->month-1] + tm->day - 1;
+	int is_leap_year = !(tm->year % 4);
+
+	int* month_yday_akt = is_leap_year ? month_yday_lp : month_yday;
+
+	uint32_t tm_yday = month_yday_akt[tm->month-1] + tm->day - 1;
 
 	time_t val =
 			tm->sec + tm->minute * 60 + tm->hour * 3600 + tm_yday * 86400 +
@@ -1081,12 +1087,14 @@ tm_t* gmtime_r(time_t time, tm_t* tm)
 
 	year += 1970;
 
+	int* month_yday_akt = !(year % 4) ? month_yday_lp : month_yday;
+
 	int i = 0;
-	while (i < 12 && month_yday[i] * DAY_IN_SECS <= time1)
+	while (i < 12 && month_yday_akt[i] * DAY_IN_SECS <= time1)
 	{
 		++i;
 	}
-	uint32_t yday_month = month_yday[i-1];
+	uint32_t yday_month = month_yday_akt[i-1];
 	uint32_t month = i;
 
 	time1 -= yday_month * DAY_IN_SECS;

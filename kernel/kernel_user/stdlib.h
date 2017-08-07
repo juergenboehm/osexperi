@@ -89,6 +89,11 @@ static inline void outb(uint16_t port, uint8_t val)
 // the putc, getc functions
 
 
+int printf(char* format, ... );
+int fprintf(int fd, char* format, ... );
+
+
+
 
 // some string routines
 

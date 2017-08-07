@@ -1304,6 +1304,33 @@ printf:
 	leave
 	ret
 	.size	printf, .-printf
+	.globl	fprintf
+	.type	fprintf, @function
+fprintf:
+	pushl	%ebp
+	movl	%esp, %ebp
+	subl	$1064, %esp
+	movl	$0, -12(%ebp)
+	movl	12(%ebp), %eax
+	movl	%eax, -16(%ebp)
+	leal	16(%ebp), %eax
+	movl	%eax, -1044(%ebp)
+	movl	-1044(%ebp), %eax
+	movl	%eax, 12(%esp)
+	movl	12(%ebp), %eax
+	movl	%eax, 8(%esp)
+	movl	$1024, 4(%esp)
+	leal	-1040(%ebp), %eax
+	movl	%eax, (%esp)
+	call	vprintf
+	movl	8(%ebp), %eax
+	leal	-1040(%ebp), %edx
+	movl	%edx, 4(%esp)
+	movl	%eax, (%esp)
+	call	kprint_str
+	leave
+	ret
+	.size	fprintf, .-fprintf
 	.globl	outb_printf
 	.type	outb_printf, @function
 outb_printf:
@@ -1339,16 +1366,16 @@ strlen:
 	movl	$0, -4(%ebp)
 	movl	8(%ebp), %eax
 	movl	%eax, -8(%ebp)
-	jmp	.L143
-.L144:
+	jmp	.L145
+.L146:
 	addl	$1, -4(%ebp)
-.L143:
+.L145:
 	movl	-8(%ebp), %eax
 	leal	1(%eax), %edx
 	movl	%edx, -8(%ebp)
 	movzbl	(%eax), %eax
 	testb	%al, %al
-	jne	.L144
+	jne	.L146
 	movl	-4(%ebp), %eax
 	leave
 	ret

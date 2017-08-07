@@ -655,6 +655,27 @@ int printf(char* format, ... )
 
 }
 
+
+int fprintf(int fd, char* format, ... )
+{
+	int i = 0;
+	char* p = format;
+
+	char buffer[1024];
+
+	va_list ap;
+
+	va_start(ap, format);
+
+	vprintf(buffer, 1024, format, ap);
+
+	va_end(ap);
+
+	return kprint_str(fd, buffer);
+
+}
+
+
 int outb_printf(char* format, ... )
 {
 	int i = 0;

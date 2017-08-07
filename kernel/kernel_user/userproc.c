@@ -143,21 +143,19 @@ void uproc_1()
 		if (j != 0)
 		{
 			++cnt;
-			printf(" %d ", i);
+			fprintf(3, " %d ", i);
 			if (!(cnt % 4))
 			{
-				printf("\n");
+				fprintf(3, "\n");
 			}
 		}
 		i = i + 1;
 		//outb_0xe9('A');
 		if (i % 8 == 0)
 		{
-			WAIT(126 * (1 << 24));
+			WAIT((1 << 10));
 		}
 	}
-
-	//udisplay_tss(&process_table[0]->proc_data.tss);
 
 	while (1);
 }

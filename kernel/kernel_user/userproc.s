@@ -223,15 +223,17 @@ uproc_1:
 	je	.L23
 	addl	$1, -20(%ebp)
 	movl	-12(%ebp), %eax
-	movl	%eax, 4(%esp)
-	movl	$.LC9, (%esp)
-	call	printf
+	movl	%eax, 8(%esp)
+	movl	$.LC9, 4(%esp)
+	movl	$3, (%esp)
+	call	fprintf
 	movl	-20(%ebp), %eax
 	andl	$3, %eax
 	testl	%eax, %eax
 	jne	.L23
-	movl	$.LC10, (%esp)
-	call	printf
+	movl	$.LC10, 4(%esp)
+	movl	$3, (%esp)
+	call	fprintf
 .L23:
 	addl	$1, -12(%ebp)
 	movl	-12(%ebp), %eax
@@ -244,7 +246,7 @@ uproc_1:
 	movl	$0, -48(%ebp)
 	addl	$1, -32(%ebp)
 .L24:
-	cmpl	$2113929215, -32(%ebp)
+	cmpl	$1023, -32(%ebp)
 	jle	.L25
 .L18:
 	cmpl	$1073741823, -12(%ebp)

@@ -37,6 +37,8 @@ uint32_t esp0_global;
 uint32_t ax_old;
 uint32_t cx_old;
 
+process_t* last_process_added;
+
 
 
 void insert_process(process_t * proc, list_head_t** pproc_list_head, uint32_t status)
@@ -96,6 +98,8 @@ void prepare_process(void* fun_addr, int pid, file_t* f_stdin, file_t* f_stdout)
 	uint32_t i;
 
 	process_t* new_process = get_process_t();
+
+	last_process_added = new_process;
 
 	attach_io_block(new_process, f_stdin, f_stdout);
 
@@ -330,15 +334,17 @@ void init_process_1_xp(void* fun_addr)
 	npidu = get_new_pid();
 
 	// /dev/vga1
-	prepare_process(idle_process, npid0, NULL, &fixed_file_list[DEV_VGA1]);
+	prepare_process(idle_process, npid0, NULL, NULL);
 	// /dev/vga2
-	prepare_process(kernel_shell_proc, npid1, &fixed_file_list[DEV_KBD2], &fixed_file_list[DEV_VGA2]);
+	prepare_process(kernel_shell_proc, npid1, &fixed_file_list[DEV_KBD1], &fixed_file_list[DEV_VGA1]);
 	// /dev/vga0
 	prepare_process(idle_screen, npid2, NULL, &fixed_file_list[DEV_VGA0]);
 	//
-	prepare_process(start_user_process, npidu, &fixed_file_list[DEV_KBD3], &fixed_file_list[DEV_VGA3]);
+	prepare_process(start_user_process, npidu, &fixed_file_list[DEV_KBD2], &fixed_file_list[DEV_VGA2]);
 
-	//current_node = container_of(global_proc_list, process_node_t, link);
+	last_process_added->proc_data.io_block->base_fd_arr[3] = &fixed_file_list[DEV_VGA3];
+	last_process_added->proc_data.io_block->base_fd_arr[2] = &fixed_file_list[DEV_KBD3];
+
 
 	current = 0;
 
@@ -369,71 +375,6 @@ void init_process_1_xp(void* fun_addr)
 
 	// current is the first user process
 
-#if 0
-	current = get_process_t();
-	insert_process(current, &global_proc_list, PROC_READY);
-	current_node = container_of(global_proc_list, process_node_t, link);
-
-	p_tss_current = &current->proc_data.tss;
-
-	memset(current, 0, sizeof(process_t));
-	memset(&current->proc_data.tss, 0, sizeof(tss_t));
-
-	// /dev/vga3
-	attach_io_block(current, &fixed_file_list[DEV_KBD3], &fixed_file_list[DEV_VGA3]);
-
-	uint32_t npid3 = get_new_pid();
-
-	init_proc_basic(current, npid3 , 0);
-
-	current->proc_data.status = PROC_READY;
-
-	init_proc_handler(current);
-
-	uint32_t* esp0_system = (uint32_t*)PROC_STACK_BEG(current);
-
-	init_proc_tss_stacks(current, (uint32_t) esp0_system, USER32_STACK);
-
-
-	page_table_entry_t* new_page_dir;
-	make_page_directory(&new_page_dir_phys_addr, &new_page_dir);
-
-	init_proc_cr3(current, new_page_dir_phys_addr);
-
-	printf("new page dir phys addr = %08x\n", new_page_dir_phys_addr);
-
-	//WAIT(30 * (1 << 24));
-
-	const int is_user_mode_process = 1;
-
-	init_proc_tss_segments(current, is_user_mode_process);
-
-	init_proc_eip(current, (uint32_t) fun_addr, 0);
-
-
-	IRQ_CLI_SAVE(eflags);
-	init_proc_eflags(current, eflags | (1 << 9));
-
-	printf("current->eflags = %08x\n", current->proc_data.tss.eflags);
-
-	//WAIT(1 << 24);
-
-	DEBUGOUT(0, "_usercode_phys = %08x\nlen16 = %08x\nlen32 = %08x\n", _usercode_phys, _len16, _len32);
-
-	//uint32_t real_usercode_phys = 0x100000 + _usercode_phys;
-
-
-
-/*
-		void* p = __VADDR(real_usercode_phys + j);
-		page_desc_t* pdesc = BLK_PTR(ADDR_TO_PDESC_INDEX(p));
-		++pdesc->use_cnt;
-*/
-
-	DEBUGOUT(0, "pages mapped.\n");
-
-#endif
-
 
 	proc_switch_count = 0;
 
@@ -447,7 +388,7 @@ void init_process_1_xp(void* fun_addr)
 
 	//WAIT(20 * (1 << 24));
 
-	screen_current = 2;
+	screen_current = 1;
 
 	schedule_off = 0;
 
