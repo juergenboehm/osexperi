@@ -1,12 +1,11 @@
 
-//#include "drivers/vga.h"
 #include "libs/utils.h"
 #include "libs/kerneldefs.h"
-//#include "mem/paging.h"
-//#include "mem/pagedesc.h"
-//#include "kernel32/irq.h"
 
 #include "syscalls/syscalls.h"
+
+#include "fs/fcntl.h"
+
 
 #include "kernel_user/stdlib.h"
 
@@ -24,6 +23,22 @@ __NOINLINE static uint32_t make_syscall1(uint32_t code, uint32_t arg1)
 
 	return ret;
 }
+
+
+__NOINLINE static uint32_t make_syscall2(uint32_t code, uint32_t arg1, uint32_t arg2)
+{
+	uint32_t ret;
+
+	asm __volatile__ ( "movl %1, %%eax \n\t" \
+										 "movl %2, %%ebx \n\t" \
+										 "movl %3, %%ecx \n\t" \
+										 "int $0x80 \n\t" \
+										 "movl %%eax, %0" \
+			: "=g"(ret) : "g"(code), "g"(arg1), "g"(arg2): "%eax", "%ebx", "%ecx");
+
+	return ret;
+}
+
 
 
 __NOINLINE static uint32_t make_syscall3(uint32_t code, uint32_t arg1, uint32_t arg2, uint32_t arg3)
@@ -65,14 +80,57 @@ static void __attribute__ ((stdcall))  handler_wrapper(uint32_t arg)
 int register_handler(void *address_of_handler)
 {
 	*HANDLER_ADDRESS = (uint32_t) address_of_handler;
-	return make_syscall1(SC_SYS_REGISTER_HANDLER, (uint32_t) handler_wrapper);
+	return make_syscall1(SC_SYS_REGISTER_HANDLER_NO, (uint32_t) handler_wrapper);
 }
 
 
 int fork()
 {
-	return make_syscall1(SC_SYS_FORK, (uint32_t) 0);
+	return make_syscall1(SC_SYS_FORK_NO, (uint32_t) 0);
 }
+
+
+
+int open(char *pathname, int flags, ...)
+{
+	mode_t mode = 0;
+	int retval;
+
+	va_list ap;
+
+	va_start(ap, flags);
+
+	if (flags & O_CREAT)
+	{
+		mode = va_arg(ap, mode_t);
+		retval = make_syscall3(SC_SYS_OPEN_3_NO, (uint32_t) pathname, (uint32_t) flags, (uint32_t) mode);
+	}
+	else
+	{
+		retval = make_syscall2(SC_SYS_OPEN_NO, (uint32_t) pathname, (uint32_t) flags);
+	}
+
+	va_end(ap);
+
+	return retval;
+}
+
+
+int read(int fd, void *buf, size_t count)
+{
+	return make_syscall3(SC_SYS_READ_NO, (uint32_t) fd, (uint32_t) buf, (uint32_t) count);
+}
+
+int write(int fd, const void *buf, size_t count)
+{
+	return make_syscall3(SC_SYS_WRITE_NO, (uint32_t) fd, (uint32_t) buf, (uint32_t) count);
+
+}
+
+
+
+/****************************************************************************************************/
+
 
 int getc(uint32_t fd)
 {
@@ -306,7 +364,7 @@ static char* parse_format_command(char *p, fmt_flag_type* flags,
 
 #if 0
 
-static uint64_t __udivdi3(uint64_t num, uint64_t den)
+static uint64_t q__udivdi3(uint64_t num, uint64_t den)
 {
 	uint64_t q = 0;
 
@@ -335,7 +393,7 @@ static uint64_t __udivdi3(uint64_t num, uint64_t den)
 	return q;
 }
 
-static uint64_t __umoddi3(uint64_t num, uint64_t den)
+static uint64_t q__umoddi3(uint64_t num, uint64_t den)
 {
 
 	return num - __udivdi3(num, den) * den;
@@ -398,8 +456,8 @@ static int int_to_str(char* buf, size_t buf_size, long long val, unsigned int ba
 
 	while(val_akt_pos > 0)
 	{
-		size_t digit = __umoddi3(val_akt_pos, base); // val_akt_pos % base;
-		val_akt_pos = __udivdi3(val_akt_pos, base); // /= base;
+		size_t digit = val_akt_pos % base; // __umoddi3(val_akt_pos, base); // val_akt_pos % base;
+		val_akt_pos /= base; //__udivdi3(val_akt_pos, base); // /= base;
 
 		*pp++ = (digit < max_digit) ? digits[digit] : '?';
 

@@ -128,6 +128,9 @@ int strlen(char* str);
 
 int atoi(char* str);
 
+uint64_t strhash(char* str);
+
+
 void parse_buf(char* buf, int len, char* delims, int* argc, char* argv[]);
 
 

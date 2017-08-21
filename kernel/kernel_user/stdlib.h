@@ -4,6 +4,8 @@
 #include "kerneltypes.h"
 #include "drivers/keyb.h"
 
+#include "fs/fcntl.h"
+
 
 // some typical defines
 
@@ -58,6 +60,9 @@ uint32_t FILE;
 int printf(char* format, ... );
 int outb_printf(char* format, ... );
 
+int fprintf(int fd, char* format, ... );
+
+
 // read from keyboard
 
 int getc(uint32_t fd);
@@ -89,8 +94,6 @@ static inline void outb(uint16_t port, uint8_t val)
 // the putc, getc functions
 
 
-int printf(char* format, ... );
-int fprintf(int fd, char* format, ... );
 
 
 
@@ -116,7 +119,11 @@ int register_handler(void *address_of_handler);
 int fork();
 
 
+int open(char *pathname, int flags, ...);
 
+
+int read(int fd, void *buf, size_t count);
+int write(int fd, const void *buf, size_t count);
 
 
 #endif

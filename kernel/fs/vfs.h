@@ -12,6 +12,20 @@
 
 #define INODE_TYPE_GENERIC		0
 
+#define DEV_FS_CODE		0
+
+
+#define MAX_PATH_COMPONENTS 32
+
+#define FILE_NAMELEN	255
+
+
+#define SEEK_SET	0	/* seek relative to beginning of file */
+#define SEEK_CUR	1	/* seek relative to current file position */
+#define SEEK_END	2	/* seek relative to end of file */
+
+
+
 
 
 struct superblk_ops_s;
@@ -22,14 +36,17 @@ struct file_ops_s;
 struct dentry_s;
 struct inode_s;
 
+typedef struct dentry_s dentry_t;
+typedef struct inode_s inode_t;
+
 
 typedef struct superblock_s {
 
 	uint32_t	s_device_id;
-	struct inode_s* s_first_inode;
-	struct inode_s* s_mount_point;
+	inode_t* s_first_inode;
+	inode_t* s_mount_point;
 
-	struct dentry_s* s_root;
+	dentry_t* s_root;
 
 	short s_blocksize;
 	short s_blocksize_bits;  // blocksize in bits;
@@ -42,15 +59,19 @@ typedef struct superblock_s {
 
 typedef struct superblk_ops_s {
 
-	int (*read_inode)(struct inode_s* inode);
-	int (*write_inode)(struct inode_s* inode);
+	int (*read_inode)(inode_t* inode);
+	int (*write_inode)(inode_t* inode);
 } superblk_ops_t;
 
+
+#define MK_INO_NO(fs_code, ino_code) ((((uint64_t) (fs_code)) << 32) + (ino_code))
+#define GET_FS_CODE(ino) (((ino) >> 32))
+#define GET_INO_CODE(ino) ((ino) & (((uint64_t)(1 << 32)) - 1))
 
 
 typedef	struct inode_s {
 
-	unsigned long i_ino;				// inode number !! uniquely identifies this inode !!
+	uint64_t i_ino;				// inode number !! uniquely identifies this inode !!
 
 	uint32_t	i_device;								// device number of device holding this inode
 	
@@ -68,22 +89,26 @@ typedef	struct inode_s {
 	
 	unsigned int i_blkbits;	 		// blocksize in bits
 
-	unsigned long	i_blocks;	 		// number of blocks in file
-	unsigned short i_bytes;  		// number of bytes in last block
+	uint64_t	i_blocks;	 		// number of blocks in file
+	uint32_t i_bytes;  		// number of bytes in last block
 	loff_t i_size;					 		// file size in bytes
+
+	uint32_t i_dentries_refcnt;
+
+	void*	i_concrete_inode;
 
 } inode_t;
 
 
 typedef struct inode_ops_s {
 
-	int (*create)(inode_t* dir, struct dentry_s* dentry, uint32_t mode);
-	struct dentry_s* (*lookup)(inode_t* dir, struct dentry_s* dentry);
-	int (*unlink)(inode_t* dir, struct dentry_s* dentry);
-	int (*mkdir)(inode_t* dir, struct dentry_s* dentry, uint32_t mode);
-	int (*rmdir)(inode_t* dir, struct dentry_s* dentry);
-	int (*mknod)(inode_t* dir, struct dentry_s* dentry, uint32_t mode, uint32_t rdev);
-	int (*rename)(inode_t* old_dir, struct dentry_s* old_dentry, inode_t* new_dir, struct dentry_s* new_dentry);
+	int (*create)(inode_t* dir, dentry_t* dentry, uint32_t mode);
+	dentry_t* (*lookup)(inode_t* dir, dentry_t* dentry);
+	int (*unlink)(inode_t* dir, dentry_t* dentry);
+	int (*mkdir)(inode_t* dir, dentry_t* dentry, uint32_t mode);
+	int (*rmdir)(inode_t* dir, dentry_t* dentry);
+	int (*mknod)(inode_t* dir, dentry_t* dentry, uint32_t mode, uint32_t rdev);
+	int (*rename)(inode_t* old_dir, dentry_t* old_dentry, inode_t* new_dir, dentry_t* new_dentry);
 	
 } inode_ops_t;
 
@@ -92,13 +117,18 @@ typedef struct dentry_s {
 
 	char* d_name;
 	
-	struct dentry_s* d_parent;
+	dentry_t* d_parent;
 	
 	list_head_t d_subdirs;
 	list_head_t d_siblings;
 
+	list_head_t d_link;
+	list_head_t d_lru_link;
+
 	inode_t* d_inode;
 	
+	uint64_t d_parent_inode_no;
+
 	int	d_count;
 
 } dentry_t;
@@ -140,7 +170,7 @@ typedef int (*filldir_t)(void* dirent,
 
 typedef struct file_ops_s {
 
-	int (*llseek)(file_t* fil, size_t offset, size_t origin);
+	int (*llseek)(file_t* fil, off_t offset, size_t origin);
 	int (*read)(file_t* fil, char* buf, size_t count, size_t* offset);
 	int (*write)(file_t* fil, char* buf, size_t count, size_t* offset);
 	int (*ioctl)(inode_t* inode, file_t* fil, uint32_t cmd, uint32_t arg);
@@ -152,12 +182,14 @@ typedef struct file_ops_s {
 	//readblk, writeblk communicate with the hardware
 	//in implementations of concrete drivers
 	//read and write are programmed generically to use
-	//readpage, writepage
+	//readblk, writeblk
 	// fil is here for example
 	// a file pointing to a dentry pointing to the inode /dev/sda<x>
 	// or /dev/sda
 	int (*readblk)(file_t* fil, uint32_t blk_index, char **buf);
 	int (*writeblk)(file_t* fil, uint32_t blk_index, char *buf);
+	//TODO: the following is not implemented yet, and will perhaps
+	//not be used anymore in the future.
 	//readpage and writepage use readblk and writeblk,
 	//readpage and writepage are part of the
 	//global buffer system
@@ -167,6 +199,20 @@ typedef struct file_ops_s {
 
 
 } file_ops_t;
+
+
+// 541 is 100th prime
+
+#define NUM_INDE_HASH	541
+
+list_head_t* global_in_de_hash_headers[NUM_INDE_HASH];
+
+list_head_t* global_in_de_lru_list;
+
+dentry_t* gen_lookup(inode_t* dir, dentry_t* dentry);
+
+int get_parse_path(dentry_t* pwd_dentry, uint32_t mode, char* path,
+		dentry_t** found_dentry, char* last_fname);
 
 
 
@@ -179,6 +225,8 @@ file_t* create_file(int type, file_t* buf);
 dirent_t* create_dirent(int type, dirent_t* buf);
 
 file_ops_t* create_file_ops(int type, file_ops_t* buf);
+
+
 
 
 #define INIT_FIXED_LISTS_LEN 32
@@ -211,6 +259,9 @@ extern inode_t fixed_inode_list[INIT_FIXED_LISTS_LEN];
 #define MAX_NUM_FILE_OPS_TYPES 16
 
 extern file_ops_t file_ops_table[MAX_NUM_FILE_OPS_TYPES];
+
+extern dentry_t* global_root_dentry;
+extern inode_t* global_root_inode;
 
 
 

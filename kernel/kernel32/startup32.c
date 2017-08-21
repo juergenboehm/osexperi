@@ -211,30 +211,17 @@ void kmain32()
 
 	uint32_t cnt = 0;
 
-  goto skip_pfh_test;
-
-	for (i = 12; i < 19; ++i)
-	{
-		uint32_t p_addr = (0x100000+i);
-		volatile char* p = (char*)p_addr;
-		*p = 'e';
-		printf("%d %x %c\n", i, *p, *p);
-	}
-	for (i = 0; i < 12; ++i)
-	{
-		uint32_t p_addr = (0x100000+i);
-		volatile char* p = (char*)p_addr;
-		*p = 'e';
-		printf("%d %x %c\n", i, *p, *p);
-	}
-
-	skip_pfh_test: {}
 
 	//do_list_tests();
 
 	// for instant keyboard code debugging
 	//use_keyboard();
 
+	printf("sizeof(uint64_t) = %d, sizeof(long long) = %d, sizeof(unsigned long long) = %d\n",
+			sizeof(uint64_t), sizeof(long long), sizeof(unsigned long long));
+
+	uint64_t val1 = 0xdeadc0decafebabeL;
+	printf("val1 = %016lx\n", val1);
 
 	for(i = 0; i < 2; ++i)
 	{

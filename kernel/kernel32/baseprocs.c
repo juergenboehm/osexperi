@@ -103,7 +103,7 @@ void idle_process()
 
 		{
 
-			outb_printf("idle_process: writing hash list %d\n", j);
+			//outb_printf("idle_process: writing hash list %d\n", j);
 
 			syncj(j);
 
@@ -829,9 +829,33 @@ int execute_ide(int argc, char* argv[])
 
 	case OPC_TST:
 	{
+#if 1
 		// do read through file /dev/ide<x>
 		file_t* devide1 = &fixed_file_list[DEV_IDE];
 		test_read_write(devide1);
+#endif
+
+#if 0
+		file_ext2_t* root_dir_ext2 = (file_ext2_t*)global_root_inode->i_concrete_inode;
+
+		file_ext2_t new_root_dir_ext2;
+
+		init_file_ext2(&new_root_dir_ext2, root_dir_ext2->dev_file, root_dir_ext2->sb);
+
+		read_inode_ext2(&new_root_dir_ext2, 2);
+
+		file_ext2_t filp_new_file;
+
+		init_file_ext2(&filp_new_file, root_dir_ext2->dev_file, root_dir_ext2->sb);
+
+		create_file_ext2(&new_root_dir_ext2, &filp_new_file, "bochsrc.copy", EXT2_S_IFREG | 0644, 0);
+
+		destroy_file_ext2(&filp_new_file);
+		destroy_file_ext2(&new_root_dir_ext2);
+
+		printf("ide tst: bochsrc.copy created.\n");
+
+#endif
 	}
 	break;
 

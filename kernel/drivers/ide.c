@@ -78,6 +78,7 @@ int writeblk_ide(file_t* fil, uint32_t blk_index, char *buf)
 
 	blk_index += dev_specific_offset;
 
+	//outb_printf("writeblk_ide: blk_index = %d :dev_specific_offset = %d\n", blk_index, dev_specific_offset);
 	//outb_printf("writeblk_ide : taking mutex ide_op_mutex ..\n");
 
 	mtx_lock(&ide_op_mutex);

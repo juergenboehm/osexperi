@@ -54,6 +54,8 @@ sti:
 	.code16gcc	
 
 /NO_APP
+	.comm	global_in_de_hash_headers,2164,32
+	.comm	global_in_de_lru_list,4,4
 	.comm	ide_result,4,4
 	.comm	ide_ctrl_PM,4,4
 	.comm	malloc_sizes_log,60,32
@@ -109,13 +111,18 @@ keyb_controller_comreg:
 	.string	"\nkmain32: ide_buffer = %08x\n"
 .LC12:
 	.string	"\nkmain32: prd_table = %08x\n"
+	.align 4
+.LC13:
+	.string	"sizeof(uint64_t) = %d, sizeof(long long) = %d, sizeof(unsigned long long) = %d\n"
+.LC14:
+	.string	"val1 = %016lx\n"
 	.text
 	.globl	kmain32
 	.type	kmain32, @function
 kmain32:
 	pushl	%ebp
 	movl	%esp, %ebp
-	subl	$72, %esp
+	subl	$88, %esp
 	movl	$0, current
 	movl	$0, screen_current
 	movl	$0, -12(%ebp)
@@ -221,18 +228,29 @@ kmain32:
 	movl	$.LC12, (%esp)
 	call	printf
 	movl	$0, -52(%ebp)
-	nop
-.L9:
+	movl	$8, 12(%esp)
+	movl	$8, 8(%esp)
+	movl	$8, 4(%esp)
+	movl	$.LC13, (%esp)
+	call	printf
+	movl	$-889275714, -64(%ebp)
+	movl	$-559038242, -60(%ebp)
+	movl	-64(%ebp), %eax
+	movl	-60(%ebp), %edx
+	movl	%eax, 4(%esp)
+	movl	%edx, 8(%esp)
+	movl	$.LC14, (%esp)
+	call	printf
 	movl	$0, -12(%ebp)
-	jmp	.L10
-.L11:
+	jmp	.L9
+.L10:
 	call	waitkey
 	addl	$1, -12(%ebp)
-.L10:
+.L9:
 	cmpl	$1, -12(%ebp)
-	jbe	.L11
-	movl	$4096, -56(%ebp)
-	movl	-56(%ebp), %eax
+	jbe	.L10
+	movl	$4096, -68(%ebp)
+	movl	-68(%ebp), %eax
 	movl	%eax, (%esp)
 	call	init_process_1_xp
 	leave

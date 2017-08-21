@@ -14,6 +14,10 @@ typedef unsigned int uint_t;
 typedef uint32_t size_t;
 typedef long long loff_t;
 
+typedef int off_t;
+
+typedef int mode_t;
+
 typedef uint32_t physaddr_t;
 
 

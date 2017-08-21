@@ -3,6 +3,8 @@
 	.code16gcc	
 
 /NO_APP
+	.comm	global_in_de_hash_headers,2164,32
+	.comm	global_in_de_lru_list,4,4
 	.comm	ide_result,4,4
 	.comm	ide_ctrl_PM,4,4
 	.comm	idt_table,4,4

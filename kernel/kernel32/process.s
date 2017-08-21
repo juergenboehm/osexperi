@@ -1,4 +1,6 @@
 	.file	"process.c"
+	.comm	global_in_de_hash_headers,2164,32
+	.comm	global_in_de_lru_list,4,4
 /APP
 	.code16gcc	
 

@@ -4,6 +4,7 @@
 #include "kerneltypes.h"
 #include "libs/utils.h"
 #include "libs32/klib.h"
+#include "kernel32/objects.h"
 
 #include "drivers/timer.h"
 
@@ -294,7 +295,7 @@ int init_superblock_ext2(file_t* dev_file)
 	return 0;
 }
 
-static file_ext2_t* g_file = 0;
+static file_ext2_t* g_root_dir_file = 0;
 
 int init_ext2_system(file_t* dev_file)
 {
@@ -338,12 +339,12 @@ int init_ext2_system(file_t* dev_file)
 
 	// init global root inode
 
-	g_file = alloc_file_ext2();
-	init_file_ext2(g_file, dev_file, gsb_ext2);
+	g_root_dir_file = alloc_file_ext2();
+	init_file_ext2(g_root_dir_file, dev_file, gsb_ext2);
 
-	read_inode_ext2(g_file, 2);
+	read_inode_ext2(g_root_dir_file, 2);
 
-	g_root_inode_ext2 = g_file->pinode;
+	g_root_inode_ext2 = g_root_dir_file->pinode;
 
 	uint32_t root_inode_blks = g_root_inode_ext2->i_blocks;
 
@@ -356,6 +357,19 @@ int init_ext2_system(file_t* dev_file)
 
 	printf("Test ok.\n");
 #endif
+
+
+	global_root_inode = get_inode_t();
+
+	init_inode_from_ext2(global_root_inode, g_root_dir_file);
+
+	global_root_dentry = get_dentry_t();
+
+	global_root_dentry->d_inode = global_root_inode;
+	global_root_dentry->d_parent_inode_no = global_root_inode->i_ino;
+
+	++global_root_inode->i_dentries_refcnt;
+
 
 	return 0;
 }
@@ -629,7 +643,7 @@ int read_from_dev(file_t* dev_file, char* buf, uint32_t count, uint32_t offset)
 	size_t offs_dummy;
 
 	ret = dev_file->f_fops->llseek(dev_file, offset, 0);
-	ret = dev_file->f_fops->read(dev_file, buf, count, &offs_dummy);
+	ret = dev_file->f_fops->read(dev_file, buf, count, NULL);
 
 	return ret;
 }
@@ -640,7 +654,7 @@ int write_to_dev(file_t* dev_file, char* buf, uint32_t count, uint32_t offset)
 	size_t offs_dummy;
 
 	ret = dev_file->f_fops->llseek(dev_file, offset, 0);
-	ret = dev_file->f_fops->write(dev_file, buf, count, &offs_dummy);
+	ret = dev_file->f_fops->write(dev_file, buf, count, NULL);
 
 	return ret;
 }
@@ -1209,11 +1223,10 @@ int allocate_new_inode(file_ext2_t* filp, uint32_t goal_bgd_index, uint16_t imod
 
 	retval = 0;
 
-
+ende:
 	free(inode_bitmap);
 	//free(pbgd_akt);
 
-	ende:
 	return retval;
 
 }
@@ -1823,6 +1836,9 @@ ende:
 	return retval;
 }
 
+#define CDE_NULL_INODE_FOUND	1
+#define CDE_NON_NULL_INODE_FOUND	2
+
 
 int create_dir_entry_ext2(file_ext2_t* filp_parent_directory, file_ext2_t* filp_new, char* fname)
 {
@@ -1865,10 +1881,51 @@ int create_dir_entry_ext2(file_ext2_t* filp_parent_directory, file_ext2_t* filp_
 	dir_entry_ext2_t last_entry;
 	uint32_t offset_last;
 
-	lookup_last_in_dir_ext2(filp_parent_directory, &last_entry, &offset_last );
-	// last entry found
-	// append after it
-	// TODO: find fitting hole if possible before going to the end
+	uint32_t dir_offset = 0;
+
+	blk_iterator_next(filp_parent_directory->it_lpos, dir_offset);
+
+	char namebuf[EXT2_NAMELEN];
+
+	uint32_t dir_size = filp_parent_directory->pinode->i_size;
+
+	offset_last = dir_offset;
+
+	uint16_t last_entry_necess_len = 0;
+	uint16_t last_entry_free_space = 0;
+
+	uint16_t last_entry_rec_len = 0;
+
+	int space_found = 0;
+
+	while (dir_offset < dir_size)
+	{
+		offset_last = dir_offset;
+		readdir_ext2(filp_parent_directory, &last_entry, namebuf, &dir_offset);
+
+		last_entry_rec_len = last_entry.rec_len;
+
+		if (!last_entry.inode)
+		{
+			last_entry_necess_len = 0;
+			last_entry_free_space = last_entry.rec_len;
+		}
+		else
+		{
+			last_entry_necess_len = sizeof(dir_entry_ext2_t) + last_entry.name_len;
+			last_entry_necess_len = align(last_entry_necess_len, 4);
+			last_entry_free_space = last_entry.rec_len - last_entry_necess_len;
+		}
+
+		if (last_entry_free_space >= rec_len_prelim)
+		{
+			space_found = !last_entry.inode ? CDE_NULL_INODE_FOUND : CDE_NON_NULL_INODE_FOUND;
+			break;
+		}
+
+
+	}
+
 
 	uint32_t parent_dir_size = filp_parent_directory->pinode->i_size;
 
@@ -1880,26 +1937,39 @@ int create_dir_entry_ext2(file_ext2_t* filp_parent_directory, file_ext2_t* filp_
 	// calculate start of new entry
 	// must be on a 4 byte boundary and entry must not cross ext2 block border
 
-	if (!dir_empty)
+	uint32_t start_new_entry1;
+
+	if (space_found)
 	{
-		last_entry_real_len = sizeof(dir_entry_ext2_t) + last_entry.name_len;
-		last_entry_real_len = align(last_entry_real_len, 4);
+		start_new_entry1 = offset_last + last_entry_necess_len;
 	}
-
-	uint32_t start_new_entry = offset_last + last_entry_real_len;
-
-	uint32_t start_new_entry1 = start_new_entry;
-
-	uint32_t rest_in_block = ext2_blocksize - start_new_entry1 % ext2_blocksize;
-
-	if (rest_in_block < rec_len_prelim)
+	else
 	{
-		start_new_entry1 += rest_in_block;
+		// space not found
+		// last_entry is really the *last* entry in directory (if not dir_empty)
+
+		if (!dir_empty)
+		{
+			last_entry_real_len = sizeof(dir_entry_ext2_t) + last_entry.name_len;
+			last_entry_real_len = align(last_entry_real_len, 4);
+		}
+
+		uint32_t start_new_entry = offset_last + last_entry_real_len;
+
+		start_new_entry1 = start_new_entry;
+
+		uint32_t rest_in_block = ext2_blocksize - start_new_entry1 % ext2_blocksize;
+
+		if (rest_in_block < rec_len_prelim)
+		{
+			start_new_entry1 += rest_in_block;
+		}
+
 	}
 
 	// rewrite rec_len of last entry
 
-	if (!dir_empty)
+	if (!dir_empty && space_found != CDE_NULL_INODE_FOUND)
 	{
 		last_entry.rec_len = start_new_entry1 - offset_last;
 
@@ -1907,11 +1977,21 @@ int create_dir_entry_ext2(file_ext2_t* filp_parent_directory, file_ext2_t* filp_
 	}
 
 	// calculate the end of the new entry
-	// the end must fall together with the end of an ext2 block
 
 	uint32_t end_new_entry = start_new_entry1 + rec_len_prelim;
+	uint32_t end_new_entry1 = end_new_entry;
 
-	uint32_t end_new_entry1 = align(max(end_new_entry, parent_dir_size), ext2_blocksize);
+	uint32_t end_last_entry = offset_last + last_entry_rec_len;
+
+	if (space_found)
+	{
+		end_new_entry1 = end_last_entry;
+	}
+
+	if (!space_found)
+	{
+		end_new_entry1 = align(max(end_new_entry, parent_dir_size), ext2_blocksize);
+	}
 
 	new_entry.rec_len = end_new_entry1 - start_new_entry1;
 
@@ -1992,6 +2072,8 @@ int unlink_file_ext2(file_ext2_t* filp_dir, char* fname)
 	uint32_t akt_offset = 0;
 	uint32_t before_offset = 0;
 
+	uint32_t ext2_blocksize = GET_BLOCKSIZE_EXT2(filp_dir->sb);
+
 	int found = lookup_name_in_dir_ext2(filp_dir, fname, &akt_entry, &akt_offset, &before_offset);
 
 	if (found != 1)
@@ -2001,12 +2083,29 @@ int unlink_file_ext2(file_ext2_t* filp_dir, char* fname)
 
 	int is_first = (akt_offset == before_offset);
 
+	int crosses_block = 0;
+
 	if (!is_first)
 	{
 		dir_entry_ext2_t before_entry;
 		read_dir_entry_ext2(filp_dir, before_offset, &before_entry);
-		before_entry.rec_len += akt_entry.rec_len;
+
+		uint16_t before_rec_len = before_entry.rec_len;
+
+		uint16_t new_before_rec_len = before_rec_len + akt_entry.rec_len;
+		uint16_t new_before_rec_len1 = new_before_rec_len;
+
+		crosses_block = ((before_offset % ext2_blocksize) + new_before_rec_len) > ext2_blocksize;
+
+		if (crosses_block)
+		{
+			new_before_rec_len1 = ext2_blocksize - (before_offset % ext2_blocksize);
+		}
+
+		before_entry.rec_len = new_before_rec_len1;
+
 		write_dir_entry_ext2(filp_dir, before_offset, &before_entry);
+
 	}
 
 	uint32_t del_inode = akt_entry.inode;
@@ -2040,7 +2139,17 @@ int unlink_file_ext2(file_ext2_t* filp_dir, char* fname)
 
 	akt_entry.inode = 0;
 
-	write_dir_entry_ext2(filp_dir, akt_offset, &akt_entry);
+	if (crosses_block)
+	{
+		akt_entry.file_type = 0;
+		akt_entry.name_len = 0;
+		writedir_ext2(filp_dir, &akt_entry, "", akt_offset);
+	}
+	else
+	{
+		write_file_ext2(filp_dir, zero_block, akt_entry.rec_len, akt_offset);
+		//write_dir_entry_ext2(filp_dir, akt_offset, &akt_entry);
+	}
 
 	retval = 0;
 	ende:
@@ -2405,7 +2514,7 @@ void test_read_write(file_t* dev_file)
 	while (cnt2 < len2)
 	{
 		dev_file->f_fops->llseek(dev_file, cnt1, 0);
-		int nrd = dev_file->f_fops->read(dev_file, pbuf1, len1, &offs );
+		int nrd = dev_file->f_fops->read(dev_file, pbuf1, len1, NULL );
 
 		ASSERT(nrd == len1);
 
@@ -2422,7 +2531,7 @@ void test_read_write(file_t* dev_file)
 	while (cnt2 < len1)
 	{
 		dev_file->f_fops->llseek(dev_file, cnt1, 0);
-		int nrd = dev_file->f_fops->read(dev_file, pbuf2, len2, &offs );
+		int nrd = dev_file->f_fops->read(dev_file, pbuf2, len2, NULL );
 
 		ASSERT(nrd == len2);
 
@@ -2463,7 +2572,7 @@ void test_read_write(file_t* dev_file)
 	while (cnt2 < len2)
 	{
 		dev_file->f_fops->llseek(dev_file, cnt1, 0);
-		uint32_t nwrt = dev_file->f_fops->write(dev_file, pbuf1, len1, &offs );
+		uint32_t nwrt = dev_file->f_fops->write(dev_file, pbuf1, len1, NULL );
 
 		ASSERT(nwrt == len1);
 
@@ -2482,7 +2591,7 @@ void test_read_write(file_t* dev_file)
 	while (cnt2 < len1)
 	{
 		dev_file->f_fops->llseek(dev_file, cnt1, 0);
-		uint32_t nwrt = dev_file->f_fops->write(dev_file, pbuf2, len2, &offs );
+		uint32_t nwrt = dev_file->f_fops->write(dev_file, pbuf2, len2, NULL );
 
 		ASSERT(nwrt == len2);
 
@@ -2497,12 +2606,12 @@ void test_read_write(file_t* dev_file)
 	memset(buf2, 0xcd, buf_size);
 
 	dev_file->f_fops->llseek(dev_file, offset_a, 0);
-	int nrd = dev_file->f_fops->read(dev_file, buf1, len1 * len2, &offs);
+	int nrd = dev_file->f_fops->read(dev_file, buf1, len1 * len2, NULL);
 
 	ASSERT(nrd == len1 * len2);
 
 	dev_file->f_fops->llseek(dev_file, offset_a + buf_size, 0);
-	nrd = dev_file->f_fops->read(dev_file, buf2, len1 * len2, &offs);
+	nrd = dev_file->f_fops->read(dev_file, buf2, len1 * len2, NULL);
 
 	ASSERT(nrd == len1 * len2);
 

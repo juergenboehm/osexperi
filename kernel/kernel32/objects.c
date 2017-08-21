@@ -10,13 +10,23 @@ static int len_global_proc_node_list = 0;
 
 inode_t* get_inode_t()
 {
+	inode_t* p_new_inode = (inode_t*) malloc(sizeof(inode_t));
+	memset(p_new_inode, 0, sizeof(inode_t));
+
+	return p_new_inode;
 
 }
 
 dentry_t* get_dentry_t()
 {
-	return 0;
+	dentry_t* p_new_dentry = (dentry_t*) malloc(sizeof(dentry_t));
+	memset(p_new_dentry, 0, sizeof(dentry_t));
+
+	return p_new_dentry;
+
 }
+
+
 
 file_t* get_file_t()
 {
@@ -111,6 +121,18 @@ void free_timer_node_t(timer_node_t* ptnd)
 {
 	free(ptnd);
 }
+
+
+void free_inode_t(inode_t* pinode)
+{
+	free(pinode);
+}
+
+void free_dentry_t(dentry_t* pdentry)
+{
+	free(pdentry);
+}
+
 
 
 void init_objects()

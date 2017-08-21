@@ -2,6 +2,7 @@
 #include "kernel_user/stdlib.h"
 #include "kernel_user/userproc.h"
 
+
 void my_handler(uint32_t arg)
 {
 	printf("\nmy handler_called: arg = %d\n", arg);
@@ -70,10 +71,10 @@ void uproc_1()
 	printf("                                                       \n");
 
 
-	printf("proc1: forking");
+	printf("proc1: forking\n");
 	uint32_t ret = fork();
 	printf("after fork: ret = %d\n", ret);
-	printf("proc1: fork done.");
+	printf("proc1: fork done.\n");
 
 	if (ret == 0)
 	{
@@ -94,6 +95,7 @@ void uproc_1()
 
 		testq = 998;
 		uint32_t key = 0;
+
 
 		while (1)
 		{
@@ -118,6 +120,47 @@ void uproc_1()
 
 	//WAIT(10 * (1 << 24));
 
+	outb_printf("val1 = %016lx\n", (uint64_t)0xdeadc0decafebabeL);
+
+	int fd = open("/home/bochsrc", O_RDONLY);
+
+	printf("\n\nopen done: fd = %d\n", fd);
+
+	int fd_out = open("/bochsrc.copy", O_WRONLY | O_CREAT, 0644);
+
+	printf("\nopen done: fd_out = %d\n", fd_out);
+
+
+	int to_rd = 127;
+
+	char buf[128];
+
+	int num_rd = 0;
+
+	do
+	{
+
+		num_rd = read(fd, buf, to_rd);
+
+		if (num_rd < 0)
+		{
+			break;
+		}
+
+		if (num_rd > 0)
+		{
+			buf[num_rd] = 0;
+
+			printf("%s", buf);
+
+			write(fd_out, buf, num_rd);
+		}
+	}
+	while (num_rd != 0);
+
+
+	while (1)
+		WAIT(1 << 20);
 
 	while (i < (1 << 30))
 	{

@@ -39,6 +39,8 @@ void free_wq_t(wq_t* p_wqt);
 
 void free_timer_node_t(timer_node_t* ptnd);
 
+void free_inode_t(inode_t* pinode);
+void free_dentry_t(dentry_t* pdentry);
 
 
 void init_objects();

@@ -2,8 +2,12 @@
 
 #include "drivers/hardware.h"
 
+#include "fs/fcntl.h"
+#include "fs/vfsext2.h"
+#include "fs/ext2.h"
 #include "fs/vfs.h"
 
+#include "kernel32/objects.h"
 #include "kernel32/irq.h"
 #include "kernel32/process.h"
 #include "libs32/klib.h"
@@ -11,6 +15,41 @@
 #include "syscalls/syscalls.h"
 
 #define GET_REG_32(ptr,offset) ((uint32_t*) (((uint8_t*) ptr) + offset))
+
+typedef struct syscall_info_s {
+	void* sys_fun;
+	int no_parms;
+} syscall_info_t;
+
+syscall_info_t syscall_list[] =
+{
+		{.sys_fun = sys_open, .no_parms = 2 },
+		{.sys_fun = sys_open_3, .no_parms = 3},
+		{.sys_fun = sys_creat, .no_parms = 2 },
+
+		{.sys_fun = sys_unlink, .no_parms = 1},
+		{.sys_fun = sys_mkdir, .no_parms = 2},
+		{.sys_fun = sys_rmdir, .no_parms = 1},
+		{.sys_fun = sys_rename, .no_parms = 2},
+
+		{.sys_fun = sys_lseek, .no_parms = 3},
+		{.sys_fun = sys_read, .no_parms = 3 },
+		{.sys_fun = sys_write, .no_parms = 3 },
+
+		{.sys_fun = sys_register_handler, .no_parms = 1},
+		{.sys_fun = sys_fork, .no_parms = 1 },
+
+		{.sys_fun = sys_close, .no_parms = 1}
+
+};
+
+typedef int (*sys_fun_1_t)(uint32_t );
+typedef int (*sys_fun_2_t)(uint32_t, uint32_t );
+typedef int (*sys_fun_3_t)(uint32_t, uint32_t, uint32_t );
+typedef int (*sys_fun_4_t)(uint32_t, uint32_t, uint32_t, uint32_t );
+typedef int (*sys_fun_5_t)(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t );
+
+
 
 void syscall_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 {
@@ -29,20 +68,24 @@ void syscall_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 	//		eax, ebx, ecx, edx, esi);
 
 
-	switch (eax)
+	void* sys_fun = syscall_list[eax].sys_fun;
+	int no_parms = syscall_list[eax].no_parms;
+
+	switch (no_parms)
 	{
-		case SC_SYS_OPEN_NO: retval = sys_open((char*) ebx, (uint32_t) ecx);
-				break;
-		case SC_SYS_READ_NO: retval = sys_read((uint32_t) ebx, (char*) ecx, (size_t) edx);
-				break;
-		case SC_SYS_WRITE_NO: retval = sys_write((uint32_t) ebx, (char*) ecx, (size_t) edx);
-				break;
-		case SC_SYS_REGISTER_HANDLER: retval = sys_register_handler((uint32_t) ebx);
-				break;
-		case SC_SYS_FORK: retval = sys_fork(ebx);
-				break;
+		case 1: retval = (*((sys_fun_1_t)(sys_fun)))(ebx);
+						break;
+		case 2: retval = (*((sys_fun_2_t)(sys_fun)))(ebx, ecx);
+						break;
+		case 3: retval = (*((sys_fun_3_t)(sys_fun)))(ebx, ecx, edx);
+						break;
+		case 4: retval = (*((sys_fun_4_t)(sys_fun)))(ebx, ecx, edx, esi);
+						break;
+		case 5: retval = (*((sys_fun_5_t)(sys_fun)))(ebx, ecx, edx, esi, edi);
+						break;
 		default:
-			break;
+						retval = -1;
+						break;
 	}
 
 	 *(GET_REG_32(esp, IRQ_REG_OFFSET_AX)) = retval;
@@ -51,12 +94,147 @@ void syscall_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 
 }
 
-int sys_open(char* fname, uint32_t fmode)
+
+
+int sys_open(char *pathname, int flags)
+{
+	int retval = -1;
+	retval = sys_open_3(pathname, flags, 0);
+	return retval;
+}
+
+int sys_open_3(char *pathname, int flags, mode_t mode)
+{
+
+	int retval = -1;
+
+	outb_printf("enter: sys_open\n");
+
+	dentry_t* found_dentry = 0;
+	char* last_fname = (char*)malloc(FILE_NAMELEN);
+
+	outb_printf("sys_open:pathname = >%s< flags = %d\n",
+			pathname, flags);
+
+	if (flags & (O_WRONLY | O_RDWR))
+	{
+		get_parse_path(global_root_dentry, 0x01, pathname, &found_dentry, last_fname);
+
+		dentry_t aux_dentry;
+
+		aux_dentry.d_name = last_fname;
+
+		inode_t *aux_inode = found_dentry->d_inode;
+
+		dentry_t* final_found_dentry = gen_lookup(aux_inode, &aux_dentry);
+
+		if (final_found_dentry)
+		{
+			if ((flags & O_CREAT) && (flags & O_EXCL))
+			{
+				retval = -1;
+				goto ende;
+			}
+			if (flags & O_TRUNC)
+			{
+				//TODO: implement trunc
+			}
+			found_dentry = final_found_dentry;
+		}
+		else
+		{
+			if (flags & O_CREAT)
+			{
+
+				retval = aux_inode->i_ops->create(aux_inode, &aux_dentry, mode);
+
+				if (retval < 0)
+				{
+					goto ende;
+				}
+
+				found_dentry = gen_lookup(aux_inode, &aux_dentry);
+
+				if (!found_dentry)
+				{
+					goto ende;
+				}
+			}
+		}
+
+	}
+	else if ((flags & O_ACCMODE) == O_RDONLY)
+	{
+		get_parse_path(global_root_dentry, 0, pathname, &found_dentry, last_fname);
+
+		if (!found_dentry)
+		{
+			goto ende;
+		}
+	}
+
+	file_ext2_t* new_file_ext2 = ((file_ext2_t*)found_dentry->d_inode->i_concrete_inode);
+
+	outb_printf("inode found = %d\n", new_file_ext2->inode_index);
+
+	file_t* new_file = get_file_t();
+
+	new_file->f_pos = 0;
+	new_file->f_dentry = found_dentry;
+	new_file->f_fops = found_dentry->d_inode->i_fops;
+	new_file->f_flags = flags;
+
+	++found_dentry->d_count;
+
+	int i;
+	for(i = 0; i < NUM_BASE_FD_PROC; ++i)
+	{
+		if (!current->proc_data.io_block->base_fd_arr[i])
+		{
+			current->proc_data.io_block->base_fd_arr[i] = new_file;
+			retval = i;
+			goto ende;
+		}
+	}
+
+	ende:
+
+	free(last_fname);
+	return retval;
+}
+
+int sys_creat(char *pathname, mode_t mode)
 {
 	return -1;
 }
 
-int sys_read(uint32_t fd, char* buf, size_t count)
+int sys_unlink(char *pathname)
+{
+	return -1;
+}
+
+int sys_mkdir(char *pathname, mode_t mode)
+{
+	return -1;
+}
+
+int sys_rmdir(char *pathname)
+{
+	return -1;
+}
+
+int sys_rename(char *oldpath, const char *newpath)
+{
+	return -1;
+}
+
+int sys_lseek(int fd, off_t offset, int whence)
+{
+	return -1;
+}
+
+
+int sys_read(int fd, void *buf, size_t count)
 {
 	int ret;
 	file_t* p_file = current->proc_data.io_block->base_fd_arr[fd];
@@ -68,35 +246,22 @@ int sys_read(uint32_t fd, char* buf, size_t count)
 		}
 		else
 		{
-			ret = ENOREAD;
+			ret = -1;
 		}
 	}
 	else
 	{
-		ret = ENOFILE;
+		ret = -1;
 	}
 	return ret;
 }
 
-int sys_write(uint32_t fd, char* buf, size_t count)
+int sys_write(int fd, void *buf, size_t count)
 {
 	int ret;
 
-/*
-	outb_printf("fd = %d current = %08x io_block = %08x base_fd_arr = %08x\n",
-			fd,
-			(uint32_t) current, (uint32_t) current->proc_data.io_block,
-			(uint32_t) current->proc_data.io_block->base_fd_arr);
-*/
-
 	file_t* p_file = current->proc_data.io_block->base_fd_arr[fd];
 
-/*
-	outb_0xe9( 'W');
-
-	outb_printf("fd = %d\n buf = %s \n count = %d \n", fd, buf, count);
-	outb_printf("p_file = %08x fixed_file[] = %08x\n", (uint32_t) p_file, (uint32_t) &fixed_file_list[0] );
-*/
 	if (p_file)
 	{
 		if (p_file->f_fops->write)
@@ -105,12 +270,12 @@ int sys_write(uint32_t fd, char* buf, size_t count)
 		}
 		else
 		{
-			ret = ENOWRITE;
+			ret = -1;
 		}
 	}
 	else
 	{
-		ret = ENOFILE;
+		ret = -1;
 	}
 
 	return ret;
@@ -132,3 +297,7 @@ int sys_fork(uint32_t arg)
 }
 
 
+int sys_close(int fd)
+{
+	return -1;
+}

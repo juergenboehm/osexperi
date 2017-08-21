@@ -65,6 +65,7 @@ objectsC_kernel32 = kernel32/startup32.o \
 			fs/ext2.o \
 			fs/gendrivers.o \
 			fs/bufcache.o \
+			fs/vfsext2.o \
 			drivers/pci.o \
 			mem/paging.o \
 			mem/memareas.o \

@@ -78,9 +78,16 @@ int kprint_str(uint32_t fd, char* str)
 		return 0;
 	} else {
 		file_t* p_outfile = current->proc_data.io_block->base_fd_arr[fd];
-		uint32_t slen = strlen(str);
-		int res = p_outfile->f_fops->write(p_outfile, str, slen, 0);
-		return res;
+		if (p_outfile && p_outfile->f_fops && p_outfile->f_fops->write)
+		{
+			uint32_t slen = strlen(str);
+			int res = p_outfile->f_fops->write(p_outfile, str, slen, 0);
+			return res;
+		}
+		else
+		{
+			return -1;
+		}
 	}
 }
 
@@ -780,10 +787,8 @@ int strcmp(const char* str1, const char* str2)
 char* strcpy(char* str1, char* str2)
 {
 	char* p = str1;
-	while (*p)
-	{
-		*str2++ = *p++;
-	}
+	while ((*p++ = *str2++));
+
 	return str1;
 }
 
@@ -791,9 +796,15 @@ char* strncpy(char* str1, char* str2, size_t n)
 {
 	size_t i = 0;
 	char* p = str1;
-	while((i < n) && (*p))
+	while (i < n)
 	{
-		*str2++ = *p++;
+		*p = *str2;
+		if (!*p)
+		{
+			break;
+		}
+		++p;
+		++str2;
 		++i;
 	}
 	return str1;
@@ -810,6 +821,7 @@ char* strcat(char* str1, char* str2)
 	{
 		*p++ = *str2++;
 	}
+	*p = *str2;
 	return str1;
 }
 
@@ -841,6 +853,25 @@ int atoi(char* str)
 
 	return eps * val;
 }
+
+// djb hash (daniel julius bernstein)
+uint64_t strhash(char* str)
+{
+	uint64_t hash = 5381;
+	int c;
+	char *p = str;
+	while ((c = *p++))
+	{
+		hash = ((hash << 5) + hash) + c;
+	}
+
+	return hash;
+
+}
+
+
+
+
 
 //getc
 

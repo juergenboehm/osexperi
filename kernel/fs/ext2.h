@@ -8,7 +8,6 @@
 #define BLK_SIZE_EXT2	1024
 #define LOG_IN_PHYS	2
 
-#define MAX_PATH_COMPONENTS 32
 
 #define AUX_BLOCK_SIZE	4096
 
@@ -240,6 +239,10 @@ int write_file_ext2(file_ext2_t* file, char* buf, uint32_t counta, uint32_t offs
 int parse_path_ext2(file_ext2_t* file_pwd, uint32_t mode, char* path,
 		file_ext2_t *file, char* last_fname);
 
+int lookup_name_in_dir_ext2(file_ext2_t* file_dir, char* fname,
+		dir_entry_ext2_t *found_entry, uint32_t* offset, uint32_t* offset_before);
+
+
 
 int get_indirect_blocks(uint32_t offset, uint32_t* index_arr, uint32_t *mode);
 int test_get_indirect_blocks();
@@ -283,6 +286,18 @@ int test_ext2_write(file_t* dev_file, superblock_ext2_t* sb, int no_runs);
 // old ide rw test
 
 void test_read_write(file_t* dev_file);
+
+// higher operations
+
+int create_file_ext2(file_ext2_t* filp_parent_dir,
+		file_ext2_t *filp_new_file, char* fname, uint16_t imode, uint32_t iflags);
+
+int create_directory_ext2(file_ext2_t* filp_parent_dir,
+		file_ext2_t *filp_new_dir, char* fname, uint16_t imode, uint32_t iflags);
+
+int unlink_file_ext2(file_ext2_t* filp_dir, char* fname);
+
+int delete_directory_ext2(file_ext2_t* filp_dir, char* fname);
 
 
 
