@@ -118,10 +118,6 @@ void uproc_1()
 	}
 
 
-	//WAIT(10 * (1 << 24));
-
-	outb_printf("val1 = %016lx\n", (uint64_t)0xdeadc0decafebabeL);
-
 	int fd = open("/home/bochsrc", O_RDONLY);
 
 	printf("\n\nopen done: fd = %d\n", fd);
@@ -162,18 +158,19 @@ void uproc_1()
 	while (1)
 		WAIT(1 << 20);
 
+	// for debugging: provoke an illegal access to kernel space
+	// results in a page_fault, as wished for
+/*
+	uint32_t paddr = 0xc0000010;
+	uprintf("paddr = %08x\n", paddr);
+
+	__volatile__ uint32_t val = *((uint32_t*) paddr);
+*/
+
+
+
 	while (i < (1 << 30))
 	{
-		// for debugging: provoke an illegal access to kernel space
-		// results in a page_fault, as wished for
-/*
-		if (i > (1 << 16)) {
-			uint32_t paddr = 0xc0000010;
-			uprintf("paddr = %08x\n", paddr);
-			//WAIT(1 << 24);
-			__volatile__ uint32_t val = *((uint32_t*) paddr);
-		}
-*/
 		j = 2;
 		while (j * j <= i)
 		{
@@ -203,25 +200,3 @@ void uproc_1()
 	while (1);
 }
 
-void display_tss(tss_t* tss)
-{
-	printf("esp = 0x%08x\n", tss->esp);
-	printf("ss = 0x%08x\n", tss->ss);
-
-	printf("esp0 = 0x%08x\n", tss->esp0);
-	printf("ss0 = 0x%08x\n", tss->ss0);
-
-	printf("ebp = 0x%08x\n", tss->ebp);
-
-	printf("ebx = 0x%08x\n", tss->ebx);
-	printf("eax = 0x%08x\n", tss->ebx);
-	printf("ecx = 0x%08x\n", tss->ebx);
-	printf("edx = 0x%08x\n", tss->ebx);
-
-	printf("esi = 0x%08x\n", tss->esi);
-	printf("edi = 0x%08x\n", tss->edi);
-
-	printf("ds = 0x%08x\n", tss->ds);
-	printf("es = 0x%08x\n", tss->es);
-
-}

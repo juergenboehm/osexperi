@@ -409,8 +409,8 @@ void release_pid(uint32_t pid)
 
 int init_global_tss()
 {
-	DEBUGOUT(0, "sizeof(tss_t) = %d\n", sizeof(tss_t));
-	DEBUGOUT(0, "sizeof(process_t) = %d\n", sizeof(process_t));
+	DEBUGOUT1(0, "sizeof(tss_t) = %d\n", sizeof(tss_t));
+	DEBUGOUT1(0, "sizeof(process_t) = %d\n", sizeof(process_t));
 
 	global_tss = get_tss_t();
 
@@ -420,7 +420,7 @@ int init_global_tss()
 
 	asm __volatile__ ("movw %0, %%ax \n\t ltr %%ax" : : "g"(TSS_GDT_INDEX * 8): "%ax", "memory");
 
-	DEBUGOUT(0, "End of init_global_tss.\n");
+	DEBUGOUT1(0, "End of init_global_tss.\n");
 
 	return 0;
 }
@@ -643,6 +643,17 @@ void free_user_memory(process_t *proc)
 
 void destroy_io_data(process_t *proc)
 {
+	proc_io_block_t* pio_blk = proc->proc_data.io_block;
+
+	int j;
+	for(j = 0; j < NUM_BASE_FD_PROC; ++j)
+	{
+		unlink_file_t(pio_blk->base_fd_arr[j]);
+	}
+
+	unlink_dentry_t(pio_blk->root_dentry);
+	unlink_dentry_t(pio_blk->pwd_dentry);
+
 	free_proc_io_block_t(proc->proc_data.io_block);
 }
 
@@ -745,9 +756,7 @@ int clone_file_t(file_t* old_file, file_t** new_file)
 
 	DEBUGOUT1(0, "clone_file_t: after memcpy.\n");
 
-	pnew_file->f_dentry = old_file->f_dentry;
-	//++pnew_file->f_dentry->d_count;
-	pnew_file->f_count = 0;
+	link_dentry_t(&pnew_file->f_dentry, old_file->f_dentry);
 
 	*new_file = pnew_file;
 
@@ -784,9 +793,13 @@ int clone_proc_io_block_t(proc_io_block_t* old_ioblk, proc_io_block_t** new_iobl
 		 ret = clone_file_t(old_ioblk->base_fd_arr[i], &pnew_ioblk->base_fd_arr[i]);
 		 if (pnew_ioblk->base_fd_arr[i])
 		 {
-			 ++pnew_ioblk->base_fd_arr[i]->f_count;
+			 ++pnew_ioblk->base_fd_arr[i]->f_refcount;
 		 }
 	}
+
+	link_dentry_t(&pnew_ioblk->root_dentry, old_ioblk->root_dentry);
+	link_dentry_t(&pnew_ioblk->pwd_dentry, old_ioblk->pwd_dentry);
+
 
 	*new_ioblk = pnew_ioblk;
 

@@ -925,7 +925,7 @@ int execute_cat(int argc, char* argv[])
 
 	read_inode_ext2(&root_dir, 2);
 
-	char* last_fname = (char*) malloc(EXT2_NAMELEN + 1);
+	char* last_fname = malloc(EXT2_NAMELEN + 1);
 
 	parse_path_ext2(&root_dir, 0, demo_path, &out_file, last_fname);
 
@@ -1053,13 +1053,14 @@ void kernel_shell_proc()
 
 	uint32_t i = 0;
 
-	printf("init ext2 system: \n");
+	outb_printf("kernel_shell_proc: init ext2 system: \n");
+	printf("kernel_shell_proc: init ext2 system: \n");
 
 	file_t* dev_ide1 = &fixed_file_list[DEV_IDE + 1];
 
 	init_ext2_system(dev_ide1);
 
-	printf("ext2 system initialized.\n");
+	outb_printf("kernel_shell_proc: ext2 system initialized.\n");
 
 	ext2_system_on = 1;
 

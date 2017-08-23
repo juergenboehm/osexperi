@@ -121,6 +121,9 @@ typedef struct tss_s tss_t;
 
 typedef struct __PACKED proc_io_block_s {
 
+	dentry_t* root_dentry;
+	dentry_t* pwd_dentry;
+
 	file_t* base_fd_arr[NUM_BASE_FD_PROC];
 
 } proc_io_block_t;
@@ -150,6 +153,11 @@ typedef struct __PACKED process_data_s {
 	// wait queues, mutexes, semaphores
 
 	wq_t*	in_wq;
+
+	// rights management
+
+	uint16_t gid;
+	uint16_t uid;
 
 } process_data_t;
 

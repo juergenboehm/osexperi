@@ -1,6 +1,7 @@
 
 #include "fs/vfs.h"
 #include "libs/lists.h"
+#include "mem/malloc.h"
 #include "kernel32/process.h"
 #include "kernel32/objects.h"
 
@@ -10,7 +11,7 @@ static int len_global_proc_node_list = 0;
 
 inode_t* get_inode_t()
 {
-	inode_t* p_new_inode = (inode_t*) malloc(sizeof(inode_t));
+	inode_t* p_new_inode = malloc(sizeof(inode_t));
 	memset(p_new_inode, 0, sizeof(inode_t));
 
 	return p_new_inode;
@@ -19,7 +20,7 @@ inode_t* get_inode_t()
 
 dentry_t* get_dentry_t()
 {
-	dentry_t* p_new_dentry = (dentry_t*) malloc(sizeof(dentry_t));
+	dentry_t* p_new_dentry = malloc(sizeof(dentry_t));
 	memset(p_new_dentry, 0, sizeof(dentry_t));
 
 	return p_new_dentry;
@@ -30,7 +31,7 @@ dentry_t* get_dentry_t()
 
 file_t* get_file_t()
 {
-	file_t *p_new_file = (file_t*) malloc(sizeof(file_t));
+	file_t *p_new_file = malloc(sizeof(file_t));
 	memset(p_new_file, 0, sizeof(file_t));
 
 	return p_new_file;
@@ -38,7 +39,7 @@ file_t* get_file_t()
 
 tss_t* get_tss_t()
 {
-	tss_t* p_new_tss = (tss_t*) malloc(PAGE_SIZE);
+	tss_t* p_new_tss = malloc(PAGE_SIZE);
 	memset(p_new_tss, 0, sizeof(tss_t));
 	return p_new_tss;
 }
@@ -46,13 +47,13 @@ tss_t* get_tss_t()
 
 process_t* get_process_t()
 {
-	process_t* p_new_process = (process_t*)malloc(sizeof(process_t));
+	process_t* p_new_process = malloc(sizeof(process_t));
 	return p_new_process;
 }
 
 proc_io_block_t*  get_proc_io_block_t()
 {
-	proc_io_block_t* p_new_proc_io_block = (proc_io_block_t*) malloc(sizeof(proc_io_block_t));
+	proc_io_block_t* p_new_proc_io_block = malloc(sizeof(proc_io_block_t));
 
 	memset(p_new_proc_io_block, 0, sizeof(proc_io_block_t));
 
@@ -72,7 +73,7 @@ process_node_t* get_process_node_t()
 	}
 	else
 	{
-		process_node_t* p_new_node = (process_node_t*) malloc(sizeof(process_node_t));
+		process_node_t* p_new_node = malloc(sizeof(process_node_t));
 		memset(p_new_node, 0, sizeof(process_node_t));
 		return p_new_node;
 	}
@@ -80,14 +81,14 @@ process_node_t* get_process_node_t()
 
 wq_t* get_wq_t()
 {
-	wq_t* p_new_wq_t = (wq_t*) malloc(sizeof(wq_t));
+	wq_t* p_new_wq_t = malloc(sizeof(wq_t));
 	memset(p_new_wq_t, 0, sizeof(wq_t));
 	return p_new_wq_t;
 }
 
 timer_node_t * get_timer_node_t()
 {
-	timer_node_t* ptnd = (timer_node_t*) malloc(sizeof(timer_node_t));
+	timer_node_t* ptnd = malloc(sizeof(timer_node_t));
 	memset(ptnd, 0, sizeof(timer_node_t));
 	return ptnd;
 }

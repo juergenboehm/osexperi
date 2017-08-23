@@ -101,16 +101,14 @@ testq:
 .LC8:
 	.string	"%c"
 .LC9:
-	.string	"val1 = %016lx\n"
-.LC10:
 	.string	"/home/bochsrc"
-.LC11:
+.LC10:
 	.string	"\n\nopen done: fd = %d\n"
-.LC12:
+.LC11:
 	.string	"/bochsrc.copy"
-.LC13:
+.LC12:
 	.string	"\nopen done: fd_out = %d\n"
-.LC14:
+.LC13:
 	.string	"%s"
 	.text
 	.globl	uproc_1
@@ -208,26 +206,22 @@ uproc_1:
 	call	printf
 	jmp	.L17
 .L10:
-	movl	$-889275714, 4(%esp)
-	movl	$-559038242, 8(%esp)
-	movl	$.LC9, (%esp)
-	call	outb_printf
 	movl	$0, 4(%esp)
-	movl	$.LC10, (%esp)
+	movl	$.LC9, (%esp)
 	call	open
 	movl	%eax, -44(%ebp)
 	movl	-44(%ebp), %eax
 	movl	%eax, 4(%esp)
-	movl	$.LC11, (%esp)
+	movl	$.LC10, (%esp)
 	call	printf
 	movl	$420, 8(%esp)
 	movl	$65, 4(%esp)
-	movl	$.LC12, (%esp)
+	movl	$.LC11, (%esp)
 	call	open
 	movl	%eax, -48(%ebp)
 	movl	-48(%ebp), %eax
 	movl	%eax, 4(%esp)
-	movl	$.LC13, (%esp)
+	movl	$.LC12, (%esp)
 	call	printf
 	movl	$127, -52(%ebp)
 	movl	$0, -56(%ebp)
@@ -252,7 +246,7 @@ uproc_1:
 	movb	$0, (%eax)
 	leal	-184(%ebp), %eax
 	movl	%eax, 4(%esp)
-	movl	$.LC14, (%esp)
+	movl	$.LC13, (%esp)
 	call	printf
 	movl	-56(%ebp), %eax
 	movl	%eax, 8(%esp)
@@ -275,110 +269,4 @@ uproc_1:
 	jle	.L23
 	jmp	.L19
 	.size	uproc_1, .-uproc_1
-	.section	.rodata
-.LC15:
-	.string	"esp = 0x%08x\n"
-.LC16:
-	.string	"ss = 0x%08x\n"
-.LC17:
-	.string	"esp0 = 0x%08x\n"
-.LC18:
-	.string	"ss0 = 0x%08x\n"
-.LC19:
-	.string	"ebp = 0x%08x\n"
-.LC20:
-	.string	"ebx = 0x%08x\n"
-.LC21:
-	.string	"eax = 0x%08x\n"
-.LC22:
-	.string	"ecx = 0x%08x\n"
-.LC23:
-	.string	"edx = 0x%08x\n"
-.LC24:
-	.string	"esi = 0x%08x\n"
-.LC25:
-	.string	"edi = 0x%08x\n"
-.LC26:
-	.string	"ds = 0x%08x\n"
-.LC27:
-	.string	"es = 0x%08x\n"
-	.text
-	.globl	display_tss
-	.type	display_tss, @function
-display_tss:
-	pushl	%ebp
-	movl	%esp, %ebp
-	subl	$24, %esp
-	movl	8(%ebp), %eax
-	movl	56(%eax), %eax
-	movl	%eax, 4(%esp)
-	movl	$.LC15, (%esp)
-	call	printf
-	movl	8(%ebp), %eax
-	movzwl	80(%eax), %eax
-	movzwl	%ax, %eax
-	movl	%eax, 4(%esp)
-	movl	$.LC16, (%esp)
-	call	printf
-	movl	8(%ebp), %eax
-	movl	4(%eax), %eax
-	movl	%eax, 4(%esp)
-	movl	$.LC17, (%esp)
-	call	printf
-	movl	8(%ebp), %eax
-	movzwl	8(%eax), %eax
-	movzwl	%ax, %eax
-	movl	%eax, 4(%esp)
-	movl	$.LC18, (%esp)
-	call	printf
-	movl	8(%ebp), %eax
-	movl	60(%eax), %eax
-	movl	%eax, 4(%esp)
-	movl	$.LC19, (%esp)
-	call	printf
-	movl	8(%ebp), %eax
-	movl	52(%eax), %eax
-	movl	%eax, 4(%esp)
-	movl	$.LC20, (%esp)
-	call	printf
-	movl	8(%ebp), %eax
-	movl	52(%eax), %eax
-	movl	%eax, 4(%esp)
-	movl	$.LC21, (%esp)
-	call	printf
-	movl	8(%ebp), %eax
-	movl	52(%eax), %eax
-	movl	%eax, 4(%esp)
-	movl	$.LC22, (%esp)
-	call	printf
-	movl	8(%ebp), %eax
-	movl	52(%eax), %eax
-	movl	%eax, 4(%esp)
-	movl	$.LC23, (%esp)
-	call	printf
-	movl	8(%ebp), %eax
-	movl	64(%eax), %eax
-	movl	%eax, 4(%esp)
-	movl	$.LC24, (%esp)
-	call	printf
-	movl	8(%ebp), %eax
-	movl	68(%eax), %eax
-	movl	%eax, 4(%esp)
-	movl	$.LC25, (%esp)
-	call	printf
-	movl	8(%ebp), %eax
-	movzwl	84(%eax), %eax
-	movzwl	%ax, %eax
-	movl	%eax, 4(%esp)
-	movl	$.LC26, (%esp)
-	call	printf
-	movl	8(%ebp), %eax
-	movzwl	72(%eax), %eax
-	movzwl	%ax, %eax
-	movl	%eax, 4(%esp)
-	movl	$.LC27, (%esp)
-	call	printf
-	leave
-	ret
-	.size	display_tss, .-display_tss
 	.ident	"GCC: (GNU) 4.8.2"

@@ -133,18 +133,9 @@ void kmain32()
 
 	init_gdt_table_32();
 
-  //printf( " %08x\n %08x\n %08x %08x\n", (U32)sizeof(U8), (U32)sizeof(U16), (U32)sizeof(U32), (U32)sizeof(U64) );
 
-	uint64_t long_val_1 = ((((uint64_t)0x1234abcd) << 32) + (uint64_t)0xfedcabcd);
-	//U64 long_val_2 = ((((U64)0x10000000) << 32) + (U64)0xffffffff);
-
-	//printf("long_val_1 > long_val_2 ? %s \n", long_val_1 > long_val_2 ? "Ja" : "Nein" );
-
-	DEBUGOUT(1, "1: %04d 2: %04d 3: %0+8.8d 4: %04x 5: %04x\n%s\n", 1, -2, 3, 0x20, 0x3f, "Juergen Boehm");
-	DEBUGOUT(1, "Test unsigned hex:%016lx\n\n", long_val_1);
-
-	DEBUGOUT(1, "Len16: %08x\n", (uint32_t)_len16 );
-	DEBUGOUT(1, "Len32: %08x\n\n", (uint32_t)_len32 );
+	DEBUGOUT1(0, "Len16: %08x\n", (uint32_t)_len16 );
+	DEBUGOUT1(0, "Len32: %08x\n\n", (uint32_t)_len32 );
 
 	idt_table = MALLOC_FIXED_TYPE(idt_entry, IDT_TABLE_SIZE, 1);
 
@@ -199,13 +190,13 @@ void kmain32()
 
 	//ide_buffer = MALLOC_FIXED_TYPE(uint8_t, 512, 0x10000);
 	//ide_buffer = (uint8_t*) kalloc_fixed_aligned(512 * sizeof(uint8_t), 0x10000);
-	ide_buffer = (uint8_t*) malloc(0x10000);
+	ide_buffer = malloc(0x10000);
 	printf("\nkmain32: ide_buffer = %08x\n", (uint32_t)ide_buffer);
 
 	//prd_table must be 16 byte aligned
 	//prd_table = MALLOC_FIXED_TYPE(prd_entry_t, 16, 2);
 	//prd_table = (prd_entry_t*)kalloc_fixed_aligned(16 * sizeof(prd_entry_t), 0x10000);
-	prd_table = (prd_entry_t*)malloc(0x10000);
+	prd_table = malloc(0x10000);
 	printf("\nkmain32: prd_table = %08x\n", (uint32_t) prd_table);
 
 
@@ -217,10 +208,7 @@ void kmain32()
 	// for instant keyboard code debugging
 	//use_keyboard();
 
-	printf("sizeof(uint64_t) = %d, sizeof(long long) = %d, sizeof(unsigned long long) = %d\n",
-			sizeof(uint64_t), sizeof(long long), sizeof(unsigned long long));
-
-	uint64_t val1 = 0xdeadc0decafebabeL;
+	uint64_t val1 = 0x600dc0decafebabeL;
 	printf("val1 = %016lx\n", val1);
 
 	for(i = 0; i < 2; ++i)

@@ -30,6 +30,9 @@ int ext2_mknod(inode_t* dir, dentry_t* dentry, uint32_t mode, uint32_t rdev);
 
 int ext2_rename(inode_t* old_dir, dentry_t* old_dentry, inode_t* new_dir, dentry_t* new_dentry);
 
+int ext2_permission(inode_t* ino, int mask);
+
+
 
 
 int ext2_llseek(file_t* fil, off_t offset, size_t origin);

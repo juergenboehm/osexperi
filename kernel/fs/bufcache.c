@@ -5,6 +5,8 @@
 #include "libs/utils.h"
 #include "libs32/klib.h"
 
+#include "mem/malloc.h"
+
 #include "kernel32/mutex.h"
 
 //#include "drivers/hardware.h"
@@ -221,7 +223,7 @@ int init_bufcache()
 {
 	int i;
 
-	global_ide_buf_list = (buf_list_bin_t*) malloc(NUM_HASH_IDE_BUF_LIST * sizeof(buf_list_bin_t));
+	global_ide_buf_list = malloc(NUM_HASH_IDE_BUF_LIST * sizeof(buf_list_bin_t));
 
 
 	for(i = 0; i < NUM_HASH_IDE_BUF_LIST; ++i)
@@ -237,8 +239,8 @@ int init_bufcache()
 
 	for(i = 0; i < MAX_NUM_BUFS; ++i)
 	{
-		buf_node_t* pbuf_node = (buf_node_t*) malloc(sizeof(buf_node_t));
-		char* pbuf = (char*)malloc(IDE_BLKSIZE);
+		buf_node_t* pbuf_node = malloc(sizeof(buf_node_t));
+		char* pbuf = malloc(IDE_BLKSIZE);
 		memset(pbuf, 0, IDE_BLKSIZE);
 		pbuf_node->bufp = pbuf;
 		pbuf_node->dirty = 0;

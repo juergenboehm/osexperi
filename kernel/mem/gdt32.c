@@ -19,11 +19,11 @@ int __NOINLINE volatile init_gdtptr_32 ()
 
 	memset(gdt_ptr_32, 0, sizeof(lim_addr_ptr));
 
-	DBGOUT32("sizeof(GDT_ENTRY) = ", sizeof(descriptor_t));
+	DEBUGOUT1(0, "sizeof(GDT_ENTRY) = ", sizeof(descriptor_t));
 
 	uint32_t addr_gdtable_32 = (uint32_t) &gdt_table_32;
 
-	DBGOUT32("addr_gdtable_provis = ", addr_gdtable_32);
+	DEBUGOUT1(0, "addr_gdtable_provis = ", addr_gdtable_32);
 
 
   SET_LIM_ADDR(gdt_ptr_32, GDT_TABLE_32_LEN * sizeof(descriptor_t), &gdt_table_32);
@@ -37,7 +37,7 @@ void init_gdt_table_32()
 {
 	int i = 0;
 
-	printf("init_gdt_table_32: start.\n");
+	outb_printf("init_gdt_table_32: start.\n");
 
 	for(i = 0; i < GDT_TABLE_32_LEN; ++i )
 	{
@@ -73,7 +73,7 @@ void init_gdt_table_32()
 */
 	init_gdtptr_32();
 
-	printf("init_gdt_table_32: done.\n");
+	outb_printf("init_gdt_table_32: done.\n");
 
 
 }

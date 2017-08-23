@@ -4,6 +4,7 @@
 #include "mem/paging.h"
 #include "mem/pagedesc.h"
 #include "mem/gdt32.h"
+#include "mem/malloc.h"
 
 #include "drivers/hardware.h"
 #include "drivers/keyb.h"
@@ -154,10 +155,11 @@ void start_user_process()
 
 	const int MAX_NUM_USERPROG_PAGES = 5;
 
-	printf("start_user_process: begin\n");
+	outb_printf("start_user_process: begin\n");
 
 	while(!ext2_system_on);
 
+	outb_printf("start_user_process: about to load /user.bin\n");
 
 	uint32_t usercode_virtual = 0x1000;
 
@@ -168,9 +170,9 @@ void start_user_process()
 
 	inode_ext2_t res_inode;
 
-	char* demo_path = "/user.bin";
+	char* user_prog_path = "/user.bin";
 
-	int nlen = strlen(demo_path);
+	int nlen = strlen(user_prog_path);
 
 	//outb_printf("nlen = %d : demo_path = %s", nlen, demo_path);
 
@@ -182,9 +184,9 @@ void start_user_process()
 
 	read_inode_ext2(&root_dir, 2);
 
-	char* last_fname = (char*) malloc(EXT2_NAMELEN + 1);
+	char* last_fname = malloc(EXT2_NAMELEN + 1);
 
-	parse_path_ext2(&root_dir, 0, demo_path, &user_bin_file, last_fname);
+	parse_path_ext2(&root_dir, 0, user_prog_path, &user_bin_file, last_fname);
 
 
 	uint32_t user_prog_size = user_bin_file.pinode->i_size;
@@ -344,6 +346,15 @@ void init_process_1_xp(void* fun_addr)
 
 	last_process_added->proc_data.io_block->base_fd_arr[3] = &fixed_file_list[DEV_VGA3];
 	last_process_added->proc_data.io_block->base_fd_arr[2] = &fixed_file_list[DEV_KBD3];
+
+	link_dentry_t(&last_process_added->proc_data.io_block->root_dentry, &global_root_dentry);
+
+	link_dentry_t(&last_process_added->proc_data.io_block->pwd_dentry, &global_root_dentry);
+
+
+
+	last_process_added->proc_data.gid = 0;
+	last_process_added->proc_data.uid = 0;
 
 
 	current = 0;

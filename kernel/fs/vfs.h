@@ -93,7 +93,7 @@ typedef	struct inode_s {
 	uint32_t i_bytes;  		// number of bytes in last block
 	loff_t i_size;					 		// file size in bytes
 
-	uint32_t i_dentries_refcnt;
+	uint32_t i_dentries_refcnt; // how many dentrys point to this inode
 
 	void*	i_concrete_inode;
 
@@ -109,6 +109,7 @@ typedef struct inode_ops_s {
 	int (*rmdir)(inode_t* dir, dentry_t* dentry);
 	int (*mknod)(inode_t* dir, dentry_t* dentry, uint32_t mode, uint32_t rdev);
 	int (*rename)(inode_t* old_dir, dentry_t* old_dentry, inode_t* new_dir, dentry_t* new_dentry);
+	int (*permission)(inode_t* ino, int mask);
 	
 } inode_ops_t;
 
@@ -129,7 +130,7 @@ typedef struct dentry_s {
 	
 	uint64_t d_parent_inode_no;
 
-	int	d_count;
+	int	d_refcount; // how many pointers refer to this dentry
 
 } dentry_t;
 
@@ -153,7 +154,7 @@ typedef struct file_s {
 
 	uint32_t f_flags;
 
-	int f_count;
+	int f_refcount;  // how many pointers from proc_io_blks point to this file
 
 } file_t;
 
@@ -220,11 +221,12 @@ int do_open(char* fname, uint32_t fmode);
 
 void init_base_files();
 
-inode_t * create_inode(int type, inode_t* buf);
-file_t* create_file(int type, file_t* buf);
-dirent_t* create_dirent(int type, dirent_t* buf);
+int link_dentry_t(dentry_t** p, dentry_t* dentry);
+int link_file_t(file_t** p, file_t* fil);
 
-file_ops_t* create_file_ops(int type, file_ops_t* buf);
+
+int unlink_dentry_t(dentry_t* dentry);
+int unlink_file_t(file_t* fil);
 
 
 
@@ -260,8 +262,8 @@ extern inode_t fixed_inode_list[INIT_FIXED_LISTS_LEN];
 
 extern file_ops_t file_ops_table[MAX_NUM_FILE_OPS_TYPES];
 
-extern dentry_t* global_root_dentry;
-extern inode_t* global_root_inode;
+extern dentry_t global_root_dentry;
+extern inode_t global_root_inode;
 
 
 

@@ -4,6 +4,7 @@
 #include "libs/utils.h"
 #include "mem/paging.h"
 #include "mem/pagedesc.h"
+#include "mem/malloc.h"
 
 #include "kernel32/process.h"
 #include "kernel32/mutex.h"
@@ -867,6 +868,14 @@ uint64_t strhash(char* str)
 
 	return hash;
 
+}
+
+char* strcpy_alloc(char* str)
+{
+	int nlen = strlen(str);
+	char* str_dup = malloc(nlen + 1);
+	strcpy(str_dup, str);
+	return str_dup;
 }
 
 

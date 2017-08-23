@@ -317,10 +317,7 @@ void page_fault_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 	asm __volatile__ ( "movl %%esp, %0" : "=g"(esp_val));
 	uint32_t lin_addr;
 	asm __volatile__ ( "movl %%cr2, %0" : "=r"(lin_addr));
-#if 0
-	printf("page fault = %d %d 0x%08x esp = 0x%08x cs = %08x\n", errcode, irq_num, lin_addr, esp_val,
-			(uint32_t)get_cs());
-#endif
+
 	iret_blk_t* pir = (iret_blk_t*)(PROC_STACK_BEG(current) - sizeof(iret_blk_t));
 
 	outb_printf("page fault = %d %08x esp = %08x cs = %08x ds = %08x\n", errcode, lin_addr, esp_val,
@@ -328,9 +325,6 @@ void page_fault_handler(uint32_t errcode, uint32_t irq_num, void* esp)
 
 	//print_iret_blk(pir);
 
-#if 0
-	WAIT((1 << 24));
-#endif
 
 	void* cur_page_dir_sys;
 	cur_page_dir_sys = __VADDR(get_cr3());

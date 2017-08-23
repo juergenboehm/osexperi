@@ -7,6 +7,8 @@
 #include "fs/ext2.h"
 #include "fs/vfs.h"
 
+#include "mem/malloc.h"
+
 #include "kernel32/objects.h"
 #include "kernel32/irq.h"
 #include "kernel32/process.h"
@@ -107,19 +109,43 @@ int sys_open_3(char *pathname, int flags, mode_t mode)
 {
 
 	int retval = -1;
+	char* last_fname = malloc(FILE_NAMELEN);
 
 	outb_printf("enter: sys_open\n");
 
+	int i;
+	int fd_new = -1;
+	for(i = 0; i < NUM_BASE_FD_PROC; ++i)
+	{
+		if (!current->proc_data.io_block->base_fd_arr[i])
+		{
+			fd_new = i;
+			break;
+		}
+	}
+	if (fd_new < 0)
+	{
+		retval = -1;
+		goto ende;
+	}
+
+	dentry_t* current_root_dentry = current->proc_data.io_block->root_dentry;
+	dentry_t* current_pwd_dentry = current->proc_data.io_block->pwd_dentry;
+
 	dentry_t* found_dentry = 0;
-	char* last_fname = (char*)malloc(FILE_NAMELEN);
 
 	outb_printf("sys_open:pathname = >%s< flags = %d\n",
 			pathname, flags);
 
 	if (flags & (O_WRONLY | O_RDWR))
 	{
-		get_parse_path(global_root_dentry, 0x01, pathname, &found_dentry, last_fname);
+		int ret = get_parse_path(current_root_dentry, 0x01, pathname, &found_dentry, last_fname);
 
+		if (ret < 0)
+		{
+			retval = -1;
+			goto ende;
+		}
 		dentry_t aux_dentry;
 
 		aux_dentry.d_name = last_fname;
@@ -150,6 +176,7 @@ int sys_open_3(char *pathname, int flags, mode_t mode)
 
 				if (retval < 0)
 				{
+					retval = -1;
 					goto ende;
 				}
 
@@ -157,6 +184,7 @@ int sys_open_3(char *pathname, int flags, mode_t mode)
 
 				if (!found_dentry)
 				{
+					retval = -1;
 					goto ende;
 				}
 			}
@@ -165,10 +193,16 @@ int sys_open_3(char *pathname, int flags, mode_t mode)
 	}
 	else if ((flags & O_ACCMODE) == O_RDONLY)
 	{
-		get_parse_path(global_root_dentry, 0, pathname, &found_dentry, last_fname);
+		int ret = get_parse_path(current_root_dentry, 0, pathname, &found_dentry, last_fname);
+		if (ret < 0)
+		{
+			retval = -1;
+			goto ende;
+		}
 
 		if (!found_dentry)
 		{
+			retval = -1;
 			goto ende;
 		}
 	}
@@ -180,22 +214,14 @@ int sys_open_3(char *pathname, int flags, mode_t mode)
 	file_t* new_file = get_file_t();
 
 	new_file->f_pos = 0;
-	new_file->f_dentry = found_dentry;
+
+	link_dentry_t(&new_file->f_dentry, found_dentry);
+
 	new_file->f_fops = found_dentry->d_inode->i_fops;
 	new_file->f_flags = flags;
 
-	++found_dentry->d_count;
-
-	int i;
-	for(i = 0; i < NUM_BASE_FD_PROC; ++i)
-	{
-		if (!current->proc_data.io_block->base_fd_arr[i])
-		{
-			current->proc_data.io_block->base_fd_arr[i] = new_file;
-			retval = i;
-			goto ende;
-		}
-	}
+	link_file_t(&current->proc_data.io_block->base_fd_arr[fd_new], new_file);
+	retval = fd_new;
 
 	ende:
 

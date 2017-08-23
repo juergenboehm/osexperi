@@ -108,13 +108,18 @@ keyb_controller_comreg:
 .LC10:
 	.string	"Paging enabled.\n\n"
 .LC11:
-	.string	"\nkmain32: ide_buffer = %08x\n"
+	.string	"kernel32/startup32.c"
 .LC12:
-	.string	"\nkmain32: prd_table = %08x\n"
-	.align 4
+	.string	"[Debug: %s:%d]"
 .LC13:
-	.string	"sizeof(uint64_t) = %d, sizeof(long long) = %d, sizeof(unsigned long long) = %d\n"
+	.string	"Len16: %08x\n"
 .LC14:
+	.string	"Len32: %08x\n\n"
+.LC15:
+	.string	"\nkmain32: ide_buffer = %08x\n"
+.LC16:
+	.string	"\nkmain32: prd_table = %08x\n"
+.LC17:
 	.string	"val1 = %016lx\n"
 	.text
 	.globl	kmain32
@@ -122,7 +127,7 @@ keyb_controller_comreg:
 kmain32:
 	pushl	%ebp
 	movl	%esp, %ebp
-	subl	$88, %esp
+	subl	$72, %esp
 	movl	$0, current
 	movl	$0, screen_current
 	movl	$0, -12(%ebp)
@@ -173,8 +178,22 @@ kmain32:
 	movl	$.LC10, (%esp)
 	call	printf
 	call	init_gdt_table_32
-	movl	$-19092531, -40(%ebp)
-	movl	$305441741, -36(%ebp)
+	movl	$137, 8(%esp)
+	movl	$.LC11, 4(%esp)
+	movl	$.LC12, (%esp)
+	call	outb_printf
+	movl	_len16, %eax
+	movl	%eax, 4(%esp)
+	movl	$.LC13, (%esp)
+	call	outb_printf
+	movl	$138, 8(%esp)
+	movl	$.LC11, 4(%esp)
+	movl	$.LC12, (%esp)
+	call	outb_printf
+	movl	_len32, %eax
+	movl	%eax, 4(%esp)
+	movl	$.LC14, (%esp)
+	call	outb_printf
 	movl	$2048, (%esp)
 	call	malloc
 	movl	%eax, idt_table
@@ -184,7 +203,7 @@ kmain32:
 	movl	$0, keyb_special_counter
 	movl	$128, (%esp)
 	call	malloc
-	movl	%eax, -44(%ebp)
+	movl	%eax, -32(%ebp)
 	movl	$6, 8(%esp)
 	movl	$0, 4(%esp)
 	movl	$idt_ptr, (%esp)
@@ -193,7 +212,7 @@ kmain32:
 	movl	idt_table, %eax
 	movl	%eax, idt_ptr+2
 /APP
-/  163 "kernel32/startup32.c" 1
+/  154 "kernel32/startup32.c" 1
 	lidt idt_ptr
 /  0 "" 2
 /NO_APP
@@ -211,35 +230,30 @@ kmain32:
 	call	enumerate_pci_bus
 	movl	$pci_addr_ide_contr, (%esp)
 	call	ide_init
-	movl	%eax, -48(%ebp)
+	movl	%eax, -36(%ebp)
 	call	init_bufcache
 	movl	$65536, (%esp)
 	call	malloc
 	movl	%eax, ide_buffer
 	movl	ide_buffer, %eax
 	movl	%eax, 4(%esp)
-	movl	$.LC11, (%esp)
+	movl	$.LC15, (%esp)
 	call	printf
 	movl	$65536, (%esp)
 	call	malloc
 	movl	%eax, prd_table
 	movl	prd_table, %eax
 	movl	%eax, 4(%esp)
-	movl	$.LC12, (%esp)
+	movl	$.LC16, (%esp)
 	call	printf
-	movl	$0, -52(%ebp)
-	movl	$8, 12(%esp)
-	movl	$8, 8(%esp)
-	movl	$8, 4(%esp)
-	movl	$.LC13, (%esp)
-	call	printf
-	movl	$-889275714, -64(%ebp)
-	movl	$-559038242, -60(%ebp)
-	movl	-64(%ebp), %eax
-	movl	-60(%ebp), %edx
+	movl	$0, -40(%ebp)
+	movl	$-889275714, -48(%ebp)
+	movl	$1611514078, -44(%ebp)
+	movl	-48(%ebp), %eax
+	movl	-44(%ebp), %edx
 	movl	%eax, 4(%esp)
 	movl	%edx, 8(%esp)
-	movl	$.LC14, (%esp)
+	movl	$.LC17, (%esp)
 	call	printf
 	movl	$0, -12(%ebp)
 	jmp	.L9
@@ -249,8 +263,8 @@ kmain32:
 .L9:
 	cmpl	$1, -12(%ebp)
 	jbe	.L10
-	movl	$4096, -68(%ebp)
-	movl	-68(%ebp), %eax
+	movl	$4096, -52(%ebp)
+	movl	-52(%ebp), %eax
 	movl	%eax, (%esp)
 	call	init_process_1_xp
 	leave

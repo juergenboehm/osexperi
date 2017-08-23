@@ -82,9 +82,7 @@ dentry_t* ext2_lookup(inode_t* dir, dentry_t* dentry)
 		new_akt_dentry->d_inode = new_akt_inode;
 		new_akt_dentry->d_parent_inode_no = dir->i_ino;
 
-		int dnamelen = strlen(dentry->d_name);
-		char* new_name = (char*) malloc(dnamelen + 1);
-		memcpy(new_name, dentry->d_name, dnamelen + 1);
+		char* new_name = strcpy_alloc(dentry->d_name);
 
 		new_akt_dentry->d_name = new_name;
 
@@ -128,6 +126,10 @@ int ext2_rename(inode_t* old_dir, dentry_t* old_dentry, inode_t* new_dir, dentry
 	return -1;
 }
 
+int ext2_permission(inode_t* ino, int mask)
+{
+	return -1;
+}
 
 
 
@@ -192,16 +194,6 @@ int ext2_write(file_t* fil, char* buf, size_t count, size_t* offset)
 	uint32_t offset_akt = offset ? *offset : fil->f_pos;
 
 	file_ext2_t* ext2_file = (file_ext2_t*)fil->f_dentry->d_inode->i_concrete_inode;
-
-#if 0
-	int i;
-	for(i = 0; i < count; ++i)
-	{
-		outb_printf("%c", buf[i]);
-	}
-	outb_printf("ext2_write: ext2_file size = %d, count = %d, offset_akt = %d : ",
-			ext2_file->pinode->i_size, count, offset_akt);
-#endif
 
 	int nwrt = write_file_ext2(ext2_file, buf, count, offset_akt);
 

@@ -1,6 +1,9 @@
 
 #include "libs32/klib.h"
 #include "drivers/vga.h"
+
+#include "mem/malloc.h"
+
 #include "fs/vfsext2.h"
 #include "fs/gendrivers.h"
 #include "fs/vfs.h"
@@ -15,8 +18,8 @@ file_ops_t device_driver_file_ops;
 
 file_ops_t device_driver_blk_file_ops;
 
-dentry_t* global_root_dentry;
-inode_t* global_root_inode;
+dentry_t global_root_dentry;
+inode_t global_root_inode;
 
 
 
@@ -168,7 +171,7 @@ int ddriv_read_blk(file_t* fil, char* buf, size_t count, size_t* offset)
 
 	uint32_t akt_count = count;
 
-	char* blk_buf = (char*)malloc(blksize);
+	char* blk_buf = malloc(blksize);
 	char* pbuf = buf;
 
 	uint32_t nrd_total = 0;
@@ -235,7 +238,7 @@ int ddriv_write_blk(file_t* fil, char* buf, size_t count, size_t* offset)
 
 	uint32_t akt_count = count;
 
-	char* blk_buf = (char*)malloc(blksize);
+	char* blk_buf = malloc(blksize);
 	char* pbuf = buf;
 
 	uint32_t nwrt_total = 0;
@@ -337,7 +340,8 @@ int set_inode_ops(inode_ops_t* iops,
 		void *mkdir,
 		void *rmdir,
 		void *mknod,
-		void *rename )
+		void *rename,
+		void *permission)
 {
 	iops->create = create;
 	iops->lookup = lookup;
@@ -346,6 +350,7 @@ int set_inode_ops(inode_ops_t* iops,
 	iops->rmdir = rmdir;
 	iops->mknod = mknod;
 	iops->rename = rename;
+	iops->permission = permission;
 
 	return 0;
 }
@@ -402,7 +407,7 @@ void create_ext2_file_ops(file_ops_t* fops)
 void create_ext2_inode_ops(inode_ops_t* iops)
 {
 	set_inode_ops(iops, ext2_create, ext2_lookup, ext2_unlink, ext2_mkdir, ext2_rmdir,
-			ext2_mknod, ext2_rename);
+			ext2_mknod, ext2_rename, ext2_permission);
 }
 
 
@@ -513,6 +518,46 @@ void init_base_files()
 
 	}
 
+}
+
+int link_file_t(file_t** p, file_t* fil)
+{
+	*p = fil;
+	if (fil)
+	{
+		++fil->f_refcount;
+	}
+	return 0;
+}
+
+
+int link_dentry_t(dentry_t** p, dentry_t* dentry)
+{
+	*p = dentry;
+	if (dentry)
+	{
+		++dentry->d_refcount;
+	}
+	return 0;
+}
+
+
+int unlink_dentry_t(dentry_t* dentry)
+{
+	if (dentry)
+	{
+		--dentry->d_refcount;
+	}
+	return 0;
+}
+
+int unlink_file_t(file_t* fil)
+{
+	if (fil)
+	{
+	--fil->f_refcount;
+	}
+	return 0;
 }
 
 
@@ -630,9 +675,7 @@ int get_parse_path(dentry_t* pwd_dentry, uint32_t mode, char* path,
 	int argc;
 	char* argv[MAX_PATH_COMPONENTS];
 
-	int nlen = strlen(path);
-	char* path_copy = (char*)malloc(nlen + 1);
-	memcpy(path_copy, path, nlen + 1);
+	char* path_copy = strcpy_alloc(path);
 
 	parse_buf(path_copy, strlen(path), "/", &argc, argv);
 
