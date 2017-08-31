@@ -3,6 +3,7 @@
 
 #include "kerneltypes.h"
 #include "libs/kerneldefs.h"
+#include "fs/vfs.h"
 
 void syscall_handler(uint32_t errcode, uint32_t irq_num, void* esp);
 
@@ -24,6 +25,11 @@ void syscall_handler(uint32_t errcode, uint32_t irq_num, void* esp);
 #define SC_SYS_FORK_NO							11
 
 #define SC_SYS_CLOSE_NO			12
+
+#define SC_SYS_CHDIR_NO			13
+#define SC_SYS_READDIR_NO		14
+
+
 
 
 
@@ -53,6 +59,9 @@ int sys_fork(uint32_t arg);
 
 int sys_close(int fd);
 
+int sys_chdir(char* pathname);
+
+int sys_readdir(int fd, dirent_t* dirent);
 
 
 

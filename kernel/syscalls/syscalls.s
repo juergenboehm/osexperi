@@ -1,6 +1,7 @@
 	.file	"syscalls.c"
 	.comm	global_in_de_hash_headers,2164,32
 	.comm	global_in_de_lru_list,4,4
+	.comm	global_ino_hash_headers,2164,32
 	.comm	malloc_sizes_log,60,32
 	.comm	malloc_heads,60,32
 /APP
@@ -11,7 +12,7 @@
 	.data
 	.align 32
 	.type	syscall_list, @object
-	.size	syscall_list, 104
+	.size	syscall_list, 120
 syscall_list:
 	.long	sys_open
 	.long	2
@@ -39,6 +40,10 @@ syscall_list:
 	.long	1
 	.long	sys_close
 	.long	1
+	.long	sys_chdir
+	.long	1
+	.long	sys_readdir
+	.long	2
 	.text
 	.globl	syscall_handler
 	.type	syscall_handler, @function
@@ -190,7 +195,7 @@ sys_open:
 .LC1:
 	.string	"sys_open:pathname = >%s< flags = %d\n"
 .LC2:
-	.string	"inode found = %d\n"
+	.string	"sys_open_3: inode found = %d\n"
 	.text
 	.globl	sys_open_3
 	.type	sys_open_3, @function
@@ -248,12 +253,14 @@ sys_open_3:
 	testl	%eax, %eax
 	je	.L19
 	movl	-24(%ebp), %eax
-	movl	%eax, 16(%esp)
+	movl	%eax, 20(%esp)
 	leal	-60(%ebp), %eax
-	movl	%eax, 12(%esp)
+	movl	%eax, 16(%esp)
 	movl	8(%ebp), %eax
-	movl	%eax, 8(%esp)
-	movl	$1, 4(%esp)
+	movl	%eax, 12(%esp)
+	movl	$1, 8(%esp)
+	movl	-32(%ebp), %eax
+	movl	%eax, 4(%esp)
 	movl	-28(%ebp), %eax
 	movl	%eax, (%esp)
 	call	get_parse_path
@@ -264,11 +271,11 @@ sys_open_3:
 	jmp	.L18
 .L20:
 	movl	-24(%ebp), %eax
-	movl	%eax, -116(%ebp)
+	movl	%eax, -120(%ebp)
 	movl	-60(%ebp), %eax
-	movl	40(%eax), %eax
+	movl	44(%eax), %eax
 	movl	%eax, -40(%ebp)
-	leal	-116(%ebp), %eax
+	leal	-120(%ebp), %eax
 	movl	%eax, 4(%esp)
 	movl	-40(%ebp), %eax
 	movl	%eax, (%esp)
@@ -300,7 +307,7 @@ sys_open_3:
 	movl	(%eax), %eax
 	movl	16(%ebp), %edx
 	movl	%edx, 8(%esp)
-	leal	-116(%ebp), %edx
+	leal	-120(%ebp), %edx
 	movl	%edx, 4(%esp)
 	movl	-40(%ebp), %edx
 	movl	%edx, (%esp)
@@ -311,7 +318,7 @@ sys_open_3:
 	movl	$-1, -12(%ebp)
 	jmp	.L18
 .L25:
-	leal	-116(%ebp), %eax
+	leal	-120(%ebp), %eax
 	movl	%eax, 4(%esp)
 	movl	-40(%ebp), %eax
 	movl	%eax, (%esp)
@@ -331,12 +338,14 @@ sys_open_3:
 	testl	%eax, %eax
 	jne	.L26
 	movl	-24(%ebp), %eax
-	movl	%eax, 16(%esp)
+	movl	%eax, 20(%esp)
 	leal	-60(%ebp), %eax
-	movl	%eax, 12(%esp)
+	movl	%eax, 16(%esp)
 	movl	8(%ebp), %eax
-	movl	%eax, 8(%esp)
-	movl	$0, 4(%esp)
+	movl	%eax, 12(%esp)
+	movl	$0, 8(%esp)
+	movl	-32(%ebp), %eax
+	movl	%eax, 4(%esp)
 	movl	-28(%ebp), %eax
 	movl	%eax, (%esp)
 	call	get_parse_path
@@ -353,8 +362,8 @@ sys_open_3:
 	jmp	.L18
 .L26:
 	movl	-60(%ebp), %eax
-	movl	40(%eax), %eax
-	movl	72(%eax), %eax
+	movl	44(%eax), %eax
+	movl	84(%eax), %eax
 	movl	%eax, -52(%ebp)
 	movl	-52(%ebp), %eax
 	movl	12(%eax), %eax
@@ -373,7 +382,7 @@ sys_open_3:
 	movl	%edx, (%esp)
 	call	link_dentry_t
 	movl	-60(%ebp), %eax
-	movl	40(%eax), %eax
+	movl	44(%eax), %eax
 	movl	40(%eax), %edx
 	movl	-56(%ebp), %eax
 	movl	%edx, 16(%eax)
@@ -414,8 +423,84 @@ sys_creat:
 sys_unlink:
 	pushl	%ebp
 	movl	%esp, %ebp
-	movl	$-1, %eax
-	popl	%ebp
+	subl	$136, %esp
+	movl	$-1, -12(%ebp)
+	movl	$255, (%esp)
+	call	malloc
+	movl	%eax, -16(%ebp)
+	movl	current, %eax
+	movl	108(%eax), %eax
+	movl	(%eax), %eax
+	movl	%eax, -20(%ebp)
+	movl	current, %eax
+	movl	108(%eax), %eax
+	movl	4(%eax), %eax
+	movl	%eax, -24(%ebp)
+	movl	$0, -36(%ebp)
+	movl	-16(%ebp), %eax
+	movl	%eax, 20(%esp)
+	leal	-36(%ebp), %eax
+	movl	%eax, 16(%esp)
+	movl	8(%ebp), %eax
+	movl	%eax, 12(%esp)
+	movl	$1, 8(%esp)
+	movl	-24(%ebp), %eax
+	movl	%eax, 4(%esp)
+	movl	-20(%ebp), %eax
+	movl	%eax, (%esp)
+	call	get_parse_path
+	movl	%eax, -12(%ebp)
+	cmpl	$0, -12(%ebp)
+	js	.L32
+	movl	-36(%ebp), %eax
+	testl	%eax, %eax
+	je	.L32
+	movl	-36(%ebp), %eax
+	movl	44(%eax), %eax
+	movl	%eax, -28(%ebp)
+	movl	-16(%ebp), %eax
+	movl	%eax, -96(%ebp)
+	leal	-96(%ebp), %eax
+	movl	%eax, 4(%esp)
+	movl	-28(%ebp), %eax
+	movl	%eax, (%esp)
+	call	gen_lookup
+	movl	%eax, -32(%ebp)
+	cmpl	$0, -32(%ebp)
+	jne	.L33
+	movl	$-1, -12(%ebp)
+	jmp	.L32
+.L33:
+	movl	-32(%ebp), %eax
+	movl	56(%eax), %eax
+	testl	%eax, %eax
+	je	.L34
+	movl	$-1, -12(%ebp)
+	jmp	.L32
+.L34:
+	movl	-32(%ebp), %eax
+	movl	%eax, (%esp)
+	call	delete_in_de_hash_elem
+	movl	-28(%ebp), %eax
+	movl	36(%eax), %eax
+	movl	8(%eax), %eax
+	leal	-96(%ebp), %edx
+	movl	%edx, 4(%esp)
+	movl	-28(%ebp), %edx
+	movl	%edx, (%esp)
+	call	*%eax
+	movl	%eax, -12(%ebp)
+	cmpl	$0, -12(%ebp)
+	jns	.L35
+	jmp	.L32
+.L35:
+	movl	$0, -12(%ebp)
+.L32:
+	movl	-16(%ebp), %eax
+	movl	%eax, (%esp)
+	call	free
+	movl	-12(%ebp), %eax
+	leave
 	ret
 	.size	sys_unlink, .-sys_unlink
 	.globl	sys_mkdir
@@ -423,17 +508,220 @@ sys_unlink:
 sys_mkdir:
 	pushl	%ebp
 	movl	%esp, %ebp
-	movl	$-1, %eax
-	popl	%ebp
+	subl	$136, %esp
+	movl	$-1, -12(%ebp)
+	movl	$255, (%esp)
+	call	malloc
+	movl	%eax, -16(%ebp)
+	movl	current, %eax
+	movl	108(%eax), %eax
+	movl	(%eax), %eax
+	movl	%eax, -20(%ebp)
+	movl	current, %eax
+	movl	108(%eax), %eax
+	movl	4(%eax), %eax
+	movl	%eax, -24(%ebp)
+	movl	$0, -32(%ebp)
+	movl	-16(%ebp), %eax
+	movl	%eax, 20(%esp)
+	leal	-32(%ebp), %eax
+	movl	%eax, 16(%esp)
+	movl	8(%ebp), %eax
+	movl	%eax, 12(%esp)
+	movl	$1, 8(%esp)
+	movl	-24(%ebp), %eax
+	movl	%eax, 4(%esp)
+	movl	-20(%ebp), %eax
+	movl	%eax, (%esp)
+	call	get_parse_path
+	movl	%eax, -12(%ebp)
+	cmpl	$0, -12(%ebp)
+	js	.L38
+	movl	-32(%ebp), %eax
+	testl	%eax, %eax
+	je	.L38
+	movl	-32(%ebp), %eax
+	movl	44(%eax), %eax
+	movl	%eax, -28(%ebp)
+	movl	-16(%ebp), %eax
+	movl	%eax, -92(%ebp)
+	movl	-28(%ebp), %eax
+	movl	36(%eax), %eax
+	movl	12(%eax), %eax
+	movl	12(%ebp), %edx
+	movl	%edx, 8(%esp)
+	leal	-92(%ebp), %edx
+	movl	%edx, 4(%esp)
+	movl	-28(%ebp), %edx
+	movl	%edx, (%esp)
+	call	*%eax
+	movl	%eax, -12(%ebp)
+	cmpl	$0, -12(%ebp)
+	jns	.L39
+	jmp	.L38
+.L39:
+	movl	$0, -12(%ebp)
+.L38:
+	movl	-16(%ebp), %eax
+	movl	%eax, (%esp)
+	call	free
+	movl	-12(%ebp), %eax
+	leave
 	ret
 	.size	sys_mkdir, .-sys_mkdir
+	.section	.rodata
+.LC3:
+	.string	"."
+.LC4:
+	.string	"syscalls/syscalls.c"
+.LC5:
+	.string	"[Debug: %s:%d]"
+.LC6:
+	.string	" failed"
+.LC7:
+	.string	"dot_dentry == 0 && 1"
+.LC8:
+	.string	"%s %s\n"
+.LC9:
+	.string	".."
+.LC10:
+	.string	"dot_dentry == 0 && 2"
+	.text
 	.globl	sys_rmdir
 	.type	sys_rmdir, @function
 sys_rmdir:
 	pushl	%ebp
 	movl	%esp, %ebp
-	movl	$-1, %eax
-	popl	%ebp
+	subl	$200, %esp
+	movl	$-1, -12(%ebp)
+	movl	$255, (%esp)
+	call	malloc
+	movl	%eax, -16(%ebp)
+	movl	current, %eax
+	movl	108(%eax), %eax
+	movl	(%eax), %eax
+	movl	%eax, -20(%ebp)
+	movl	current, %eax
+	movl	108(%eax), %eax
+	movl	4(%eax), %eax
+	movl	%eax, -24(%ebp)
+	movl	$0, -40(%ebp)
+	movl	-16(%ebp), %eax
+	movl	%eax, 20(%esp)
+	leal	-40(%ebp), %eax
+	movl	%eax, 16(%esp)
+	movl	8(%ebp), %eax
+	movl	%eax, 12(%esp)
+	movl	$1, 8(%esp)
+	movl	-24(%ebp), %eax
+	movl	%eax, 4(%esp)
+	movl	-20(%ebp), %eax
+	movl	%eax, (%esp)
+	call	get_parse_path
+	movl	%eax, -12(%ebp)
+	cmpl	$0, -12(%ebp)
+	js	.L42
+	movl	-40(%ebp), %eax
+	testl	%eax, %eax
+	je	.L42
+	movl	-40(%ebp), %eax
+	movl	44(%eax), %eax
+	movl	%eax, -28(%ebp)
+	movl	-16(%ebp), %eax
+	movl	%eax, -100(%ebp)
+	leal	-100(%ebp), %eax
+	movl	%eax, 4(%esp)
+	movl	-28(%ebp), %eax
+	movl	%eax, (%esp)
+	call	gen_lookup
+	movl	%eax, -32(%ebp)
+	cmpl	$0, -32(%ebp)
+	jne	.L43
+	movl	$-1, -12(%ebp)
+	jmp	.L42
+.L43:
+	movl	-32(%ebp), %eax
+	movl	56(%eax), %eax
+	testl	%eax, %eax
+	je	.L44
+	movl	$-1, -12(%ebp)
+	jmp	.L42
+.L44:
+	movl	$.LC3, -160(%ebp)
+	movl	-32(%ebp), %eax
+	movl	44(%eax), %eax
+	leal	-160(%ebp), %edx
+	movl	%edx, 4(%esp)
+	movl	%eax, (%esp)
+	call	gen_lookup
+	movl	%eax, -36(%ebp)
+	cmpl	$0, -36(%ebp)
+	jne	.L45
+	cmpl	$0, -36(%ebp)
+	je	.L45
+	movl	$400, 8(%esp)
+	movl	$.LC4, 4(%esp)
+	movl	$.LC5, (%esp)
+	call	printf
+	movl	$.LC6, 8(%esp)
+	movl	$.LC7, 4(%esp)
+	movl	$.LC8, (%esp)
+	call	printf
+.L46:
+	jmp	.L46
+.L45:
+	movl	-36(%ebp), %eax
+	movl	%eax, (%esp)
+	call	delete_in_de_hash_elem
+	movl	$.LC9, -160(%ebp)
+	movl	-32(%ebp), %eax
+	movl	44(%eax), %eax
+	leal	-160(%ebp), %edx
+	movl	%edx, 4(%esp)
+	movl	%eax, (%esp)
+	call	gen_lookup
+	movl	%eax, -36(%ebp)
+	cmpl	$0, -36(%ebp)
+	jne	.L47
+	cmpl	$0, -36(%ebp)
+	je	.L47
+	movl	$414, 8(%esp)
+	movl	$.LC4, 4(%esp)
+	movl	$.LC5, (%esp)
+	call	printf
+	movl	$.LC6, 8(%esp)
+	movl	$.LC10, 4(%esp)
+	movl	$.LC8, (%esp)
+	call	printf
+.L48:
+	jmp	.L48
+.L47:
+	movl	-36(%ebp), %eax
+	movl	%eax, (%esp)
+	call	delete_in_de_hash_elem
+	movl	-32(%ebp), %eax
+	movl	%eax, (%esp)
+	call	delete_in_de_hash_elem
+	movl	-28(%ebp), %eax
+	movl	36(%eax), %eax
+	movl	16(%eax), %eax
+	leal	-100(%ebp), %edx
+	movl	%edx, 4(%esp)
+	movl	-28(%ebp), %edx
+	movl	%edx, (%esp)
+	call	*%eax
+	movl	%eax, -12(%ebp)
+	cmpl	$0, -12(%ebp)
+	jns	.L49
+	jmp	.L42
+.L49:
+	movl	$0, -12(%ebp)
+.L42:
+	movl	-16(%ebp), %eax
+	movl	%eax, (%esp)
+	call	free
+	movl	-12(%ebp), %eax
+	leave
 	ret
 	.size	sys_rmdir, .-sys_rmdir
 	.globl	sys_rename
@@ -466,12 +754,12 @@ sys_read:
 	movl	8(%eax,%edx,4), %eax
 	movl	%eax, -16(%ebp)
 	cmpl	$0, -16(%ebp)
-	je	.L42
+	je	.L56
 	movl	-16(%ebp), %eax
 	movl	16(%eax), %eax
 	movl	4(%eax), %eax
 	testl	%eax, %eax
-	je	.L43
+	je	.L57
 	movl	-16(%ebp), %eax
 	movl	16(%eax), %eax
 	movl	4(%eax), %eax
@@ -484,13 +772,13 @@ sys_read:
 	movl	%edx, (%esp)
 	call	*%eax
 	movl	%eax, -12(%ebp)
-	jmp	.L45
-.L43:
+	jmp	.L59
+.L57:
 	movl	$-1, -12(%ebp)
-	jmp	.L45
-.L42:
+	jmp	.L59
+.L56:
 	movl	$-1, -12(%ebp)
-.L45:
+.L59:
 	movl	-12(%ebp), %eax
 	leave
 	ret
@@ -507,12 +795,12 @@ sys_write:
 	movl	8(%eax,%edx,4), %eax
 	movl	%eax, -16(%ebp)
 	cmpl	$0, -16(%ebp)
-	je	.L48
+	je	.L62
 	movl	-16(%ebp), %eax
 	movl	16(%eax), %eax
 	movl	8(%eax), %eax
 	testl	%eax, %eax
-	je	.L49
+	je	.L63
 	movl	-16(%ebp), %eax
 	movl	16(%eax), %eax
 	movl	8(%eax), %eax
@@ -525,20 +813,20 @@ sys_write:
 	movl	%edx, (%esp)
 	call	*%eax
 	movl	%eax, -12(%ebp)
-	jmp	.L51
-.L49:
+	jmp	.L65
+.L63:
 	movl	$-1, -12(%ebp)
-	jmp	.L51
-.L48:
+	jmp	.L65
+.L62:
 	movl	$-1, -12(%ebp)
-.L51:
+.L65:
 	movl	-12(%ebp), %eax
 	leave
 	ret
 	.size	sys_write, .-sys_write
 	.section	.rodata
 	.align 4
-.LC3:
+.LC11:
 	.string	"sys_register_handler: registered = %08x\n"
 	.text
 	.globl	sys_register_handler
@@ -552,7 +840,7 @@ sys_register_handler:
 	movl	%edx, 124(%eax)
 	movl	8(%ebp), %eax
 	movl	%eax, 4(%esp)
-	movl	$.LC3, (%esp)
+	movl	$.LC11, (%esp)
 	call	outb_printf
 	movl	$0, %eax
 	leave
@@ -575,8 +863,125 @@ sys_fork:
 sys_close:
 	pushl	%ebp
 	movl	%esp, %ebp
-	movl	$-1, %eax
-	popl	%ebp
+	subl	$40, %esp
+	movl	$-1, -12(%ebp)
+	movl	current, %eax
+	movl	108(%eax), %eax
+	movl	8(%ebp), %edx
+	movl	8(%eax,%edx,4), %eax
+	testl	%eax, %eax
+	jne	.L72
+	jmp	.L73
+.L72:
+	movl	current, %eax
+	movl	108(%eax), %eax
+	movl	8(%ebp), %edx
+	movl	8(%eax,%edx,4), %eax
+	movl	12(%eax), %eax
+	movl	%eax, (%esp)
+	call	unlink_dentry_t
+	movl	current, %eax
+	movl	108(%eax), %eax
+	movl	8(%ebp), %edx
+	movl	8(%eax,%edx,4), %eax
+	movl	%eax, (%esp)
+	call	unlink_file_t
+	movl	current, %eax
+	movl	108(%eax), %eax
+	movl	8(%ebp), %edx
+	movl	$0, 8(%eax,%edx,4)
+	movl	$0, -12(%ebp)
+.L73:
+	movl	-12(%ebp), %eax
+	leave
 	ret
 	.size	sys_close, .-sys_close
+	.globl	sys_chdir
+	.type	sys_chdir, @function
+sys_chdir:
+	pushl	%ebp
+	movl	%esp, %ebp
+	subl	$72, %esp
+	movl	$-1, -12(%ebp)
+	movl	$255, (%esp)
+	call	malloc
+	movl	%eax, -16(%ebp)
+	movl	current, %eax
+	movl	108(%eax), %eax
+	movl	(%eax), %eax
+	movl	%eax, -20(%ebp)
+	movl	current, %eax
+	movl	108(%eax), %eax
+	movl	4(%eax), %eax
+	movl	%eax, -24(%ebp)
+	movl	$0, -28(%ebp)
+	movl	-16(%ebp), %eax
+	movl	%eax, 20(%esp)
+	leal	-28(%ebp), %eax
+	movl	%eax, 16(%esp)
+	movl	8(%ebp), %eax
+	movl	%eax, 12(%esp)
+	movl	$0, 8(%esp)
+	movl	-24(%ebp), %eax
+	movl	%eax, 4(%esp)
+	movl	-20(%ebp), %eax
+	movl	%eax, (%esp)
+	call	get_parse_path
+	movl	%eax, -12(%ebp)
+	cmpl	$0, -12(%ebp)
+	js	.L76
+	movl	-28(%ebp), %eax
+	testl	%eax, %eax
+	je	.L76
+	movl	current, %eax
+	movl	108(%eax), %eax
+	movl	4(%eax), %eax
+	movl	%eax, (%esp)
+	call	unlink_dentry_t
+	movl	-28(%ebp), %eax
+	movl	current, %edx
+	movl	108(%edx), %edx
+	addl	$4, %edx
+	movl	%eax, 4(%esp)
+	movl	%edx, (%esp)
+	call	link_dentry_t
+.L76:
+	movl	-16(%ebp), %eax
+	movl	%eax, (%esp)
+	call	free
+	movl	-12(%ebp), %eax
+	leave
+	ret
+	.size	sys_chdir, .-sys_chdir
+	.globl	sys_readdir
+	.type	sys_readdir, @function
+sys_readdir:
+	pushl	%ebp
+	movl	%esp, %ebp
+	subl	$40, %esp
+	movl	$-1, -12(%ebp)
+	movl	current, %eax
+	movl	108(%eax), %eax
+	movl	8(%ebp), %edx
+	movl	8(%eax,%edx,4), %eax
+	movl	%eax, -16(%ebp)
+	cmpl	$0, -16(%ebp)
+	jne	.L79
+	jmp	.L80
+.L79:
+	movl	-16(%ebp), %eax
+	movl	16(%eax), %eax
+	movl	24(%eax), %eax
+	movl	$0, 8(%esp)
+	movl	12(%ebp), %edx
+	movl	%edx, 4(%esp)
+	movl	-16(%ebp), %edx
+	movl	%edx, (%esp)
+	call	*%eax
+	movl	%eax, -12(%ebp)
+.L80:
+	movl	-12(%ebp), %eax
+	leave
+	ret
+	.size	sys_readdir, .-sys_readdir
 	.ident	"GCC: (GNU) 4.8.2"

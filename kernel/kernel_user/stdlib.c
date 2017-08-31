@@ -2,7 +2,7 @@
 #include "libs/utils.h"
 #include "libs/kerneldefs.h"
 
-#include "syscalls/syscalls.h"
+//#include "syscalls/syscalls.h"
 
 #include "fs/fcntl.h"
 
@@ -116,6 +116,12 @@ int open(char *pathname, int flags, ...)
 }
 
 
+int close(int fd)
+{
+	return make_syscall1(SC_SYS_CLOSE_NO, (uint32_t) fd);
+}
+
+
 int read(int fd, void *buf, size_t count)
 {
 	return make_syscall3(SC_SYS_READ_NO, (uint32_t) fd, (uint32_t) buf, (uint32_t) count);
@@ -126,6 +132,33 @@ int write(int fd, const void *buf, size_t count)
 	return make_syscall3(SC_SYS_WRITE_NO, (uint32_t) fd, (uint32_t) buf, (uint32_t) count);
 
 }
+
+int chdir(char* pathname)
+{
+	return make_syscall1(SC_SYS_CHDIR_NO, (uint32_t) pathname);
+}
+
+int readdir(int fd, dirent_t* dirent)
+{
+	return make_syscall2(SC_SYS_READDIR_NO, (uint32_t) fd, (uint32_t) dirent);
+}
+
+
+int unlink(char *pathname)
+{
+	return make_syscall1(SC_SYS_UNLINK_NO, (uint32_t) pathname);
+}
+
+int mkdir(char *pathname, mode_t mode)
+{
+	return make_syscall2(SC_SYS_MKDIR_NO, (uint32_t) pathname, (uint32_t) mode);
+}
+
+int rmdir(char *pathname)
+{
+	return make_syscall1(SC_SYS_RMDIR_NO, (uint32_t) pathname);
+}
+
 
 
 
@@ -764,10 +797,9 @@ int outb_printf(char* format, ... )
 // getc, putc, gets, puts
 
 
-
 // some string routines
-/*
-int strcmp(char* str1, char* str2)
+
+int strcmp(const char* str1, const char* str2)
 {
 	while(*str1 && *str2 && (*str1 == *str2))
 	{
@@ -793,10 +825,8 @@ int strcmp(char* str1, char* str2)
 char* strcpy(char* str1, char* str2)
 {
 	char* p = str1;
-	while (*p)
-	{
-		*str2++ = *p++;
-	}
+	while ((*p++ = *str2++));
+
 	return str1;
 }
 
@@ -804,9 +834,15 @@ char* strncpy(char* str1, char* str2, size_t n)
 {
 	size_t i = 0;
 	char* p = str1;
-	while((i < n) && (*p))
+	while (i < n)
 	{
-		*str2++ = *p++;
+		*p = *str2;
+		if (!*p)
+		{
+			break;
+		}
+		++p;
+		++str2;
 		++i;
 	}
 	return str1;
@@ -823,12 +859,11 @@ char* strcat(char* str1, char* str2)
 	{
 		*p++ = *str2++;
 	}
+	*p = *str2;
 	return str1;
 }
 
-*/
-
-int strlen(char *str)
+int strlen(char* str)
 {
 	int i = 0;
 	char* p = str;
@@ -837,17 +872,41 @@ int strlen(char *str)
 	return i;
 }
 
-/*
-
-// some lowlevel io functions
-
-void waitkey()
+int atoi(char* str)
 {
-	while(!keyb_sema)
+	char* p = str;
+	int eps = 1;
+	int val = 0;
+	if (*p == '-')
 	{
+		eps = -1;
+		++p;
 	}
-	keyb_sema = 0;
+
+	while ('0' <= *p && *p <= '9')
+	{
+		val = 10 * val + ((*p) - '0');
+		++p;
+	}
+
+	return eps * val;
 }
+
+// djb hash (daniel julius bernstein)
+uint64_t strhash(char* str)
+{
+	uint64_t hash = 5381;
+	int c;
+	char *p = str;
+	while ((c = *p++))
+	{
+		hash = ((hash << 5) + hash) + c;
+	}
+
+	return hash;
+
+}
+
 
 // memcpy
 
@@ -856,10 +915,27 @@ void* memcpy(void* dest, void* src, size_t n)
   uint8_t* p = dest;
   uint8_t* q = src;
   size_t i = 0;
-  while (i < n)
+
+	// if critical overlap
+	// revert copy direction
+
+  if (q < p && p < q + n)
+	{
+		p = p + n - 1;
+		q = q + n - 1;
+		while (i < n)
+		{
+			*p-- = *q--;
+			++i;
+		}
+	}
+  else
   {
-    *p++ = *q++;
-    ++i;
+		while (i < n)
+		{
+			*p++ = *q++;
+			++i;
+		}
   }
   return dest;
 }
@@ -876,6 +952,24 @@ void* memset(void* dest, uint8_t val, size_t n)
   return dest;
 }
 
+int memcmp(void* dest, void* src, size_t n)
+{
+	size_t i = 0;
+	uint8_t* p = dest;
+	uint8_t* q = src;
+	while (i < n)
+	{
+		if (*p++ != *q++)
+		{
+			break;
+		}
+		++i;
+	}
+	return i < n;
+}
+
+
+
 
 static uint32_t rand_val = 27182811;
 
@@ -885,7 +979,62 @@ uint32_t rand()
 	return rand_val >> 5;
 }
 
-*/
+// some string utilities
+
+bool in_delim(char c, char* delims)
+{
+	char *q = delims;
+	while (*q)
+	{
+		if (*q == c)
+		{
+			break;
+		}
+		++q;
+	}
+	return (bool)*q;
+}
+
+void parse_buf(char* buf, int len, char* delims, int* argc, char* argv[])
+{
+	char* p = buf;
+	int argc_local = 0;
+
+	*argc = argc_local;
+
+	while (p - buf < len)
+	{
+		if (argc_local && *p)
+		{
+			*p = 0;
+			++p;
+		}
+		while (in_delim(*p, delims))
+		{
+			++p;
+		}
+
+		if (*p)
+		{
+			argv[argc_local] = p;
+			++argc_local;
+			while (*p && !in_delim(*p, delims))
+				++p;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	*argc = argc_local;
+
+	//printf("parse_buf: argc = %d\n", *argc);
+
+}
+
+
+
 
 
 

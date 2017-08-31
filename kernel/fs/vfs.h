@@ -65,8 +65,8 @@ typedef struct superblk_ops_s {
 
 
 #define MK_INO_NO(fs_code, ino_code) ((((uint64_t) (fs_code)) << 32) + (ino_code))
-#define GET_FS_CODE(ino) (((ino) >> 32))
-#define GET_INO_CODE(ino) ((ino) & (((uint64_t)(1 << 32)) - 1))
+#define GET_FS_CODE(ino) ((uint32_t)(((ino) >> 32)))
+#define GET_INO_CODE(ino) ((uint32_t)((ino) & ((((uint64_t)1) << 32) - 1)))
 
 
 typedef	struct inode_s {
@@ -87,13 +87,16 @@ typedef	struct inode_s {
 	struct inode_ops_s* i_ops;	// inode operations
 	struct file_ops_s* i_fops;	// associated file operations
 	
+	list_head_t		i_hash_link;		// links inode in hash table bucket
+	uint32_t i_dentries_refcnt; // how many dentrys point to this inode
+	list_head_t** i_hash_header; // hash bucket header of inode
+
 	unsigned int i_blkbits;	 		// blocksize in bits
 
 	uint64_t	i_blocks;	 		// number of blocks in file
 	uint32_t i_bytes;  		// number of bytes in last block
 	loff_t i_size;					 		// file size in bytes
 
-	uint32_t i_dentries_refcnt; // how many dentrys point to this inode
 
 	void*	i_concrete_inode;
 
@@ -110,6 +113,8 @@ typedef struct inode_ops_s {
 	int (*mknod)(inode_t* dir, dentry_t* dentry, uint32_t mode, uint32_t rdev);
 	int (*rename)(inode_t* old_dir, dentry_t* old_dentry, inode_t* new_dir, dentry_t* new_dentry);
 	int (*permission)(inode_t* ino, int mask);
+	int (*refresh)(inode_t* ino);
+	int (*destroy)(inode_t* ino);
 	
 } inode_ops_t;
 
@@ -125,6 +130,7 @@ typedef struct dentry_s {
 
 	list_head_t d_link;
 	list_head_t d_lru_link;
+	list_head_t **d_hash_header;
 
 	inode_t* d_inode;
 	
@@ -161,8 +167,9 @@ typedef struct file_s {
 
 typedef struct dirent_s {
 	
-	inode_t* d_inode;
-	char d_name[1];
+	uint64_t d_inode;
+	uint8_t d_type;
+	char d_name[FILE_NAMELEN];
 
 } dirent_t;
 
@@ -210,9 +217,28 @@ list_head_t* global_in_de_hash_headers[NUM_INDE_HASH];
 
 list_head_t* global_in_de_lru_list;
 
+int display_in_de_hash();
+
+int delete_in_de_hash_elem(dentry_t* del_dentry);
+
+
+
+
+#define NUM_INO_HASH	541
+
+list_head_t* global_ino_hash_headers[NUM_INO_HASH];
+
+int find_ino(uint64_t inode_no, inode_t** found_inode);
+int insert_ino_hash(inode_t* ino);
+
+int display_ino_hash();
+
+
+
+
 dentry_t* gen_lookup(inode_t* dir, dentry_t* dentry);
 
-int get_parse_path(dentry_t* pwd_dentry, uint32_t mode, char* path,
+int get_parse_path(dentry_t* root_dentry, dentry_t* pwd_dentry, uint32_t mode, char* path,
 		dentry_t** found_dentry, char* last_fname);
 
 

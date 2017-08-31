@@ -12,6 +12,7 @@
 
 #include "fs/gendrivers.h"
 #include "fs/vfs.h"
+#include "fs/vfsext2.h"
 #include "fs/ext2.h"
 
 
@@ -360,18 +361,20 @@ int init_ext2_system(file_t* dev_file)
 	printf("Test ok.\n");
 #endif
 
-	memset(&global_root_inode, 0, sizeof(inode_t));
 	memset(&global_root_dentry, 0, sizeof(dentry_t));
 
+	inode_t* root_inode = get_inode_t();
 
-	init_inode_from_ext2(&global_root_inode, g_root_dir_file);
+	init_inode_from_ext2(root_inode, g_root_dir_file);
+	root_inode->i_ino = MK_INO_NO(EXT2_FS_CODE, g_root_dir_file->inode_index);
+	insert_ino_hash(root_inode);
 
-	global_root_dentry.d_inode = &global_root_inode;
-	global_root_dentry.d_parent_inode_no = global_root_inode.i_ino;
+	global_root_dentry.d_inode = root_inode;
+	global_root_dentry.d_parent_inode_no = root_inode->i_ino;
 
 	++global_root_dentry.d_refcount;
 
-	++global_root_inode.i_dentries_refcnt;
+	++root_inode->i_dentries_refcnt;
 
 	outb_printf("init_ext2_system: done.\n");
 

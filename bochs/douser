@@ -1,0 +1,10 @@
+
+sudo ./domount
+
+cp ../kernel/user.bin mnt/
+
+sudo umount mnt
+
+sudo e2fsck -f /dev/loop0
+
+cp c.img c.img.bak

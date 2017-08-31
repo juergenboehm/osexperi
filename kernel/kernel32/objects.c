@@ -14,6 +14,8 @@ inode_t* get_inode_t()
 	inode_t* p_new_inode = malloc(sizeof(inode_t));
 	memset(p_new_inode, 0, sizeof(inode_t));
 
+	outb_printf("get_inode_t: new inode_t created.\n");
+
 	return p_new_inode;
 
 }

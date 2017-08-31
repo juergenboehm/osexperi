@@ -19,7 +19,7 @@ file_ops_t device_driver_file_ops;
 file_ops_t device_driver_blk_file_ops;
 
 dentry_t global_root_dentry;
-inode_t global_root_inode;
+//inode_t global_root_inode;
 
 
 
@@ -341,7 +341,9 @@ int set_inode_ops(inode_ops_t* iops,
 		void *rmdir,
 		void *mknod,
 		void *rename,
-		void *permission)
+		void *permission,
+		void *refresh,
+		void *destroy)
 {
 	iops->create = create;
 	iops->lookup = lookup;
@@ -351,6 +353,8 @@ int set_inode_ops(inode_ops_t* iops,
 	iops->mknod = mknod;
 	iops->rename = rename;
 	iops->permission = permission;
+	iops->refresh = refresh;
+	iops->destroy = destroy;
 
 	return 0;
 }
@@ -407,7 +411,7 @@ void create_ext2_file_ops(file_ops_t* fops)
 void create_ext2_inode_ops(inode_ops_t* iops)
 {
 	set_inode_ops(iops, ext2_create, ext2_lookup, ext2_unlink, ext2_mkdir, ext2_rmdir,
-			ext2_mknod, ext2_rename, ext2_permission);
+			ext2_mknod, ext2_rename, ext2_permission, ext2_refresh, ext2_destroy);
 }
 
 
@@ -602,6 +606,114 @@ int do_open(char* fname, uint32_t fmode)
 }
 
 
+int find_ino(uint64_t inode_no, inode_t** found_inode)
+{
+
+	uint64_t index = inode_no % NUM_INO_HASH;
+
+	list_head_t* ino_header = global_ino_hash_headers[index];
+
+	outb_printf("find_ino: enter lookup = %016x\n", inode_no);
+
+	INIT_LISTVAR(p);
+
+	FORLIST(p, ino_header)
+	{
+		inode_t* pinode_akt = container_of(p, inode_t, i_hash_link);
+
+		if (pinode_akt->i_ino == inode_no)
+		{
+
+			outb_printf("find_ino: inode %016x found.\n", inode_no);
+			//pinode_akt->i_ops->refresh(pinode_akt);
+
+			*found_inode = pinode_akt;
+			return 1;
+		}
+
+		p = p->next;
+	}
+	END_FORLIST(p, ino_header);
+
+	*found_inode = NULL;
+
+	return 0;
+
+}
+
+int insert_ino_hash(inode_t* ino)
+{
+	uint64_t index = ino->i_ino % NUM_INO_HASH;
+
+	prepend_list(&(global_ino_hash_headers[index]), &(ino->i_hash_link));
+	ino->i_hash_header = &(global_ino_hash_headers[index]);
+
+	return 0;
+
+}
+
+int display_ino_hash()
+{
+	int j;
+	for(j = 0; j < NUM_INO_HASH; ++j)
+	{
+		INIT_LISTVAR(p);
+
+		int out_done = 0;
+
+		FORLIST(p, global_ino_hash_headers[j])
+		{
+			inode_t* pinode_akt = container_of(p, inode_t, i_hash_link);
+
+			outb_printf("(%d, %d) ", GET_INO_CODE(pinode_akt->i_ino),
+					pinode_akt->i_dentries_refcnt);
+
+			out_done = 1;
+
+			p = p->next;
+		}
+		END_FORLIST(p, global_ino_hash_headers[j]);
+		if (out_done)
+		{
+			outb_printf("\n");
+		}
+	}
+	return 0;
+}
+
+
+int display_in_de_hash()
+{
+	int j;
+	for(j = 0; j < NUM_INDE_HASH; ++j)
+	{
+		INIT_LISTVAR(p);
+
+		int out_done = 0;
+
+		FORLIST(p, global_in_de_hash_headers[j])
+		{
+			dentry_t* pdentry_akt = container_of(p, dentry_t, d_link);
+
+			outb_printf("(%d, %d, %s) ", GET_INO_CODE(pdentry_akt->d_inode->i_ino),
+					GET_INO_CODE(pdentry_akt->d_parent_inode_no), pdentry_akt->d_name);
+
+			out_done = 1;
+
+			p = p->next;
+		}
+		END_FORLIST(p, global_in_de_hash_headers[j]);
+		if (out_done)
+		{
+			outb_printf("\n");
+		}
+	}
+	return 0;
+
+}
+
+
+
 
 // inode_no is inode number of parent directory where file dname is to be found
 int find_in_de_pair(list_head_t* in_de_header, uint64_t inode_no, char* dname, dentry_t** found_dentry)
@@ -618,6 +730,8 @@ int find_in_de_pair(list_head_t* in_de_header, uint64_t inode_no, char* dname, d
 			delete_elem(&global_in_de_lru_list, &(pdentry_akt->d_lru_link));
 			prepend_list(&global_in_de_lru_list, &(pdentry_akt->d_lru_link));
 
+			pdentry_akt->d_inode->i_ops->refresh(pdentry_akt->d_inode);
+
 			*found_dentry = pdentry_akt;
 			return 1;
 		}
@@ -631,6 +745,38 @@ int find_in_de_pair(list_head_t* in_de_header, uint64_t inode_no, char* dname, d
 	return 0;
 
 }
+
+int destroy_inode(inode_t* del_inode)
+{
+	del_inode->i_ops->destroy(del_inode);
+	delete_elem(del_inode->i_hash_header, &(del_inode->i_hash_link));
+	return 0;
+}
+
+int delete_in_de_hash_elem(dentry_t* del_dentry)
+{
+	delete_elem(&global_in_de_lru_list, &(del_dentry->d_lru_link));
+	delete_elem(del_dentry->d_hash_header, &(del_dentry->d_link));
+
+	free(del_dentry->d_name);
+
+	inode_t* del_dentry_inode = del_dentry->d_inode;
+
+	--del_dentry_inode->i_dentries_refcnt;
+
+	if (!del_dentry_inode->i_dentries_refcnt)
+	{
+		destroy_inode(del_dentry_inode);
+		free(del_dentry_inode);
+	}
+
+	free(del_dentry);
+
+	return 0;
+}
+
+
+
 
 
 
@@ -656,6 +802,7 @@ dentry_t* gen_lookup(inode_t* dir, dentry_t* dentry)
 
 	if (found_dentry)
 	{
+		found_dentry->d_hash_header = &global_in_de_hash_headers[in_de_hash];
 		prepend_list(&global_in_de_hash_headers[in_de_hash], &(found_dentry->d_link));
 		prepend_list(&global_in_de_lru_list, &(found_dentry->d_lru_link));
 	}
@@ -666,7 +813,7 @@ dentry_t* gen_lookup(inode_t* dir, dentry_t* dentry)
 
 
 
-int get_parse_path(dentry_t* pwd_dentry, uint32_t mode, char* path,
+int get_parse_path(dentry_t* root_dentry, dentry_t* pwd_dentry, uint32_t mode, char* path,
 		dentry_t** found_dentry, char* last_fname)
 {
 
@@ -676,6 +823,8 @@ int get_parse_path(dentry_t* pwd_dentry, uint32_t mode, char* path,
 	char* argv[MAX_PATH_COMPONENTS];
 
 	char* path_copy = strcpy_alloc(path);
+
+	int is_root = (path_copy[0] == '/');
 
 	parse_buf(path_copy, strlen(path), "/", &argc, argv);
 
@@ -706,7 +855,7 @@ int get_parse_path(dentry_t* pwd_dentry, uint32_t mode, char* path,
 
 	dentry_t dentry_akt;
 
-	dentry_t* found_dentry_akt = pwd_dentry;
+	dentry_t* found_dentry_akt = is_root ? root_dentry : pwd_dentry;
 
 	while (i < goal)
 	{

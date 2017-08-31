@@ -41,7 +41,11 @@ syscall_info_t syscall_list[] =
 		{.sys_fun = sys_register_handler, .no_parms = 1},
 		{.sys_fun = sys_fork, .no_parms = 1 },
 
-		{.sys_fun = sys_close, .no_parms = 1}
+		{.sys_fun = sys_close, .no_parms = 1},
+
+		{.sys_fun = sys_chdir, .no_parms = 1},
+
+		{.sys_fun = sys_readdir, .no_parms = 2}
 
 };
 
@@ -139,7 +143,8 @@ int sys_open_3(char *pathname, int flags, mode_t mode)
 
 	if (flags & (O_WRONLY | O_RDWR))
 	{
-		int ret = get_parse_path(current_root_dentry, 0x01, pathname, &found_dentry, last_fname);
+		int ret = get_parse_path(current_root_dentry, current_pwd_dentry,
+				0x01, pathname, &found_dentry, last_fname);
 
 		if (ret < 0)
 		{
@@ -193,7 +198,8 @@ int sys_open_3(char *pathname, int flags, mode_t mode)
 	}
 	else if ((flags & O_ACCMODE) == O_RDONLY)
 	{
-		int ret = get_parse_path(current_root_dentry, 0, pathname, &found_dentry, last_fname);
+		int ret = get_parse_path(current_root_dentry, current_pwd_dentry,
+				0, pathname, &found_dentry, last_fname);
 		if (ret < 0)
 		{
 			retval = -1;
@@ -209,7 +215,7 @@ int sys_open_3(char *pathname, int flags, mode_t mode)
 
 	file_ext2_t* new_file_ext2 = ((file_ext2_t*)found_dentry->d_inode->i_concrete_inode);
 
-	outb_printf("inode found = %d\n", new_file_ext2->inode_index);
+	outb_printf("sys_open_3: inode found = %d\n", new_file_ext2->inode_index);
 
 	file_t* new_file = get_file_t();
 
@@ -236,17 +242,196 @@ int sys_creat(char *pathname, mode_t mode)
 
 int sys_unlink(char *pathname)
 {
-	return -1;
+	int retval = -1;
+
+	char* last_fname = malloc(FILE_NAMELEN);
+
+
+	dentry_t* current_root_dentry = current->proc_data.io_block->root_dentry;
+	dentry_t* current_pwd_dentry = current->proc_data.io_block->pwd_dentry;
+
+	dentry_t* found_dentry = 0;
+
+	retval = get_parse_path(current_root_dentry, current_pwd_dentry,
+			0x01, pathname, &found_dentry, last_fname);
+
+	if (retval < 0 || !found_dentry)
+	{
+		goto ende;
+	}
+
+	inode_t *parent_dir_ino = found_dentry->d_inode;
+
+	dentry_t aux_dentry;
+
+	aux_dentry.d_name = last_fname;
+
+	dentry_t* found_dentry_2 = gen_lookup(parent_dir_ino, &aux_dentry);
+
+	if (!found_dentry_2)
+	{
+		retval = -1;
+		goto ende;
+	}
+
+	if (found_dentry_2->d_refcount)
+	{
+		// dentry to be deleted is referenced by a valid file
+		// so no unlink is done
+		retval = -1;
+		goto ende;
+	}
+
+	// delete the dentry found_dentry_2 formed from parent_dir_ino and aux_dentry
+	// which points to the inode to be unlinked.
+	delete_in_de_hash_elem(found_dentry_2);
+
+	retval = parent_dir_ino->i_ops->unlink(parent_dir_ino, &aux_dentry);
+
+	if (retval < 0)
+	{
+		goto ende;
+	}
+
+	retval = 0;
+
+
+	ende:
+	free(last_fname);
+	return retval;
 }
 
 int sys_mkdir(char *pathname, mode_t mode)
 {
-	return -1;
+	int retval = -1;
+
+	char* last_fname = malloc(FILE_NAMELEN);
+
+
+	dentry_t* current_root_dentry = current->proc_data.io_block->root_dentry;
+	dentry_t* current_pwd_dentry = current->proc_data.io_block->pwd_dentry;
+
+	dentry_t* found_dentry = 0;
+
+	retval = get_parse_path(current_root_dentry, current_pwd_dentry,
+			0x01, pathname, &found_dentry, last_fname);
+
+	if (retval < 0 || !found_dentry)
+	{
+		goto ende;
+	}
+
+	inode_t *parent_dir_ino = found_dentry->d_inode;
+
+	dentry_t aux_dentry;
+
+	aux_dentry.d_name = last_fname;
+
+
+	retval = parent_dir_ino->i_ops->mkdir(parent_dir_ino, &aux_dentry, mode);
+
+	if (retval < 0)
+	{
+		goto ende;
+	}
+
+	retval = 0;
+
+
+	ende:
+	free(last_fname);
+	return retval;
 }
 
 int sys_rmdir(char *pathname)
 {
-	return -1;
+
+	int retval = -1;
+
+	char* last_fname = malloc(FILE_NAMELEN);
+
+
+	dentry_t* current_root_dentry = current->proc_data.io_block->root_dentry;
+	dentry_t* current_pwd_dentry = current->proc_data.io_block->pwd_dentry;
+
+	dentry_t* found_dentry = 0;
+
+	retval = get_parse_path(current_root_dentry, current_pwd_dentry,
+			0x01, pathname, &found_dentry, last_fname);
+
+	if (retval < 0 || !found_dentry)
+	{
+		goto ende;
+	}
+
+	inode_t *parent_dir_ino = found_dentry->d_inode;
+
+	dentry_t aux_dentry;
+
+	aux_dentry.d_name = last_fname;
+
+	dentry_t* found_dentry_2 = gen_lookup(parent_dir_ino, &aux_dentry);
+
+	if (!found_dentry_2)
+	{
+		retval = -1;
+		goto ende;
+	}
+
+	if (found_dentry_2->d_refcount)
+	{
+		// the directory found_dentry_2 is referred to from a file
+		// so it will not be deleted.
+		retval = -1;
+		goto ende;
+	}
+
+	// delete the dentry entry associated with .
+
+	dentry_t aux_dot_dentry;
+
+	aux_dot_dentry.d_name = ".";
+
+	dentry_t* dot_dentry = gen_lookup(found_dentry_2->d_inode, &aux_dot_dentry);
+
+	if (!dot_dentry)
+	{
+		// should not happen
+		ASSERT(dot_dentry == 0 && 1);
+	}
+
+	delete_in_de_hash_elem(dot_dentry);
+
+	// delete the dentry entry associated with ..
+
+	aux_dot_dentry.d_name = "..";
+
+	dot_dentry = gen_lookup(found_dentry_2->d_inode, &aux_dot_dentry);
+
+	if (!dot_dentry)
+	{
+		// should not happen
+		ASSERT(dot_dentry == 0 && 2);
+	}
+
+	delete_in_de_hash_elem(dot_dentry);
+
+	delete_in_de_hash_elem(found_dentry_2);
+
+	retval = parent_dir_ino->i_ops->rmdir(parent_dir_ino, &aux_dentry);
+
+	if (retval < 0)
+	{
+		goto ende;
+	}
+
+	retval = 0;
+
+
+	ende:
+	free(last_fname);
+	return retval;
+
 }
 
 int sys_rename(char *oldpath, const char *newpath)
@@ -325,5 +510,64 @@ int sys_fork(uint32_t arg)
 
 int sys_close(int fd)
 {
-	return -1;
+	int retval = -1;
+
+	if (!current->proc_data.io_block->base_fd_arr[fd])
+	{
+		goto ende;
+	}
+
+	unlink_dentry_t(current->proc_data.io_block->base_fd_arr[fd]->f_dentry);
+	unlink_file_t(current->proc_data.io_block->base_fd_arr[fd]);
+
+	current->proc_data.io_block->base_fd_arr[fd] = NULL;
+	retval = 0;
+
+	ende:
+	return retval;
 }
+
+int sys_chdir(char* pathname)
+{
+	int retval = -1;
+	char* last_fname = malloc(FILE_NAMELEN);
+
+	dentry_t* current_root_dentry = current->proc_data.io_block->root_dentry;
+	dentry_t* current_pwd_dentry = current->proc_data.io_block->pwd_dentry;
+
+	dentry_t* found_dentry = 0;
+
+	retval = get_parse_path(current_root_dentry, current_pwd_dentry,
+			0, pathname, &found_dentry, last_fname);
+
+	if (retval < 0 || !found_dentry)
+	{
+		goto ende;
+	}
+
+	unlink_dentry_t(current->proc_data.io_block->pwd_dentry);
+	link_dentry_t(&current->proc_data.io_block->pwd_dentry, found_dentry);
+
+	ende:
+	free(last_fname);
+	return retval;
+}
+
+int sys_readdir(int fd, dirent_t* dirent)
+{
+	int retval = -1;
+
+	file_t* dirfil = current->proc_data.io_block->base_fd_arr[fd];
+
+	if (!dirfil)
+	{
+		goto ende;
+	}
+
+	retval = dirfil->f_fops->readdir(dirfil, dirent, NULL);
+
+	ende:
+	return retval;
+
+}
+

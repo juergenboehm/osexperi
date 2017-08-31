@@ -15,6 +15,10 @@ extern inode_ops_t ext2_inode_ops;
 
 int init_inode_from_ext2(inode_t* inode, file_ext2_t* file_ext2);
 
+int ext2_refresh(inode_t* ino);
+
+int ext2_destroy(inode_t* ino);
+
 
 int ext2_create(inode_t* dir, dentry_t* dentry, uint32_t mode);
 

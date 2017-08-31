@@ -678,6 +678,13 @@ int execute_mem(int argc, char* argv[])
 	}
 	printf("summed length of bin lists = %d\n", sum);
 
+	outb_printf("inode hash:\n");
+	display_ino_hash();
+	outb_printf("inode hash: end\n");
+	outb_printf("dentry hash:\n");
+	display_in_de_hash();
+	outb_printf("dentry hash: end\n");
+
 	return 0;
 }
 
